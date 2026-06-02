@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27><text y=%27.9em%27 font-size=%2790%27>🖥️</text></svg>">
+    <title>Что мониторит Zabbix Agent: полный обзор метрик и возможностей — Мониторум</title>
+    <meta name="description" content="Узнайте, что именно может отслеживать Zabbix Agent на серверах и сетевом оборудовании. Обзор системных метрик, приложений и пользовательских скриптов.">
+    <link rel="canonical" href="https://monitorium.vercel.app/articles/z/za/zabbix-agent-chto-mozhet-monitorit.html">
+
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="Что мониторит Zabbix Agent: полный обзор метрик и возможностей">
+    <meta property="og:description" content="Узнайте, что именно может отслеживать Zabbix Agent на серверах и сетевом оборудовании. Обзор системных метрик, приложений и пользовательских скриптов.">
+    <meta property="og:locale" content="ru_RU">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css?v=1780420684">
+    <style>
+    .site-footer-premium {
+        margin-top: 60px; padding: 40px 0 0; background: #1e293b; color: #94a3b8;
+    }
+    .footer-grid {
+        display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 40px;
+        padding-bottom: 32px; border-bottom: 1px solid #334155;
+    }
+    .footer-brand { font-size: 1.2rem; font-weight: 700; color: #f1f5f9; margin-bottom: 12px; }
+    .footer-about { font-size: 0.9rem; line-height: 1.6; margin-bottom: 8px; }
+    .footer-updated { font-size: 0.8rem; color: #64748b; }
+    .footer-col h4 { color: #f1f5f9; font-size: 0.95rem; margin-bottom: 16px; }
+    .footer-col ul { list-style: none; }
+    .footer-col li { margin-bottom: 8px; }
+    .footer-col a { color: #94a3b8; font-size: 0.9rem; transition: color 0.2s; }
+    .footer-col a:hover { color: #60a5fa; }
+    .footer-bottom { padding: 20px 0; text-align: center; font-size: 0.85rem; }
+    @media (max-width: 640px) {
+        .footer-grid { grid-template-columns: 1fr; gap: 24px; }
+    }
+    .cookie-popup {
+        position: fixed; bottom: 0; left: 0; right: 0; background: #1e293b; color: #fff;
+        padding: 16px; transition: transform 0.5s ease; z-index: 9999; border-top: 2px solid #2563eb;
+        transform: translateY(100%);
+    }
+    .cookie-popup.visible { transform: translateY(0); }
+    .cookie-inner { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; gap: 16px; font-size: 0.9rem; }
+    .cookie-btn { background: #2563eb; color: #fff; border: none; padding: 8px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+    .cookie-btn:hover { background: #1d4ed8; }
+    @media (max-width: 640px) {
+        .cookie-inner { flex-direction: column; text-align: center; }
+    }
+</style>
+    
+    <!--#include virtual="/ssi/head.html" -->
+</head>
+<body>
+        <!--#include virtual="/ssi/body_top.html" -->
+    <style>
+    .nav-dropdown { position: relative; display: inline-block; }
+    .dropdown-toggle {
+        background: none; border: none; cursor: pointer;
+        font: inherit; color: inherit; padding: 8px 12px;
+        border-radius: 8px; transition: background 0.2s;
+    }
+    .dropdown-toggle:hover { background: rgba(0,0,0,0.05); }
+    .dropdown-menu {
+        display: none; position: absolute; right: 0; top: 100%;
+        min-width: 240px; max-height: 70vh; overflow-y: auto;
+        background: var(--card-bg, #fff); border: 1px solid var(--border, #e5e7eb);
+        border-radius: 12px; box-shadow: 0 12px 40px rgba(0,0,0,0.12);
+        padding: 8px 0; z-index: 1000;
+    }
+    .nav-dropdown::after {
+        content: ''; position: absolute; left: 0; right: 0;
+        top: 100%; height: 12px;
+    }
+    .nav-dropdown:hover .dropdown-menu,
+    .nav-dropdown:focus-within .dropdown-menu { display: block; }
+    .dropdown-item {
+        display: block; padding: 10px 20px; color: var(--text, #1f2937);
+        text-decoration: none; font-size: 0.95rem; transition: background 0.15s;
+        white-space: nowrap;
+    }
+    .dropdown-item:hover { background: rgba(37,99,235,0.06); color: var(--primary, #2563eb); }
+    @media (max-width: 768px) {
+        .main-nav > .nav-link { display: none; }
+        .dropdown-toggle { display: none; }
+        .dropdown-menu {
+            display: block !important; position: static;
+            box-shadow: none; border: none; border-radius: 0;
+            min-width: auto; max-height: none; padding: 0;
+            background: transparent;
+        }
+        .dropdown-item {
+            padding: 8px 0; font-size: 1rem;
+        }
+    }
+    </style>
+    <header class="site-header">
+        <div class="container header-inner">
+            <a href="/" class="logo">
+                <span class="logo-icon">🖥️</span>
+                <span>Мониторум</span>
+            </a>
+            <button class="mobile-menu-btn" aria-label="Меню" id="menuBtn">☰</button>
+            <nav class="main-nav" id="mainNav">
+                <a href="/category/nastrojka-ekrana/" class="nav-link">⚙️ Настройка экрана</a>
+<a href="/category/podklyuchenie-ustrojstv/" class="nav-link">🔌 Подключение устройств</a>
+<a href="/category/mnozhestvennye-ekrany/" class="nav-link">🖥️🖥️ Множественные экраны</a>
+<a href="/category/zvuk-i-audio/" class="nav-link">🔊 Звук и аудио</a>
+<div class="nav-dropdown">
+            <button class="nav-link dropdown-toggle">📂 Все разделы ▾</button>
+            <div class="dropdown-menu"><a href="/category/nastrojka-ekrana/" class="dropdown-item">⚙️ Настройка экрана</a>
+<a href="/category/podklyuchenie-ustrojstv/" class="dropdown-item">🔌 Подключение устройств</a>
+<a href="/category/mnozhestvennye-ekrany/" class="dropdown-item">🖥️🖥️ Множественные экраны</a>
+<a href="/category/zvuk-i-audio/" class="dropdown-item">🔊 Звук и аудио</a>
+<a href="/category/remont-i-polomki/" class="dropdown-item">🔧 Ремонт и поломки</a>
+<a href="/category/ukhod-i-chistka/" class="dropdown-item">🧼 Уход и чистка</a>
+<a href="/category/vybor-i-kharakteristiki/" class="dropdown-item">📊 Выбор и характеристики</a>
+<a href="/category/drajvery-i-po/" class="dropdown-item">💿 Драйверы и ПО</a>
+<a href="/category/krepleniya-i-ustanovka/" class="dropdown-item">🔩 Крепления и установка</a>
+<a href="/category/utilizatsiya-i-prodazha/" class="dropdown-item">♻️ Утилизация и продажа</a>
+<a href="/category/spetsialnye-rezhimy/" class="dropdown-item">🎮 Специальные режимы</a>
+<a href="/category/drugoe/" class="dropdown-item">📁 Другое</a></div>
+        </div>
+            </nav>
+        </div>
+    </header>
+
+    <nav class="breadcrumbs" aria-label="Навигация">
+        <div class="container"><a href="/">Главная</a><span class="breadcrumb-sep">›</span><a href="/category/drajvery-i-po/">Драйверы и ПО</a><span class="breadcrumb-sep">›</span><span class="breadcrumb-current">Что мониторит Zabbix Agent: полный обзор метрик и возможностей</span></div>
+    </nav>
+
+    <main class="site-main">
+        <div class="container">
+            <div class="article-layout">
+                <article class="article-main">
+                    
+                    <h1>Что может мониторить Zabbix Agent: полный гид по метрикам</h1>
+                    <nav class="mobile-toc"><details><summary>📋 Содержание</summary><ul><li><a href="#введение-в-возможности-агента-мониторинга">Введение в возможности агента мониторинга</a></li><li><a href="#базовые-системные-метрики-операционной-системы">Базовые системные метрики операционной системы</a></li><li><a href="#мониторинг-служб-процессов-и-пользователей">Мониторинг служб, процессов и пользователей</a></li><li><a href="#сбор-данных-с-приложений-и-баз-данных">Сбор данных с приложений и баз данных</a></li><li><a href="#пользовательские-скрипты-и-внешний-мониторинг">Пользовательские скрипты и внешний мониторинг</a></li><li><a href="#мониторинг-оборудования-и-сенсоры">Мониторинг оборудования и сенсоры</a></li><li><a href="#активный-и-пассивный-режимы-работы">Активный и пассивный режимы работы</a></li><li><a href="#частые-вопросы-по-возможностям-агента">Частые вопросы по возможностям агента</a></li></ul></details></nav>
+                    <!--#include virtual="/ssi/article_before.html" -->
+                    <div class="article-body"><h2 id="введение-в-возможности-агента-мониторинга">Введение в возможности агента мониторинга</h2>
+
+<p>Система <strong>Zabbix</strong> является одним из лидеров в области автоматизированного наблюдения за IT-инфраструктурой, а её агент играет ключевую роль в сборе данных. <em>Zabbix Agent</em> — это легковесное программное обеспечение, устанавливаемое на контролируемые узлы, которое отвечает за опрос операционной системы и передачу метрик на сервер мониторинга. Без этого компонента получение детальной информации о внутреннем состоянии сервера было бы невозможным или требовало бы сложных обходных путей.</p>
+
+<p>Многие администраторы ошибочно полагают, что агент собирает только базовую статистику, такую как загрузка процессора или свободная память. На самом деле функционал <strong>Zabbix Agent</strong> гораздо шире и позволяет отслеживать тысячи различных параметров, от состояния файловой системы до специфических индикаторов работы веб-серверов и баз данных. Правильная настройка агента превращает его в универсальный инструмент диагностики, способный предсказать проблемы до их возникновения.</p>
+
+<p>Важно понимать, что агент работает в двух основных режимах: активном и пассивном. В пассивном режиме сервер сам запрашивает данные по расписанию, тогда как активный агент сам отправляет метрики на сервер, что снижает нагрузку на саму систему мониторинга. Выбор режима зависит от архитектуры сети и требований к скорости реакции на инциденты. <mark>Способность агента выполнять пользовательские скрипты делает его универсальным сборщиком данных для любых специфических задач</mark>.</p>
+
+<h2 id="базовые-системные-метрики-операционной-системы">Базовые системные метрики операционной системы</h2>
+
+<p>Фундаментом работы любого агента является сбор показателей непосредственно от ядра операционной системы. <strong>Zabbix Agent</strong> поддерживает нативные модули для Linux, Windows, macOS и других платформ, позволяя получать данные о загрузке <code>CPU</code>, использовании оперативной памяти <code>RAM</code> и дисковом пространстве. Эти метрики критически важны для понимания общего здоровья сервера и формирования базовых порогов тревоги.</p>
+
+<p>Агент может отслеживать не только текущее состояние, но и историю изменения параметров, что позволяет выявлять аномалии в поведении системы. Например, внезапный скачок использования процессора в 23:00 может указывать на некорректную работу фоновой задачи. <em>Дисковые метрики</em> включают в себя не только свободное место, но и количество ошибок чтения/записи, что часто является первым признаком скорой поломки носителя.</p>
+
+<p>Для сетевых интерфейсов агент собирает информацию о скорости передачи данных, количестве потерянных пакетов и состоянии интерфейса (up/down). Это позволяет администраторам быстро реагировать на перегрузки каналов связи или сбои сетевого оборудования. Если вы видите, что нагрузка на процессор стабильно превышает 80% в течение длительного времени, это сигнал к оптимизации кода приложений или наращиванию ресурсов.</p>
+
+<ul>
+<li>🔍 Загрузка процессора по ядрам и в целом по системе</li>
+<li>💾 Использование оперативной памяти и swap-пространства</li>
+<li>💿 Свободное место на разделах и индексы фрагментации</li>
+<li>🌐 Статистика сетевого трафика и количество ошибок интерфейсов</li>
+</ul>
+
+<h2 id="мониторинг-служб-процессов-и-пользователей">Мониторинг служб, процессов и пользователей</h2>
+
+<p>Одной из самых частых задач является контроль доступности критически важных сервисов. <strong>Zabbix Agent</strong> умеет проверять, запущен ли определенный процесс, и сообщать администратору, если служба веб-сервера или базы данных была остановлена аварийно. Проверка может осуществляться как по имени процесса, так и по порту, на котором он слушает подключения.</p>
+
+<p>Кроме того, агент способен отслеживать количество активных пользователей, вошедших в систему. Это полезно для контроля лицензий или выявления несанкционированного доступа. Если на сервере базы данных резко прекратились соединения, агент мгновенно зафиксирует остановку процесса <code>mysqld</code> или <code>postgres</code> и отправит уведомление. Такая реакция занимает секунды, что критично для бизнес-критичных систем.</p>
+
+<p>Для Windows-серверов доступны специфические метрики, такие как статус служб через <code>ServiceCheck</code> или использование диспетчера задач. <em>Linux-агент</em> предоставляет гибкие настройки для проверки наличия процессов по PID или по имени. Важно настроить правильные пороги срабатывания, чтобы избежать ложных срабатываний при плановых перезагрузках или обновлении служб.</p>
+
+<blockquote>
+<p>⚠️ <strong>Внимание:</strong> При мониторинге служб необходимо учитывать время их старта. Если проверка срабатывает сразу после перезагрузки сервера, пока служба еще инициализируется, вы получите ложное уведомление о падении. Используйте задержку в настройках проверки или параметры <code>startup</code> в конфигурационном файле агента.</p>
+</blockquote>
+
+<div class="poll-widget" id="poll-ea859e06"><div class="poll-widget-question">📊 Как вы чаще всего отслеживаете процессы?</div><div class="poll-widget-option" data-poll="ea859e06" data-idx="0" onclick="pbPollVote(this)"><span class="poll-widget-label">По имени процесса</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="ea859e06" data-idx="1" onclick="pbPollVote(this)"><span class="poll-widget-label">По порту</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="ea859e06" data-idx="2" onclick="pbPollVote(this)"><span class="poll-widget-label">По PID</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="ea859e06" data-idx="3" onclick="pbPollVote(this)"><span class="poll-widget-label">Через сторонний скрипт</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div></div>
+
+<h2 id="сбор-данных-с-приложений-и-баз-данных">Сбор данных с приложений и баз данных</h2>
+
+<p>Современные системы мониторинга требуют глубокого понимания работы приложений. <strong>Zabbix Agent 2</strong> значительно расширил возможности в этой области, внедрив нативные плагины для популярных баз данных и веб-серверов. Теперь не нужно писать сложные скрипты для получения метрик из <em>MySQL</em>, <em>PostgreSQL</em>, <em>MongoDB</em> или <em>Redis</em> — достаточно установить соответствующий плагин агента.</p>
+
+<p>Агент может собирать информацию о количестве активных соединений, скорости выполнения запросов, времени отклика и размере буферов кэша. Для веб-серверов типа Nginx или Apache доступны метрики по количеству обработанных запросов, ошибкам 4xx/5xx и времени ожидания ответов. Это позволяет строить сложные корреляции между нагрузкой на сервер и производительностью приложений.</p>
+
+<p>Важным аспектом является возможность мониторинга очередей сообщений и кэширующих систем. Знание размера очереди в <em>RabbitMQ</em> или возраста ключей в <em>Redis</em> помогает предотвратить простои в работе микросервисов. Агент может выполнять SQL-запросы напрямую к базе данных и парсить результаты, переводя их в удобные числовые метрики для графика.</p>
+
+<table>
+<thead>
+<tr>
+<th>Тип приложения</th>
+<th>Ключевые метрики</th>
+<th>Метод сбора</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Веб-сервер (Nginx)</td>
+<td>Активные соединения, запросы в секунду</td>
+<td>Статус-страница (stub_status)</td>
+</tr>
+<tr>
+<td>База данных (PostgreSQL)</td>
+<td>Размер БД, транзакции, блокировки</td>
+<td>Native Plugin / SQL Query</td>
+</tr>
+<tr>
+<td>Кэш (Redis)</td>
+<td>Использование памяти, кэшированный хит-рейт</td>
+<td>Redis Command (INFO)</td>
+</tr>
+<tr>
+<td>Очередь (RabbitMQ)</td>
+<td>Размер очереди, потребители</td>
+<td>Management API / Plugin</td>
+</tr>
+</tbody>
+</table>
+
+<h2 id="пользовательские-скрипты-и-внешний-мониторинг">Пользовательские скрипты и внешний мониторинг</h2>
+
+<p>Если стандартных метрик недостаточно, <strong>Zabbix Agent</strong> позволяет запускать произвольные исполняемые файлы. Это открывает безграничные возможности для мониторинга уникального оборудования, специфического ПО или внутренних бизнес-процессов. Вы можете написать скрипт на Python, Bash или PowerShell, который будет собирать нужные данные в формате, понятном агенту.</p>
+
+<p>Агент возвращает значение, которое скрипт вывел в стандартный поток вывода (stdout). Это может быть число, строка или JSON-объект, который затем парсится сервером. Например, скрипт может проверять наличие определенного файла в директории или анализировать логи на наличие критических ошибок. Такой подход делает агента универсальным адаптером для любой системы.</p>
+
+<p>Для безопасности важно ограничивать список разрешенных команд в файле конфигурации агента <code>zabbix_agentd.conf</code>. Параметр <code>AllowKey</code> определяет, какие именно скрипты агент имеет право выполнять по запросу сервера. Это предотвращает выполнение произвольных команд злоумышленниками в случае компрометации доступа к агенту. <em>Никогда не разрешайте выполнение всех скриптов без явного контроля</em>.</p>
+
+<ul>
+<li>🛠️ Запуск внешних программ для сбора специфических данных</li>
+<li>📝 Анализ текстовых файлов и логов через регулярные выражения</li>
+<li>🔌 Взаимодействие с API сторонних сервисов через curl/wget</li>
+<li>🔐 Безопасное выполнение команд через AllowKey</li>
+</ul>
+
+<div class="checklist-block"><h4>☑️ Настройка пользовательского скрипта</h4><label class="check-item"><input type="checkbox"><span>Написать скрипт сбора данных</span></label><label class="check-item"><input type="checkbox"><span>Проверить вывод в stdout</span></label><label class="check-item"><input type="checkbox"><span>Добавить UserParameter в конфиг</span></label><label class="check-item"><input type="checkbox"><span>Перезагрузить агента</span></label><div class="check-progress">Выполнено: <span class="check-count">0</span> / 4</div></div>
+
+<h2 id="мониторинг-оборудования-и-сенсоры">Мониторинг оборудования и сенсоры</h2>
+
+<p>Помимо программного уровня, <strong>Zabbix Agent</strong> может собирать данные о физическом состоянии серверного оборудования. Это становится возможным благодаря интеграции с утилитами мониторинга железа, такими как <code>ipmitool</code> для систем управления (IPMI) или <code>lm-sensors</code> для Linux. Агент может опрашивать датчики температуры, скорости вращения вентиляторов и напряжение на линиях питания.</p>
+
+<p>Сбор метрик температуры процессора и жестких дисков позволяет предсказать перегрев и предотвратить аварийное отключение. Для RAID-массивов агент может отслеживать состояние контроллера, наличие потерянных дисков и скорость rebuild-процесса. Эти данные критичны в дата-центрах, где физическая доступность оборудования напрямую влияет на бизнес-процессы.</p>
+
+<p>В Windows-среде для этих целей часто используются WMI-запросы или специализированные утилиты, результаты которых передаются агенту. Важно отметить, что чтение данных с сенсоров может вызывать повышенную нагрузку на шину данных, поэтому частоту опроса такого оборудования следует настраивать с осторожностью, избегая слишком частых запросов.</p>
+
+<blockquote>
+<p>⚠️ <strong>Внимание:</strong> Частый опрос сенсоров температуры через IPMI может приводить к перегрузке контроллера BMC, что в редких случаях вызывает сбои в управлении сервером. Устанавливайте интервал опроса не чаще одного раза в 5-10 минут для температурных датчиков, если нет явной необходимости в мониторинге в реальном времени.</p>
+</blockquote>
+
+<details class="faq-item"><summary>Секреты настройки IPMI мониторинга</summary><div class="faq-answer"><p>Для корректной работы мониторинга IPMI необходимо добавить пользователя в группу sudo с правами на запуск ipmitool без пароля, но только для конкретных команд, чтобы избежать рисков безопасности.</p></div></details>
+
+<h2 id="активный-и-пассивный-режимы-работы">Активный и пассивный режимы работы</h2>
+
+<p>Выбор режима работы агента влияет на архитектуру системы и скорость реакции. В <strong>пассивном режиме</strong> сервер Zabbix инициирует соединение с агентом и запрашивает конкретные метрики. Это классический подход, удобный для настройки, но он может создавать нагрузку на сервер при большом количестве хостов и коротких интервалах опроса.</p>
+
+<p>В <strong>активном режиме</strong> агент сам соединяется с сервером и отправляет собранные данные. Это снижает нагрузку на сервер мониторинга и позволяет собирать данные быстрее, так как агент не ждет запроса. Активные проверки обычно используются для мониторинга критических параметров, где важна минимальная задержка до получения алерта.</p>
+
+<p>Гибридный подход позволяет использовать оба режима одновременно: активный для быстрой реакции на критические события и пассивный для сбора детализированной истории. <em>Zabbix Agent 2</em> упростил конфигурацию активных проверок, сделав её более надежной и масштабируемой. Важно правильно настроить сетевые правила фаервола для обоих направлений соединений.</p>
+
+<div class="attention-box attention-tip"><span class="attention-icon">💡</span><p>Для уменьшения нагрузки на сеть используйте активный режим для хостов, находящихся в удаленных локациях с нестабильным соединением, так как агент будет буферизовать данные при потере связи и отправить их при восстановлении.</p></div>
+
+<div class="attention-box attention-tip"><span class="attention-icon">💡</span><p>Активный режим агента предпочтителен для мониторинга большого количества хостов и критических метрик, требующих минимальной задержки передачи данных на сервер.</p></div>
+
+<h2 id="частые-вопросы-по-возможностям-агента">Частые вопросы по возможностям агента</h2>
+
+<details>
+<summary>Может ли Zabbix Agent работать на мобильных устройствах?</summary>
+<p>Официальный Zabbix Agent не предназначен для установки на мобильные ОС (iOS, Android) в качестве полноценного агента мониторинга. Однако существуют сторонние реализации или возможность использовать API агрегации данных через специальные приложения, но это не является стандартной практикой для инфраструктуры.</p>
+</details>
+
+<details>
+<summary>Какие ограничения существуют для UserParameter?</summary>
+<p>Основное ограничение — безопасность. Выполняемые команды не должны требовать интерактивного ввода пароля. Также существуют ограничения на время выполнения скрипта (таймаут), после которого агент прерывает выполнение. Сложные скрипты могут замедлять работу агента, если они выполняются слишком часто.</p>
+</details>
+
+<details>
+<summary>Поддерживает ли агент мониторинг контейнеров Docker?</summary>
+<p>Да, Zabbix Agent 2 имеет встроенный модуль для мониторинга Docker. Он может собирать метрики использования ресурсов контейнерами (CPU, память, сеть), а также состояние самих контейнеров. Это позволяет мониторить микросервисную архитектуру без дополнительных посредников.</p>
+</details>
+
+<details>
+<summary>Как проверить, что агент работает корректно?</summary>
+<p>Самый простой способ — использовать утилиту <code>zabbix_get</code> на сервере мониторинга, передав IP-адрес хоста и ключ метрики. Это позволит проверить доступность агента и корректность возврата данных без зависимости от настроек Zabbix Server.</p>
+</details></div>
+                    <!--#include virtual="/ssi/article_after.html" -->
+
+                </article>
+                <aside class="article-sidebar"><!--#include virtual="/ssi/sidebar_top.html" --><nav class="sidebar-search"><div class="sidebar-search-box"><input type="text" id="globalSearchInput" placeholder="🔍 Поиск статей..." autocomplete="off"><div class="search-dropdown" id="globalSearchDropdown"></div></div></nav><!--#include virtual="/ssi/sidebar_before_toc.html" --><nav class="sidebar-toc" id="sidebarToc"><h3>Содержание</h3><ul><li><a href="#введение-в-возможности-агента-мониторинга">Введение в возможности агента мониторинга</a></li><li><a href="#базовые-системные-метрики-операционной-системы">Базовые системные метрики операционной системы</a></li><li><a href="#мониторинг-служб-процессов-и-пользователей">Мониторинг служб, процессов и пользователей</a></li><li><a href="#сбор-данных-с-приложений-и-баз-данных">Сбор данных с приложений и баз данных</a></li><li><a href="#пользовательские-скрипты-и-внешний-мониторинг">Пользовательские скрипты и внешний мониторинг</a></li><li><a href="#мониторинг-оборудования-и-сенсоры">Мониторинг оборудования и сенсоры</a></li><li><a href="#активный-и-пассивный-режимы-работы">Активный и пассивный режимы работы</a></li><li><a href="#частые-вопросы-по-возможностям-агента">Частые вопросы по возможностям агента</a></li></ul></nav><!--#include virtual="/ssi/sidebar_before_related.html" --><nav class="sidebar-related"><h3>Похожие статьи</h3><ul><li><a href="/articles/k/ka/kak-otkryt-monitor-porta-arduino.html" class="related-card">Как открыть Монитор порта в Arduino IDE: Полная инструкция</a></li><li><a href="/articles/k/ka/kak-ustanovit-drajver-monitora-na-noutbuke.html" class="related-card">Как установить драйвер монитора на ноутбуке: полное руководство</a></li><li><a href="/articles/k/ka/kak-vklyuchit-monitor-portala-1s-its.html" class="related-card">Как включить монитор портала 1С:ИТС: Пошаговая инструкция и настройка</a></li><li><a href="/articles/k/ka/kak-ustanovit-pogodu-na-monitor-kompyutera.html" class="related-card">Как установить погоду на монитор компьютера: 5 лучших способов</a></li><li><a href="/articles/k/ka/kak-vruchnuyu-ustanovit-drajver-dlya-monitora.html" class="related-card">Как установить драйвер монитора вручную: пошаговая инструкция 2026</a></li></ul></nav><!--#include virtual="/ssi/sidebar_after_related.html" --></aside>
+            </div>
+        </div>
+    </main>
+
+    <!--#include virtual="/ssi/before_related_bottom.html" -->
+    <section class="related-bottom">
+        <div class="container">
+            <h2 class="related-bottom-heading">📖 Читайте также</h2>
+            <div class="related-bottom-grid"><a href="/articles/k/ka/kak-otkryt-monitor-porta-arduino.html" class="related-bottom-card"><span class="related-bottom-title">Как открыть Монитор порта в Arduino IDE: Полная инструкция</span><span class="related-bottom-desc">Пошаговое руководство: как запустить Монитор порта в Arduino, настроить скорость передачи данных и у</span></a><a href="/articles/k/ka/kak-ustanovit-drajver-monitora-na-noutbuke.html" class="related-bottom-card"><span class="related-bottom-title">Как установить драйвер монитора на ноутбуке: полное руководство</span><span class="related-bottom-desc">Пошаговая инструкция по установке драйверов монитора на ноутбук. Разбор способов через ДМ, сайт прои</span></a><a href="/articles/k/ka/kak-vklyuchit-monitor-portala-1s-its.html" class="related-bottom-card"><span class="related-bottom-title">Как включить монитор портала 1С:ИТС: Пошаговая инструкция и настройка</span><span class="related-bottom-desc">Подробная инструкция по включению и настройке мониторинга на портале 1С:ИТС. Разбор причин отсутстви</span></a><a href="/articles/k/ka/kak-ustanovit-pogodu-na-monitor-kompyutera.html" class="related-bottom-card"><span class="related-bottom-title">Как установить погоду на монитор компьютера: 5 лучших способов</span><span class="related-bottom-desc">Узнайте, как выводить данные о погоде на экран монитора. Обзор виджетов Windows, утилит Rainmeter, G</span></a><a href="/articles/k/ka/kak-vruchnuyu-ustanovit-drajver-dlya-monitora.html" class="related-bottom-card"><span class="related-bottom-title">Как установить драйвер монитора вручную: пошаговая инструкция 2026</span><span class="related-bottom-desc">Не удаётся подключить монитор? Узнайте, как найти, скачать и установить драйвер для монитора вручную</span></a><a href="/articles/b/bp/bplab-sutochnyj-monitor-pause-chto.html" class="related-bottom-card"><span class="related-bottom-title">BPLab Суточный монитор: что такое Pause и как настроить</span><span class="related-bottom-desc">Разбор функции Pause в суточных мониторах BPLab. Как отключить паузу записи, анализ данных и особенн</span></a></div>
+        </div>
+    </section>
+    <!--#include virtual="/ssi/after_related_bottom.html" -->
+
+    <footer class="site-footer-premium">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-col">
+                    <div class="footer-brand">🖥️ Мониторум</div>
+                    <p class="footer-about">Полный справочник по настройке, ремонту и выбору компьютерных мониторов для любых задач.</p>
+                </div>
+                <div class="footer-col">
+                    <h4>Разделы</h4>
+                    <ul><li><a href="/category/nastrojka-ekrana/">⚙️ Настройка экрана</a></li>
+<li><a href="/category/podklyuchenie-ustrojstv/">🔌 Подключение устройств</a></li>
+<li><a href="/category/mnozhestvennye-ekrany/">🖥️🖥️ Множественные экраны</a></li>
+<li><a href="/category/zvuk-i-audio/">🔊 Звук и аудио</a></li>
+<li><a href="/category/remont-i-polomki/">🔧 Ремонт и поломки</a></li>
+<li><a href="/category/ukhod-i-chistka/">🧼 Уход и чистка</a></li></ul>
+                </div>
+                <div class="footer-col">
+                    <h4>Информация</h4>
+                    <ul>
+                        <li><a href="/">Главная</a></li>
+                        <li><a href="/about.html">О проекте</a></li>
+                        <li><a href="/categories.html">Все разделы</a></li>
+                        <li><a href="/contact.html">Контакты</a></li>
+                        <li><a href="/privacy.html">Конфиденциальность</a></li>
+                        <li><a href="/sitemap.xml">Карта сайта</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>© Мониторум. Все права защищены.</p>
+                <!--LiveInternet counter--><div style="margin-top:10px;"><a href="https://www.liveinternet.ru/click"
+                target="_blank"><img id="licnt06C4" width="88" height="15" style="border:0" 
+                title="LiveInternet: показано число посетителей за сегодня"
+                src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAEALAAAAAABAAEAAAIBTAA7"
+                alt=""/></a><script>(function(d,s){d.getElementById("licnt06C4").src=
+                "https://counter.yadro.ru/hit?t26.5;r"+escape(d.referrer)+
+                ((typeof(s)=="undefined")?"":";s"+s.width+"*"+s.height+"*"+
+                (s.colorDepth?s.colorDepth:s.pixelDepth))+";u"+escape(d.URL)+
+                ";h"+escape(d.title.substring(0,150))+";"+Math.random()})(document,screen)</script></div><!--/LiveInternet-->
+            </div>
+        </div>
+    </footer>
+    <div id="cookie-consent" class="cookie-popup">
+        <div class="cookie-inner">
+            <span>🍪 Мы используем файлы cookie для улучшения работы сайта.</span>
+            <button id="cookie-accept" class="cookie-btn">Принять</button>
+        </div>
+    </div>
+    <script src="/static/js/main.js"></script>
+    <script>
+    (function() {
+        const popup = document.getElementById('cookie-consent');
+        const btn = document.getElementById('cookie-accept');
+        if (popup && btn && !localStorage.getItem('cookie-accepted')) {
+            popup.classList.add('visible');
+            btn.onclick = () => {
+                localStorage.setItem('cookie-accepted', 'true');
+                popup.classList.remove('visible');
+            };
+        }
+    })();
+    </script>
+    <script>
+    function pbPollVote(el) {
+        var poll = el.closest('.poll-widget');
+        if (poll.classList.contains('voted')) return;
+        poll.classList.add('voted');
+        el.classList.add('selected');
+        var opts = poll.querySelectorAll('.poll-widget-option');
+        var n = opts.length;
+        var raw = [];
+        var sum = 0;
+        for (var i = 0; i < n; i++) {
+            var v = Math.random() * 50 + 5;
+            if (opts[i] === el) v += 30;
+            raw.push(v);
+            sum += v;
+        }
+        var pcts = raw.map(function(v) { return Math.round(v / sum * 100); });
+        var diff = 100 - pcts.reduce(function(a,b){ return a+b; }, 0);
+        pcts[Array.from(opts).indexOf(el)] += diff;
+        setTimeout(function() {
+            opts.forEach(function(opt, i) {
+                opt.querySelector('.poll-widget-bar').style.width = pcts[i] + '%';
+                opt.querySelector('.poll-widget-pct').textContent = pcts[i] + '%';
+            });
+        }, 50);
+    }
+    </script>
+    <!--#include virtual="/ssi/body_bottom.html" -->
+    <script src="/static/js/inject.js" defer></script>
+</body>
+</html>

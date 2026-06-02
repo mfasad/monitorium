@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27><text y=%27.9em%27 font-size=%2790%27>🖥️</text></svg>">
+    <title>Мониторинг PostgreSQL: 10 инструментов для отслеживания базы данных — Мониторум</title>
+    <meta name="description" content="Как выбрать инструмент для мониторинга PostgreSQL: сравнение pgAdmin, Grafana, Prometheus и других решений. Настройка алертов, анализ производительности и оптимизация запросов.">
+    <link rel="canonical" href="https://monitorium.vercel.app/articles/c/ch/chem-monitorit-postgresql.html">
+
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="Мониторинг PostgreSQL: 10 инструментов для отслеживания базы данных">
+    <meta property="og:description" content="Как выбрать инструмент для мониторинга PostgreSQL: сравнение pgAdmin, Grafana, Prometheus и других решений. Настройка алертов, анализ производительности и оптимизация запросов.">
+    <meta property="og:locale" content="ru_RU">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css?v=1780420684">
+    <style>
+    .site-footer-premium {
+        margin-top: 60px; padding: 40px 0 0; background: #1e293b; color: #94a3b8;
+    }
+    .footer-grid {
+        display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 40px;
+        padding-bottom: 32px; border-bottom: 1px solid #334155;
+    }
+    .footer-brand { font-size: 1.2rem; font-weight: 700; color: #f1f5f9; margin-bottom: 12px; }
+    .footer-about { font-size: 0.9rem; line-height: 1.6; margin-bottom: 8px; }
+    .footer-updated { font-size: 0.8rem; color: #64748b; }
+    .footer-col h4 { color: #f1f5f9; font-size: 0.95rem; margin-bottom: 16px; }
+    .footer-col ul { list-style: none; }
+    .footer-col li { margin-bottom: 8px; }
+    .footer-col a { color: #94a3b8; font-size: 0.9rem; transition: color 0.2s; }
+    .footer-col a:hover { color: #60a5fa; }
+    .footer-bottom { padding: 20px 0; text-align: center; font-size: 0.85rem; }
+    @media (max-width: 640px) {
+        .footer-grid { grid-template-columns: 1fr; gap: 24px; }
+    }
+    .cookie-popup {
+        position: fixed; bottom: 0; left: 0; right: 0; background: #1e293b; color: #fff;
+        padding: 16px; transition: transform 0.5s ease; z-index: 9999; border-top: 2px solid #2563eb;
+        transform: translateY(100%);
+    }
+    .cookie-popup.visible { transform: translateY(0); }
+    .cookie-inner { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; gap: 16px; font-size: 0.9rem; }
+    .cookie-btn { background: #2563eb; color: #fff; border: none; padding: 8px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+    .cookie-btn:hover { background: #1d4ed8; }
+    @media (max-width: 640px) {
+        .cookie-inner { flex-direction: column; text-align: center; }
+    }
+</style>
+    
+    <!--#include virtual="/ssi/head.html" -->
+</head>
+<body>
+        <!--#include virtual="/ssi/body_top.html" -->
+    <style>
+    .nav-dropdown { position: relative; display: inline-block; }
+    .dropdown-toggle {
+        background: none; border: none; cursor: pointer;
+        font: inherit; color: inherit; padding: 8px 12px;
+        border-radius: 8px; transition: background 0.2s;
+    }
+    .dropdown-toggle:hover { background: rgba(0,0,0,0.05); }
+    .dropdown-menu {
+        display: none; position: absolute; right: 0; top: 100%;
+        min-width: 240px; max-height: 70vh; overflow-y: auto;
+        background: var(--card-bg, #fff); border: 1px solid var(--border, #e5e7eb);
+        border-radius: 12px; box-shadow: 0 12px 40px rgba(0,0,0,0.12);
+        padding: 8px 0; z-index: 1000;
+    }
+    .nav-dropdown::after {
+        content: ''; position: absolute; left: 0; right: 0;
+        top: 100%; height: 12px;
+    }
+    .nav-dropdown:hover .dropdown-menu,
+    .nav-dropdown:focus-within .dropdown-menu { display: block; }
+    .dropdown-item {
+        display: block; padding: 10px 20px; color: var(--text, #1f2937);
+        text-decoration: none; font-size: 0.95rem; transition: background 0.15s;
+        white-space: nowrap;
+    }
+    .dropdown-item:hover { background: rgba(37,99,235,0.06); color: var(--primary, #2563eb); }
+    @media (max-width: 768px) {
+        .main-nav > .nav-link { display: none; }
+        .dropdown-toggle { display: none; }
+        .dropdown-menu {
+            display: block !important; position: static;
+            box-shadow: none; border: none; border-radius: 0;
+            min-width: auto; max-height: none; padding: 0;
+            background: transparent;
+        }
+        .dropdown-item {
+            padding: 8px 0; font-size: 1rem;
+        }
+    }
+    </style>
+    <header class="site-header">
+        <div class="container header-inner">
+            <a href="/" class="logo">
+                <span class="logo-icon">🖥️</span>
+                <span>Мониторум</span>
+            </a>
+            <button class="mobile-menu-btn" aria-label="Меню" id="menuBtn">☰</button>
+            <nav class="main-nav" id="mainNav">
+                <a href="/category/nastrojka-ekrana/" class="nav-link">⚙️ Настройка экрана</a>
+<a href="/category/podklyuchenie-ustrojstv/" class="nav-link">🔌 Подключение устройств</a>
+<a href="/category/mnozhestvennye-ekrany/" class="nav-link">🖥️🖥️ Множественные экраны</a>
+<a href="/category/zvuk-i-audio/" class="nav-link">🔊 Звук и аудио</a>
+<div class="nav-dropdown">
+            <button class="nav-link dropdown-toggle">📂 Все разделы ▾</button>
+            <div class="dropdown-menu"><a href="/category/nastrojka-ekrana/" class="dropdown-item">⚙️ Настройка экрана</a>
+<a href="/category/podklyuchenie-ustrojstv/" class="dropdown-item">🔌 Подключение устройств</a>
+<a href="/category/mnozhestvennye-ekrany/" class="dropdown-item">🖥️🖥️ Множественные экраны</a>
+<a href="/category/zvuk-i-audio/" class="dropdown-item">🔊 Звук и аудио</a>
+<a href="/category/remont-i-polomki/" class="dropdown-item">🔧 Ремонт и поломки</a>
+<a href="/category/ukhod-i-chistka/" class="dropdown-item">🧼 Уход и чистка</a>
+<a href="/category/vybor-i-kharakteristiki/" class="dropdown-item">📊 Выбор и характеристики</a>
+<a href="/category/drajvery-i-po/" class="dropdown-item">💿 Драйверы и ПО</a>
+<a href="/category/krepleniya-i-ustanovka/" class="dropdown-item">🔩 Крепления и установка</a>
+<a href="/category/utilizatsiya-i-prodazha/" class="dropdown-item">♻️ Утилизация и продажа</a>
+<a href="/category/spetsialnye-rezhimy/" class="dropdown-item">🎮 Специальные режимы</a>
+<a href="/category/drugoe/" class="dropdown-item">📁 Другое</a></div>
+        </div>
+            </nav>
+        </div>
+    </header>
+
+    <nav class="breadcrumbs" aria-label="Навигация">
+        <div class="container"><a href="/">Главная</a><span class="breadcrumb-sep">›</span><a href="/category/drugoe/">Другое</a><span class="breadcrumb-sep">›</span><span class="breadcrumb-current">Мониторинг PostgreSQL: 10 инструментов для отслеживания базы данных</span></div>
+    </nav>
+
+    <main class="site-main">
+        <div class="container">
+            <div class="article-layout">
+                <article class="article-main">
+                    
+                    <h1>Чем мониторить PostgreSQL: инструменты, метрики и практические советы</h1>
+                    <nav class="mobile-toc"><details><summary>📋 Содержание</summary><ul><li><a href="#какие-метрики-postgresql-нужно-мониторить-в-первую-очередь">Какие метрики PostgreSQL нужно мониторить в первую очередь</a></li><li><a href="#встроенные-инструменты-postgresql-когда-хватит-штатных-средств">Встроенные инструменты PostgreSQL: когда хватит штатных средств</a></li><li><a href="#grafana-prometheus-золотая-пара-для-мониторинга">Grafana + Prometheus: золотая пара для мониторинга</a></li><li><a href="#платные-решения-когда-стоит-платить-за-мониторинг">Платные решения: когда стоит платить за мониторинг</a></li><li><a href="#мониторинг-репликации-как-не-пропустить-lag">Мониторинг репликации: как не пропустить lag</a></li><li><a href="#алерты-и-нотификации-как-не-утонуть-в-потоке-данных">Алерты и нотификации: как не утонуть в потоке данных</a></li><li><a href="#скрытые-проблемы-что-упускают-90-админов">Скрытые проблемы: что упускают 90% админов</a></li><li><a href="#faq-ответы-на-частые-вопросы">FAQ: Ответы на частые вопросы</a></li></ul></details></nav>
+                    <!--#include virtual="/ssi/article_before.html" -->
+                    <div class="article-body"><p>Базы данных <strong>PostgreSQL</strong> — основа тысяч проектов: от небольших веб-приложений до высоконагруженных корпоративных систем. Но даже самая надёжная СУБД требует контроля: замедление запросов, нехватка памяти или внезапные блокировки могут обернуться простоями и потерями данных. Правильный <strong>мониторинг PostgreSQL</strong> помогает предотвратить проблемы ещё на этапе их зарождения, оптимизировать производительность и планировать масштабирование.</p>
+
+<p>В этой статье разберём, <em>какие метрики критично отслеживать</em>, какие инструменты для этого подходят (от встроенных утилит до enterprise-решений), и как настроить систему оповещений, чтобы не пропустить сбои. Особое внимание уделим <mark>скрытым "узким местам" PostgreSQL, которые часто упускают из виду: например, влияние автовакуума на IO-нагрузку или рост размера WAL-файлов при репликации</mark>.</p>
+
+<h2 id="какие-метрики-postgresql-нужно-мониторить-в-первую-очередь">Какие метрики PostgreSQL нужно мониторить в первую очередь</h2>
+
+<p>Без понимания ключевых показателей даже самый продвинутый инструмент будет бесполезен. Вот <strong>минимальный набор метрик</strong>, которые должны быть в вашем дашборде:</p>
+
+<ul>
+  <li>📊 <strong>Загрузка CPU</strong>: высокое потребление процессора часто указывает на неоптимизированные запросы или недостаток индексов. Особенно критично отслеживать <code>CPU usage by query</code> — какие именно операции "жрут" ресурсы.</li>
+  <li>🗄️ <strong>Использование памяти</strong>: PostgreSQL активно кэширует данные в <code>shared_buffers</code>. Если кэш постоянно сбрасывается на диск (<code>buffer cache hit ratio</code> ниже 99%), это сигнал к увеличению RAM или настройке параметров.</li>
+  <li>🔄 <strong>IO-операции</strong>: медленные диски — частая причина тормозов. Следите за <code>read/write latency</code>, количеством <code>checkpoints</code> и объёмом записываемых <code>WAL</code>-файлов.</li>
+  <li>🔒 <strong>Блокировки</strong>: длительные <code>LOCK</code> (особенно <code>ExclusiveLock</code>) могут парализовать работу. Важно отслеживать, какие транзакции блокируют другие и насколько долго.</li>
+  <li>⏱️ <strong>Время выполнения запросов</strong>: даже если среднее время ответа в норме, отдельные <code>slow queries</code> (дольше 1-2 секунд) могут указывать на проблемы с индексами или планировщиком.</li>
+</ul>
+
+<p>Не менее важны <strong>метрики репликации</strong> (если она используется): lag между мастером и репликами, объём передаваемых данных и ошибки синхронизации. Например, рост <code>replication lag</code> свыше 10 секунд может говорить о сетевых проблемах или перегрузке мастера.</p>
+
+<blockquote>⚠️ Внимание: В PostgreSQL 16+ изменилась логика сбора статистики для некоторых метрик (например, <code>pg_stat_activity</code> теперь показывает больше деталей о параллельных запросах). Если используете новую версию, сверьте список доступных показателей в <a href="https://www.postgresql.org/docs/current/monitoring-stats.html" target="_blank" rel="noopener">официальной документации</a>.</blockquote>
+
+<h2 id="встроенные-инструменты-postgresql-когда-хватит-штатных-средств">Встроенные инструменты PostgreSQL: когда хватит штатных средств</h2>
+
+<p>PostgreSQL поставляется с набором утилит, которых часто достаточно для базового мониторинга. Их главный плюс — <em>нет необходимости устанавливать стороннее ПО</em>, а минус — ограниченная визуализация и отсутствие алертов.</p>
+
+<p>Основные инструменты:</p>
+
+<ul>
+  <li>🛠️ <code>pg_stat_activity</code>: показывает все активные подключения, выполняемые запросы и их статус. Полезно для поиска "зависших" транзакций:
+  <pre><code>SELECT pid, usename, query, state, now() - query_start AS duration
+<p>FROM pg_stat_activity</p>
+<p>WHERE state = 'active';</code></pre></li></p>
+  <li>📈 <code>pg_stat_statements</code>: расширение для анализа производительности запросов. Требует подключения в <code>postgresql.conf</code>:
+  <pre><code>shared_preload_libraries = 'pg_stat_statements'
+<p>pg_stat_statements.track = all</code></pre></p>
+<p>После этого можно получить топ самых медленных запросов:</p>
+  <pre><code>SELECT query, calls, total_exec_time, mean_exec_time
+<p>FROM pg_stat_statements</p>
+<p>ORDER BY mean_exec_time DESC</p>
+<p>LIMIT 10;</code></pre></li></p>
+  <li>🔍 <code>EXPLAIN ANALYZE</code>: не совсем мониторинг, но незаменим для диагностики конкретных запросов. Показывает план выполнения и реальное время каждого шага.</li>
+</ul>
+
+<p>Для визуализации данных из этих инструментов можно использовать <em>psql</em> в режиме <code>\watch</code> (автообновление вывода) или простые скрипты на <em>Bash/Python</em>, которые будут слать отчёты по почте. Однако для крупных систем такого подхода явно недостаточно.</p>
+
+<div class="poll-widget" id="poll-b3ec357d"><div class="poll-widget-question">📊 Какой инструмент вы используете для мониторинга PostgreSQL?</div><div class="poll-widget-option" data-poll="b3ec357d" data-idx="0" onclick="pbPollVote(this)"><span class="poll-widget-label">Встроенные утилиты (pg_stat, EXPLAIN)</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="b3ec357d" data-idx="1" onclick="pbPollVote(this)"><span class="poll-widget-label">Grafana + Prometheus</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="b3ec357d" data-idx="2" onclick="pbPollVote(this)"><span class="poll-widget-label">Zabbix/Нagios</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="b3ec357d" data-idx="3" onclick="pbPollVote(this)"><span class="poll-widget-label">Платные решения (Datadog, Percona)</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="b3ec357d" data-idx="4" onclick="pbPollVote(this)"><span class="poll-widget-label">Собственные скрипты</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div></div>
+
+<h2 id="grafana-prometheus-золотая-пара-для-мониторинга">Grafana + Prometheus: золотая пара для мониторинга</h2>
+
+<p>Комбинация <em>Prometheus</em> (для сбора метрик) и <em>Grafana</em> (для визуализации) стала де-факто стандартом для мониторинга инфраструктуры. Для PostgreSQL этот дуэт подходит идеально благодаря гибкости и открытости.</p>
+
+<p>Чтобы настроить мониторинг:</p>
+
+<ol>
+  <li><strong>Установите экспортер метрик</strong>: самый популярный — <em>postgres_exporter</em> от <em>Prometheus Community</em>. Он подключается к базе и транслирует метрики в формат, понятный Prometheus.
+<p>Пример команды для запуска:</p>
+  <pre><code>docker run -d --name postgres_exporter \
+<p>-e DATA_SOURCE_NAME="postgresql://user:password@host:port/dbname?sslmode=disable" \</p>
+<p>-p 9187:9187 \</p>
+<p>prometheuscommunity/postgres-exporter</code></pre></li></p>
+  <li><strong>Настройте Prometheus</strong>: добавьте job в конфиг <code>prometheus.yml</code>:
+  <pre><code>- job_name: 'postgresql'
+<p>static_configs:</p>
+<p>- targets: ['localhost:9187']</code></pre></li></p>
+  <li><strong>Импортируйте дашборд в Grafana</strong>: готовые шаблоны есть в <a href="https://grafana.com/grafana/dashboards/" target="_blank" rel="noopener">официальной библиотеке</a>. Популярный вариант — <em>PostgreSQL Overview</em> (ID 9628).</li>
+</ol>
+
+<p>Преимущества этого подхода:</p>
+<ul>
+  <li>📌 Гибкая настройка алертов через <code>Alertmanager</code> (например, оповещение при росте <code>replication lag</code> свыше 5 секунд).</li>
+  <li>📊 Возможность корреляции метрик PostgreSQL с другими сервисами (например, связать нагрузку на базу с пиками трафика на веб-сервере).</li>
+  <li>🔄 Легкое масштабирование: можно мониторить десятки инстансов PostgreSQL с одного Prometheus.</li>
+</ul>
+
+<blockquote>⚠️ Внимание: По умолчанию <em>postgres_exporter</em> собирает метрики с интервалом в 1 секунду. Для высоконагруженных баз это может создать дополнительную нагрузку. Увеличьте интервал до 5-10 секунд в параметре <code>--collect.interval</code>.</blockquote>
+
+
+<p>Установить postgres_exporter с правильными правами доступа|Добавить job в prometheus.yml|Проверить доступность метрик на порту 9187|Импортировать дашборд в Grafana|Настроить алерты для критических метрик--></p>
+
+<h2 id="платные-решения-когда-стоит-платить-за-мониторинг">Платные решения: когда стоит платить за мониторинг</h2>
+
+<p>Если ваша инфраструктура включает десятки серверов PostgreSQL или требуется глубокий анализ производительности с поддержкой 24/7, стоит рассмотреть платные инструменты. Они предлагают:</p>
+<ul>
+  <li>🛡️ Встроенную поддержку и SLA (важно для предприятий).</li>
+  <li>🔍 Продвинутую диагностику (например, автоматический анализ <code>EXPLAIN</code> для медленных запросов).</li>
+  <li>📱 Мобильные приложения и интеграции с <em>Slack/Teams</em>.</li>
+</ul>
+
+<p>Сравнение популярных решений:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Инструмент</th>
+      <th>Цена (от)</th>
+      <th>Ключевые фичи</th>
+      <th>Минусы</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><em>Datadog</em></td>
+      <td>$15/хост/мес</td>
+      <td>Автоматическое обнаружение аномалий, интеграция с 600+ сервисами, APM для SQL-запросов</td>
+      <td>Дорого для небольших проектов, сложная настройка тарификации</td>
+    </tr>
+    <tr>
+      <td><em>Percona PMM</em></td>
+      <td>Бесплатно (Enterprise от $1000/год)</td>
+      <td>Специализирован для СУБД, поддержка MongoDB/MySQL, детальная диагностика</td>
+      <td>Сложный интерфейс, требует глубоких знаний PostgreSQL</td>
+    </tr>
+    <tr>
+      <td><em>TimescaleDB + Promscale</em></td>
+      <td>Бесплатно (Enterprise от $500/мес)</td>
+      <td>Оптимизирован для временных рядов, долгое хранение метрик, SQL-интерфейс</td>
+      <td>Ограниченная визуализация без Grafana</td>
+    </tr>
+    <tr>
+      <td><em>pgMonitor</em></td>
+      <td>$29/мес</td>
+      <td>Простота настройки, фокус на PostgreSQL, встроенные алерты</td>
+      <td>Мало интеграций, подходит только для PostgreSQL</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>Для большинства средних проектов оптимальным по соотношению цена/качество будет <em>Percona PMM</em> или <em>TimescaleDB</em>. А вот <em>Datadog</em> целесообразен, если у вас уже есть его экосистема для мониторинга другой инфраструктуры.</p>
+
+<div class="attention-box attention-tip"><span class="attention-icon">💡</span><p>Перед покупкой платного инструмента запросите trial-версию и протестируйте его на тестовом стенде. Обратите внимание, как решение справляется с <strong>длительными транзакциями</strong> и <strong>репликацией</strong> — это частые "слабые места" в мониторинге.</p></div>
+
+<h2 id="мониторинг-репликации-как-не-пропустить-lag">Мониторинг репликации: как не пропустить lag</h2>
+
+<p>Репликация в PostgreSQL — это не только резервирование, но и способ распределить нагрузку. Однако <strong>lag (задержка) между мастером и репликами</strong> может стать критичной проблемой. Вот что нужно отслеживать:</p>
+
+<ul>
+  <li>🕒 <strong>Replication Lag</strong>: разница во времени между мастером и репликой. В идеале она должна быть близка к нулю. Для мониторинга используйте запрос:
+  <pre><code>SELECT
+<p>pg_current_wal_lsn() - replay_lsn AS lag_bytes,</p>
+<p>pg_size_pretty(pg_current_wal_lsn() - replay_lsn) AS lag_size</p>
+<p>FROM pg_stat_replication;</code></pre></li></p>
+  <li>📤 <strong>Объём WAL</strong>: если мастер генерирует слишком много <code>WAL</code>-файлов, реплики не успевают их обрабатывать. Следите за <code>pg_stat_bgwriter</code>.</li>
+  <li>🔄 <strong>Синхронность</strong>: если используется <code>synchronous_commit = on</code>, мастер будет ждать подтверждения от реплик, что может замедлять запись.</li>
+</ul>
+
+<p>Частые причины роста lag:</p>
+<ul>
+  <li>🖥️ <strong>Недостаточные ресурсы реплики</strong> (CPU, IO, память).</li>
+  <li>🌐 <strong>Сетевые проблемы</strong> между мастером и репликой.</li>
+  <li>🔧 <strong>Длинные транзакции</strong> на мастере, блокирующие репликацию.</li>
+</ul>
+
+<p>Для диагностики используйте расширение <code>pg_stat_replication</code> и инструменты вроде <em>pgBadger</em> (анализирует логи PostgreSQL). Если lag превышает 10 секунд, проверьте:</p>
+<ol>
+  <li>Нагрузку на диск реплики (<code>iostat -x 1</code>).</li>
+  <li>Сетевую задержку (<code>ping</code> и <code>traceroute</code> между серверами).</li>
+  <li>Наличие длинных транзакций на мастере (<code>SELECT now() - xact_start FROM pg_stat_activity;</code>).</li>
+</ol>
+
+<details class="faq-item"><summary>Что делать, если lag растёт экспоненциально?</summary><div class="faq-answer"><p>
+<p>Если задержка репликации увеличивается лавинообразно (например, с 1 секунды до 1 минуты за час), это часто указывает на <strong>нехватку ресурсов для обработки WAL</strong> на реплике. Временное решение — увеличить <code>max_wal_size</code> на мастере (но это отсрочит проблему, не решив её). Радикальный способ — пересоздать реплику с нуля (<code>pg_basebackup</code>), если lag превысил несколько часов.</p></div></details></p>
+
+<h2 id="алерты-и-нотификации-как-не-утонуть-в-потоке-данных">Алерты и нотификации: как не утонуть в потоке данных</h2>
+
+<p>Собирать метрики мало — нужно <strong>реагировать на проблемы</strong> до того, как они повлияют на пользователей. Правильные алерты экономят часы на диагностике. Вот какие уведомления стоит настроить:</p>
+
+<ul>
+  <li>🚨 <strong>Критические ошибки</strong>: падение сервиса, невозможность подключиться к базе, ошибки репликации (<code>FATAL</code> в логах).</li>
+  <li>⚠️ <strong>Предупреждения</strong>:
+  <ul>
+    <li>Загрузка CPU > 90% более 5 минут.</li>
+    <li>Replication lag > 10 секунд.</li>
+    <li>Количество блокировок > 50 (из <code>pg_locks</code>).</li>
+    <li>Свободное место на диске < 10%.</li>
+  </ul></li>
+  <li>📈 <strong>Тренды</strong>: рост времени выполнения запросов на 30% за неделю, увеличение размера базы на 20% за месяц.</li>
+</ul>
+
+<p>Примеры настройки алертов:</p>
+
+<p><strong>В Prometheus + Alertmanager</strong>:</p>
+<pre><code>- alert: HighPostgresCPU
+<p>expr: rate(process_cpu_seconds_total{job="postgresql"}[5m]) * 100 > 90</p>
+<p>for: 5m</p>
+<p>labels:</p>
+<p>severity: warning</p>
+<p>annotations:</p>
+<p>summary: "High CPU usage on PostgreSQL (instance {{ $labels.instance }})"</p>
+<p>description: "CPU usage is {{ $value }}% (above 90% for 5m)"</code></pre></p>
+
+<p><strong>В Zabbix</strong>:</p>
+<p>Создайте триггер с условием:</p>
+<pre><code>{postgresql:pg_locks.count[locktype=ExclusiveLock]} > 50</code></pre>
+
+<p>Важно настроить <strong>эскалацию уведомлений</strong>:</p>
+<ul>
+  <li>Первое оповещение — в <em>Slack</em> или на почту.</li>
+  <li>Если проблема не решена за 30 минут — звонок на дежурный телефон.</li>
+  <li>Через 1 час — уведомление руководству.</li>
+</ul>
+
+<blockquote>⚠️ Внимание: Избегайте "алертной усталости" — когда уведомления приходят слишком часто и перестают восприниматься серьёзно. Настройте <code>inhibit_rules</code> в Alertmanager, чтобы подавлять второстепенные алерты при критических сбоях (например, не слать предупреждения о высоком CPU, если база вообще не отвечает).</blockquote>
+
+<h2 id="скрытые-проблемы-что-упускают-90-админов">Скрытые проблемы: что упускают 90% админов</h2>
+
+<p>Даже опытные администраторы PostgreSQL иногда не обращают внимания на <strong>неочевидные метрики</strong>, которые могут приводить к деградации производительности. Вот что часто упускают:</p>
+
+<ul>
+  <li>🧹 <strong>Автовакуум</strong>: если он не успевает очищать "мёртвые" строки, таблицы раздуваются, а индексы становятся неэффективными. Проверяйте:
+  <pre><code>SELECT schemaname, relname, n_dead_tup, last_autovacuum
+<p>FROM pg_stat_all_tables</p>
+<p>WHERE n_dead_tup > 10000;</code></pre></p>
+  <em>Решение</em>: увеличьте <code>autovacuum_vacuum_scale_factor</code> или настройте ручной <code>VACUUM FULL</code> в непиковые часы.</li>
+
+  <li>🗑️ <strong>Bloat индексов</strong>: индексы со временем "разбухают", занимая лишнее место и замедляя запросы. Найдите их так:
+  <pre><code>SELECT schemaname, tablename, indexname, pg_size_pretty(pg_relation_size(indexname::regclass)) as size
+<p>FROM pg_indexes</p>
+<p>WHERE schemaname NOT LIKE 'pg_%' AND schemaname != 'information_schema'</p>
+<p>ORDER BY pg_relation_size(indexname::regclass) DESC;</code></pre></p>
+  <em>Решение</em>: пересоздайте индекс (<code>REINDEX</code>) или используйте <code>pg_repack</code>.</li>
+
+  <li>🔄 <strong>Длинные транзакции</strong>: даже одна транзакция, открытая на час, может заблокировать автовакуум и репликацию. Ищите их в <code>pg_stat_activity</code> по полю <code>xact_start</code>.</li>
+
+  <li>📡 <strong>Сетевые задержки</strong>: если мастер и реплики в разных ЦОД, проверьте <code>ping</code> и <code>traceroute</code>. Лаг в 100+ мс может сделать репликацию бесполезной.</li>
+</ul>
+
+<p>Ещё одна распространённая проблема — <strong>неправильно настроенные параметры памяти</strong>. Например, если <code>shared_buffers</code> установлен в 25% от RAM (как часто советуют), но на сервере работает ещё и приложение, это приведёт к свапу. <em>Оптимальное значение</em> — 25-40% от <strong>физической</strong> памяти, но не более 8-16 ГБ для большинства задач.</p>
+
+<div class="attention-box attention-tip"><span class="attention-icon">💡</span><p>Регулярно проверяйте размер <code>pg_stat</code> и <code>pg_dynshmem</code> — если они занимают гигабайты, это признак утечки памяти в PostgreSQL или некорректной настройки параметров типа <code>track_activity_query_size</code>.</p></div>
+
+<h2 id="faq-ответы-на-частые-вопросы">FAQ: Ответы на частые вопросы</h2>
+
+<details>
+  <summary>Как мониторить PostgreSQL в Docker-контейнере?</summary>
+  <p>Для контейнеризированного PostgreSQL подход тот же, но есть нюансы:</p>
+  <ol>
+    <li>Используйте <code>docker stats</code> для мониторинга ресурсов контейнера.</li>
+    <li>Настройте <em>postgres_exporter</em> как sidecar-контейнер или подключайтесь к базе извне.</li>
+    <li>Следите за <code>docker logs</code> — там могут быть критические ошибки, не попадающие в стандартные логи PostgreSQL.</li>
+  </ol>
+  <p>Пример <code>docker-compose.yml</code> с мониторингом:</p>
+  <pre><code>services:
+<p>postgres:</p>
+<p>image: postgres:15</p>
+<p>environment:</p>
+<p>POSTGRES_PASSWORD: example</p>
+<p>volumes:</p>
+<p>- ./data:/var/lib/postgresql/data</p>
+<p>exporter:</p>
+<p>image: prometheuscommunity/postgres-exporter</p>
+<p>environment:</p>
+<p>DATA_SOURCE_NAME: "postgresql://postgres:example@postgres:5432/postgres?sslmode=disable"</p>
+<p>ports:</p>
+<p>- "9187:9187"</code></pre></p>
+</details>
+
+<details>
+  <summary>Можно ли мониторить PostgreSQL без установки дополнительного ПО?</summary>
+  <p>Да, но с ограничениями. Варианты:</p>
+  <ul>
+    <li>Использовать <code>psql</code> в режиме <code>\watch</code> для периодического выполнения запросов (например, <code>WATCH 1</code> обновляет вывод каждую секунду).</li>
+    <li>Написать простой <em>Bash-скрипт</em>, который будет слать уведомления по почте при превышении порогов:
+    <pre><code>#!/bin/bash
+<p>LAG=$(psql -U user -d dbname -c "SELECT EXTRACT(EPOCH FROM (now() - replay_lsn)) FROM pg_stat_replication;" | grep -oP '\d+\.\d+')</p>
+<p>if (( $(echo "$LAG > 10" | bc -l) )); then</p>
+<p>echo "Replication lag is $LAG seconds!" | mail -s "PostgreSQL Alert" admin@example.com</p>
+<p>fi</code></pre></li></p>
+    <li>Настроить <em>cron</em> для регулярного сбора статистики в CSV/JSON.</li>
+  </ul>
+  <p>Минус: нет исторических данных и удобной визуализации.</p>
+</details>
+
+<details>
+  <summary>Какие метрики важны для PostgreSQL в облаке (AWS RDS, Google Cloud SQL)?</summary>
+  <p>Облачные провайдеры предоставляют ограниченный доступ к хосту, поэтому фокусируйтесь на:</p>
+  <ul>
+    <li><strong>CloudWatch Metrics</strong> (для AWS RDS): <code>CPUUtilization</code>, <code>FreeStorageSpace</code>, <code>ReplicaLag</code>.</li>
+    <li><strong>Query Insights</strong> (Google Cloud SQL): анализ медленных запросов с разбивкой по времени и ресурсам.</li>
+    <li><strong>Логи ошибок</strong>: в облаках они часто доступны через консоль или API (например, <code>aws rds download-db-log-file-portion</code>).</li>
+    <li><strong>Сетевой трафик</strong>: в облаке за исходящий трафик между репликами может взиматься плата.</li>
+  </ul>
+  <p>Обратите внимание: в облачных сервисах <strong>нельзя</strong>:</p>
+  <ul>
+    <li>Установить <em>postgres_exporter</em> напрямую (используйте управляемые решения вроде <em>Datadog</em> или <em>Prometheus на отдельном сервере</em>).</li>
+    <li>Изменить некоторые параметры PostgreSQL (например, <code>shared_buffers</code> часто фиксирован).</li>
+  </ul>
+</details>
+
+<details>
+  <summary>Как мониторить производительность конкретного запроса?</summary>
+  <p>Используйте комбинацию инструментов:</p>
+  <ol>
+    <li><strong>pg_stat_statements</strong>: покажет, сколько раз запрос выполнялся и сколько времени занял в сумме.
+    <pre><code>SELECT query, calls, total_exec_time, mean_exec_time
+<p>FROM pg_stat_statements</p>
+<p>WHERE query LIKE '%your_table%'</p>
+<p>ORDER BY mean_exec_time DESC;</code></pre></li></p>
+    <li><strong>EXPLAIN ANALYZE</strong>: даст детальный план выполнения с реальным временем каждого шага.
+    <pre><code>EXPLAIN (ANALYZE, BUFFERS) SELECT * FROM large_table WHERE id = 123;</code></pre></li>
+    <li><strong>pgBadger</strong>: проанализирует логи и покажет, какие запросы чаще всего вызывают ошибки или блокировки.</li>
+    <li><strong>Auto-explain</strong>: расширение, которое логирует планы выполнения для всех запросов медленнее заданного порога. Настройка в <code>postgresql.conf</code>:
+    <pre><code>shared_preload_libraries = 'auto_explain'
+<p>auto_explain.log_min_duration = '100ms'</p>
+<p>auto_explain.log_analyze = on</p>
+<p>auto_explain.log_buffers = on</code></pre></li></p>
+  </ol>
+  <p>Если запрос тормозит из-за блокировок, проверьте:</p>
+  <pre><code>SELECT blocked_locks.pid AS blocked_pid,
+<p>blocked_activity.usename AS blocked_user,</p>
+<p>blocking_locks.pid AS blocking_pid,</p>
+<p>blocking_activity.usename AS blocking_user,</p>
+<p>blocked_activity.query AS blocked_statement</p>
+<p>FROM pg_catalog.pg_locks blocked_locks</p>
+<p>JOIN pg_stat_activity blocked_activity ON blocked_activity.pid = blocked_locks.pid</p>
+<p>JOIN pg_catalog.pg_locks blocking_locks</p>
+<p>ON blocking_locks.locktype = blocked_locks.locktype</p>
+<p>AND blocking_locks.DATABASE IS NOT DISTINCT FROM blocked_locks.DATABASE</p>
+<p>AND blocking_locks.relation IS NOT DISTINCT FROM blocked_locks.relation</p>
+<p>AND blocking_locks.page IS NOT DISTINCT FROM blocked_locks.page</p>
+<p>AND blocking_locks.tuple IS NOT DISTINCT FROM blocked_locks.tuple</p>
+<p>AND blocking_locks.virtualxid IS NOT DISTINCT FROM blocked_locks.virtualxid</p>
+<p>AND blocking_locks.transactionid IS NOT DISTINCT FROM blocked_locks.transactionid</p>
+<p>AND blocking_locks.classid IS NOT DISTINCT FROM blocked_locks.classid</p>
+<p>AND blocking_locks.objid IS NOT DISTINCT FROM blocked_locks.objid</p>
+<p>AND blocking_locks.objsubid IS NOT DISTINCT FROM blocked_locks.objsubid</p>
+<p>AND blocking_locks.pid != blocked_locks.pid</p>
+<p>JOIN pg_stat_activity blocking_activity ON blocking_activity.pid = blocking_locks.pid</p>
+<p>WHERE NOT blocked_locks.GRANTED;</code></pre></p>
+</details>
+
+<details>
+  <summary>Сколько истории метрик нужно хранить?</summary>
+  <p>Зависит от задачи:</p>
+  <ul>
+    <li><strong>Для оперативного мониторинга</strong> (поиск причин сбоев): 7–30 дней. Этого достаточно, чтобы проанализировать инциденты.</li>
+    <li><strong>Для трендов и планирования</strong> (масштабирование, покупка железа): 1–2 года. Позволяет увидеть сезонные нагрузки (например, рост трафика в чёрную пятницу).</li>
+    <li><strong>Для комплаенса</strong> (аудит, SLA): 3–5 лет. Может потребоваться по юридическим причинам.</li>
+  </ul>
+  <p>Технические ограничения:</p>
+  <ul>
+    <li>Prometheus: по умолчанию хранит данные 15 дней (настраивается в <code>retention</code>).</li>
+    <li>Grafana Cloud: от 14 дней в бесплатном тарифе до неограниченного в Enterprise.</li>
+    <li>TimescaleDB: оптимизирован для долговременного хранения (может хранить годы данных без потери производительности).</li>
+  </ul>
+  <p>Совет: для долговременного хранения используйте <em>downsampling</em> — агрегируйте метрики (например, хранить не каждую секунду, а средние значения за 5 минут).</p>
+</details></div>
+                    <!--#include virtual="/ssi/article_after.html" -->
+
+                </article>
+                <aside class="article-sidebar"><!--#include virtual="/ssi/sidebar_top.html" --><nav class="sidebar-search"><div class="sidebar-search-box"><input type="text" id="globalSearchInput" placeholder="🔍 Поиск статей..." autocomplete="off"><div class="search-dropdown" id="globalSearchDropdown"></div></div></nav><!--#include virtual="/ssi/sidebar_before_toc.html" --><nav class="sidebar-toc" id="sidebarToc"><h3>Содержание</h3><ul><li><a href="#какие-метрики-postgresql-нужно-мониторить-в-первую-очередь">Какие метрики PostgreSQL нужно мониторить в первую очередь</a></li><li><a href="#встроенные-инструменты-postgresql-когда-хватит-штатных-средств">Встроенные инструменты PostgreSQL: когда хватит штатных средств</a></li><li><a href="#grafana-prometheus-золотая-пара-для-мониторинга">Grafana + Prometheus: золотая пара для мониторинга</a></li><li><a href="#платные-решения-когда-стоит-платить-за-мониторинг">Платные решения: когда стоит платить за мониторинг</a></li><li><a href="#мониторинг-репликации-как-не-пропустить-lag">Мониторинг репликации: как не пропустить lag</a></li><li><a href="#алерты-и-нотификации-как-не-утонуть-в-потоке-данных">Алерты и нотификации: как не утонуть в потоке данных</a></li><li><a href="#скрытые-проблемы-что-упускают-90-админов">Скрытые проблемы: что упускают 90% админов</a></li><li><a href="#faq-ответы-на-частые-вопросы">FAQ: Ответы на частые вопросы</a></li></ul></nav><!--#include virtual="/ssi/sidebar_before_related.html" --><nav class="sidebar-related"><h3>Похожие статьи</h3><ul><li><a href="/articles/m/mo/monitor-pishet-going-to-sleep-chto-delat.html" class="related-card">Монитор пишет Going to Sleep: причины и пошаговое решение проблемы</a></li><li><a href="/articles/m/mo/monitor-priobretenie-kakoj-kosgu.html" class="related-card">Монитор: какой КОСГУ для приобретения в 2026 году? Полный гид</a></li><li><a href="/articles/d/dc/dcr-eto-v-monitore-chto.html" class="related-card">DCR в мониторе: что это такое и как работает динамическая контрастность</a></li><li><a href="/articles/c/ch/chto-takoe-subpiksel-v-monitore.html" class="related-card">Что такое субпиксель в мониторе: структура, типы и влияние на четкость</a></li><li><a href="/articles/o/ot/ot-kakogo-monitora-ne-bolyat-glaza.html" class="related-card">От какого монитора не болят глаза: выбор дисплея для здоровья</a></li></ul></nav><!--#include virtual="/ssi/sidebar_after_related.html" --></aside>
+            </div>
+        </div>
+    </main>
+
+    <!--#include virtual="/ssi/before_related_bottom.html" -->
+    <section class="related-bottom">
+        <div class="container">
+            <h2 class="related-bottom-heading">📖 Читайте также</h2>
+            <div class="related-bottom-grid"><a href="/articles/m/mo/monitor-pishet-going-to-sleep-chto-delat.html" class="related-bottom-card"><span class="related-bottom-title">Монитор пишет Going to Sleep: причины и пошаговое решение проблемы</span><span class="related-bottom-desc">Экран переходит в режим сна бесконечно? Узнайте, как исправить ошибку Going to Sleep, проверить кабе</span></a><a href="/articles/m/mo/monitor-priobretenie-kakoj-kosgu.html" class="related-bottom-card"><span class="related-bottom-title">Монитор: какой КОСГУ для приобретения в 2026 году? Полный гид</span><span class="related-bottom-desc">Узнайте, какой КОСГУ выбрать при закупке компьютерного монитора. Разбор кодов 343 и 346, нюансы клас</span></a><a href="/articles/d/dc/dcr-eto-v-monitore-chto.html" class="related-bottom-card"><span class="related-bottom-title">DCR в мониторе: что это такое и как работает динамическая контрастность</span><span class="related-bottom-desc">Разбираем технологию DCR в мониторах. Узнайте, как работает динамическая контрастность, какие у нее </span></a><a href="/articles/c/ch/chto-takoe-subpiksel-v-monitore.html" class="related-bottom-card"><span class="related-bottom-title">Что такое субпиксель в мониторе: структура, типы и влияние на четкость</span><span class="related-bottom-desc">Разбираем, что такое субпиксель в мониторе, как устроены RGB и BGR матрицы, почему это влияет на чет</span></a><a href="/articles/o/ot/ot-kakogo-monitora-ne-bolyat-glaza.html" class="related-bottom-card"><span class="related-bottom-title">От какого монитора не болят глаза: выбор дисплея для здоровья</span><span class="related-bottom-desc">Узнайте, от какого монитора не болят глаза. Рейтинг технологий: IPS, VA, OLED. Как выбрать матрицу с</span></a><a href="/articles/k/ka/kak-vklyuchit-rgb-na-monitore.html" class="related-bottom-card"><span class="related-bottom-title">Как включить RGB на мониторе: пошаговая инструкция 2026</span><span class="related-bottom-desc">Подробное руководство по активации RGB-подсветки на мониторах ASUS, Acer, MSI и других брендов. Наст</span></a></div>
+        </div>
+    </section>
+    <!--#include virtual="/ssi/after_related_bottom.html" -->
+
+    <footer class="site-footer-premium">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-col">
+                    <div class="footer-brand">🖥️ Мониторум</div>
+                    <p class="footer-about">Полный справочник по настройке, ремонту и выбору компьютерных мониторов для любых задач.</p>
+                </div>
+                <div class="footer-col">
+                    <h4>Разделы</h4>
+                    <ul><li><a href="/category/nastrojka-ekrana/">⚙️ Настройка экрана</a></li>
+<li><a href="/category/podklyuchenie-ustrojstv/">🔌 Подключение устройств</a></li>
+<li><a href="/category/mnozhestvennye-ekrany/">🖥️🖥️ Множественные экраны</a></li>
+<li><a href="/category/zvuk-i-audio/">🔊 Звук и аудио</a></li>
+<li><a href="/category/remont-i-polomki/">🔧 Ремонт и поломки</a></li>
+<li><a href="/category/ukhod-i-chistka/">🧼 Уход и чистка</a></li></ul>
+                </div>
+                <div class="footer-col">
+                    <h4>Информация</h4>
+                    <ul>
+                        <li><a href="/">Главная</a></li>
+                        <li><a href="/about.html">О проекте</a></li>
+                        <li><a href="/categories.html">Все разделы</a></li>
+                        <li><a href="/contact.html">Контакты</a></li>
+                        <li><a href="/privacy.html">Конфиденциальность</a></li>
+                        <li><a href="/sitemap.xml">Карта сайта</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>© Мониторум. Все права защищены.</p>
+                <!--LiveInternet counter--><div style="margin-top:10px;"><a href="https://www.liveinternet.ru/click"
+                target="_blank"><img id="licnt06C4" width="88" height="15" style="border:0" 
+                title="LiveInternet: показано число посетителей за сегодня"
+                src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAEALAAAAAABAAEAAAIBTAA7"
+                alt=""/></a><script>(function(d,s){d.getElementById("licnt06C4").src=
+                "https://counter.yadro.ru/hit?t26.5;r"+escape(d.referrer)+
+                ((typeof(s)=="undefined")?"":";s"+s.width+"*"+s.height+"*"+
+                (s.colorDepth?s.colorDepth:s.pixelDepth))+";u"+escape(d.URL)+
+                ";h"+escape(d.title.substring(0,150))+";"+Math.random()})(document,screen)</script></div><!--/LiveInternet-->
+            </div>
+        </div>
+    </footer>
+    <div id="cookie-consent" class="cookie-popup">
+        <div class="cookie-inner">
+            <span>🍪 Мы используем файлы cookie для улучшения работы сайта.</span>
+            <button id="cookie-accept" class="cookie-btn">Принять</button>
+        </div>
+    </div>
+    <script src="/static/js/main.js"></script>
+    <script>
+    (function() {
+        const popup = document.getElementById('cookie-consent');
+        const btn = document.getElementById('cookie-accept');
+        if (popup && btn && !localStorage.getItem('cookie-accepted')) {
+            popup.classList.add('visible');
+            btn.onclick = () => {
+                localStorage.setItem('cookie-accepted', 'true');
+                popup.classList.remove('visible');
+            };
+        }
+    })();
+    </script>
+    <script>
+    function pbPollVote(el) {
+        var poll = el.closest('.poll-widget');
+        if (poll.classList.contains('voted')) return;
+        poll.classList.add('voted');
+        el.classList.add('selected');
+        var opts = poll.querySelectorAll('.poll-widget-option');
+        var n = opts.length;
+        var raw = [];
+        var sum = 0;
+        for (var i = 0; i < n; i++) {
+            var v = Math.random() * 50 + 5;
+            if (opts[i] === el) v += 30;
+            raw.push(v);
+            sum += v;
+        }
+        var pcts = raw.map(function(v) { return Math.round(v / sum * 100); });
+        var diff = 100 - pcts.reduce(function(a,b){ return a+b; }, 0);
+        pcts[Array.from(opts).indexOf(el)] += diff;
+        setTimeout(function() {
+            opts.forEach(function(opt, i) {
+                opt.querySelector('.poll-widget-bar').style.width = pcts[i] + '%';
+                opt.querySelector('.poll-widget-pct').textContent = pcts[i] + '%';
+            });
+        }, 50);
+    }
+    </script>
+    <!--#include virtual="/ssi/body_bottom.html" -->
+    <script src="/static/js/inject.js" defer></script>
+</body>
+</html>

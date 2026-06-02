@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27><text y=%27.9em%27 font-size=%2790%27>🖥️</text></svg>">
+    <title>Как узнать положение курсора на мониторе: Python и координаты — Мониторум</title>
+    <meta name="description" content="Полное руководство по определению координат курсора мыши в Python. Разбираем библиотеки, работу с несколькими мониторами и обработку событий.">
+    <link rel="canonical" href="https://monitorium.vercel.app/articles/k/ka/kak-uznat-polozhenie-kursora-na-monitore-python.html">
+
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="Как узнать положение курсора на мониторе: Python и координаты">
+    <meta property="og:description" content="Полное руководство по определению координат курсора мыши в Python. Разбираем библиотеки, работу с несколькими мониторами и обработку событий.">
+    <meta property="og:locale" content="ru_RU">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css?v=1780420684">
+    <style>
+    .site-footer-premium {
+        margin-top: 60px; padding: 40px 0 0; background: #1e293b; color: #94a3b8;
+    }
+    .footer-grid {
+        display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 40px;
+        padding-bottom: 32px; border-bottom: 1px solid #334155;
+    }
+    .footer-brand { font-size: 1.2rem; font-weight: 700; color: #f1f5f9; margin-bottom: 12px; }
+    .footer-about { font-size: 0.9rem; line-height: 1.6; margin-bottom: 8px; }
+    .footer-updated { font-size: 0.8rem; color: #64748b; }
+    .footer-col h4 { color: #f1f5f9; font-size: 0.95rem; margin-bottom: 16px; }
+    .footer-col ul { list-style: none; }
+    .footer-col li { margin-bottom: 8px; }
+    .footer-col a { color: #94a3b8; font-size: 0.9rem; transition: color 0.2s; }
+    .footer-col a:hover { color: #60a5fa; }
+    .footer-bottom { padding: 20px 0; text-align: center; font-size: 0.85rem; }
+    @media (max-width: 640px) {
+        .footer-grid { grid-template-columns: 1fr; gap: 24px; }
+    }
+    .cookie-popup {
+        position: fixed; bottom: 0; left: 0; right: 0; background: #1e293b; color: #fff;
+        padding: 16px; transition: transform 0.5s ease; z-index: 9999; border-top: 2px solid #2563eb;
+        transform: translateY(100%);
+    }
+    .cookie-popup.visible { transform: translateY(0); }
+    .cookie-inner { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; gap: 16px; font-size: 0.9rem; }
+    .cookie-btn { background: #2563eb; color: #fff; border: none; padding: 8px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+    .cookie-btn:hover { background: #1d4ed8; }
+    @media (max-width: 640px) {
+        .cookie-inner { flex-direction: column; text-align: center; }
+    }
+</style>
+    
+    <!--#include virtual="/ssi/head.html" -->
+</head>
+<body>
+        <!--#include virtual="/ssi/body_top.html" -->
+    <style>
+    .nav-dropdown { position: relative; display: inline-block; }
+    .dropdown-toggle {
+        background: none; border: none; cursor: pointer;
+        font: inherit; color: inherit; padding: 8px 12px;
+        border-radius: 8px; transition: background 0.2s;
+    }
+    .dropdown-toggle:hover { background: rgba(0,0,0,0.05); }
+    .dropdown-menu {
+        display: none; position: absolute; right: 0; top: 100%;
+        min-width: 240px; max-height: 70vh; overflow-y: auto;
+        background: var(--card-bg, #fff); border: 1px solid var(--border, #e5e7eb);
+        border-radius: 12px; box-shadow: 0 12px 40px rgba(0,0,0,0.12);
+        padding: 8px 0; z-index: 1000;
+    }
+    .nav-dropdown::after {
+        content: ''; position: absolute; left: 0; right: 0;
+        top: 100%; height: 12px;
+    }
+    .nav-dropdown:hover .dropdown-menu,
+    .nav-dropdown:focus-within .dropdown-menu { display: block; }
+    .dropdown-item {
+        display: block; padding: 10px 20px; color: var(--text, #1f2937);
+        text-decoration: none; font-size: 0.95rem; transition: background 0.15s;
+        white-space: nowrap;
+    }
+    .dropdown-item:hover { background: rgba(37,99,235,0.06); color: var(--primary, #2563eb); }
+    @media (max-width: 768px) {
+        .main-nav > .nav-link { display: none; }
+        .dropdown-toggle { display: none; }
+        .dropdown-menu {
+            display: block !important; position: static;
+            box-shadow: none; border: none; border-radius: 0;
+            min-width: auto; max-height: none; padding: 0;
+            background: transparent;
+        }
+        .dropdown-item {
+            padding: 8px 0; font-size: 1rem;
+        }
+    }
+    </style>
+    <header class="site-header">
+        <div class="container header-inner">
+            <a href="/" class="logo">
+                <span class="logo-icon">🖥️</span>
+                <span>Мониторум</span>
+            </a>
+            <button class="mobile-menu-btn" aria-label="Меню" id="menuBtn">☰</button>
+            <nav class="main-nav" id="mainNav">
+                <a href="/category/nastrojka-ekrana/" class="nav-link">⚙️ Настройка экрана</a>
+<a href="/category/podklyuchenie-ustrojstv/" class="nav-link">🔌 Подключение устройств</a>
+<a href="/category/mnozhestvennye-ekrany/" class="nav-link">🖥️🖥️ Множественные экраны</a>
+<a href="/category/zvuk-i-audio/" class="nav-link">🔊 Звук и аудио</a>
+<div class="nav-dropdown">
+            <button class="nav-link dropdown-toggle">📂 Все разделы ▾</button>
+            <div class="dropdown-menu"><a href="/category/nastrojka-ekrana/" class="dropdown-item">⚙️ Настройка экрана</a>
+<a href="/category/podklyuchenie-ustrojstv/" class="dropdown-item">🔌 Подключение устройств</a>
+<a href="/category/mnozhestvennye-ekrany/" class="dropdown-item">🖥️🖥️ Множественные экраны</a>
+<a href="/category/zvuk-i-audio/" class="dropdown-item">🔊 Звук и аудио</a>
+<a href="/category/remont-i-polomki/" class="dropdown-item">🔧 Ремонт и поломки</a>
+<a href="/category/ukhod-i-chistka/" class="dropdown-item">🧼 Уход и чистка</a>
+<a href="/category/vybor-i-kharakteristiki/" class="dropdown-item">📊 Выбор и характеристики</a>
+<a href="/category/drajvery-i-po/" class="dropdown-item">💿 Драйверы и ПО</a>
+<a href="/category/krepleniya-i-ustanovka/" class="dropdown-item">🔩 Крепления и установка</a>
+<a href="/category/utilizatsiya-i-prodazha/" class="dropdown-item">♻️ Утилизация и продажа</a>
+<a href="/category/spetsialnye-rezhimy/" class="dropdown-item">🎮 Специальные режимы</a>
+<a href="/category/drugoe/" class="dropdown-item">📁 Другое</a></div>
+        </div>
+            </nav>
+        </div>
+    </header>
+
+    <nav class="breadcrumbs" aria-label="Навигация">
+        <div class="container"><a href="/">Главная</a><span class="breadcrumb-sep">›</span><a href="/category/drajvery-i-po/">Драйверы и ПО</a><span class="breadcrumb-sep">›</span><span class="breadcrumb-current">Как узнать положение курсора на мониторе: Python и координаты</span></div>
+    </nav>
+
+    <main class="site-main">
+        <div class="container">
+            <div class="article-layout">
+                <article class="article-main">
+                    
+                    <h1>Программное определение координат курсора мыши в Python</h1>
+                    <nav class="mobile-toc"><details><summary>📋 Содержание</summary><ul><li><a href="#выбор-подходящей-библиотеки-для-получения-координат">Выбор подходящей библиотеки для получения координат</a></li><li><a href="#базовое-получение-координат-с-помощью-pyautogui">Базовое получение координат с помощью pyautogui</a></li><li><a href="#работа-с-несколькими-мониторами-и-масштабированием">Работа с несколькими мониторами и масштабированием</a></li><li><a href="#таблица-сравнения-методов-получения-координат">Таблица сравнения методов получения координат</a></li><li><a href="#отслеживание-движения-курсора-в-реальном-времени">Отслеживание движения курсора в реальном времени</a></li><li><a href="#применение-координат-курсора-для-автоматизации">Применение координат курсора для автоматизации</a></li><li><a href="#ошибки-и-способы-их-устранения">Ошибки и способы их устранения</a></li><li><a href="#безопасность-при-работе-с-системным-вводом">Безопасность при работе с системным вводом</a></li><li><a href="#заключение-и-лучшие-практики">Заключение и лучшие практики</a></li></ul></details></nav>
+                    <!--#include virtual="/ssi/article_before.html" -->
+                    <div class="article-body">
+
+<p>Работа с графическим интерфейсом на языке программирования <strong>Python</strong> часто требует точного знания местоположения указателя мыши относительно экрана. Это необходимо для создания автоматизированных тестов, ботов, инструментов мониторинга или сложных визуальных приложений. Без доступа к координатам невозможно реализовать скрипты, реагирующие на действия пользователя в реальном времени.</p>
+
+<p>Несмотря на кажущуюся простоту задачи, получение данных о положении курсора имеет свои нюансы. Разные операционные системы хранят эту информацию по-своему, а наличие нескольких дисплеев усложняет общую логику определения глобальных координат. В этой статье мы детально разберем лучшие методы и библиотеки для решения этой проблемы.</p>
+
+<p>Вам нужно выбрать подходящий инструмент в зависимости от вашей конечной цели. Если задача простая — достаточно одной строки кода. Если же требуется обработка кликов или движение курсора, потребуется более сложный подход с использованием событийных циклов.</p>
+
+<h2 id="выбор-подходящей-библиотеки-для-получения-координат">Выбор подходящей библиотеки для получения координат</h2>
+
+<p>В экосистеме <strong>Python</strong> существует множество модулей для работы с графикой, но для нашей задачи лучше всего подходят специализированные инструменты. Самой популярной и простой в использовании является библиотека <em>pyautogui</em>. Она позволяет получать текущие координаты курсора одной функцией и поддерживает работу на Windows, macOS и Linux.</p>
+
+<p>Альтернативой служит <em>PyGetWindow</em>, который предоставляет более низкий уровень доступа к окнам и курсору, но требует больше кода для инициализации. Также можно использовать <strong>keyboard</strong> и <strong>pynput</strong> для перехвата событий ввода в реальном времени. <mark>Правильный выбор библиотеки напрямую влияет на быстродействие вашего приложения и потребление ресурсов процессора.</mark></p>
+
+<p>Не стоит использовать стандартные библиотеки ОС без оберток, так как это усложнит код и сделает его зависимым от конкретной платформы. Инкапсуляция логики через готовые модули обеспечивает кроссплатформенность и легкость поддержки проекта в будущем.</p>
+
+<ul>
+<li>🚀 <strong>pyautogui</strong> — идеален для быстрого получения координат и эмуляции действий мыши.</li>
+<li>⚡ <strong>pynput</strong> — отлично подходит для создания слушателей событий нажатия клавиш и движения мыши.</li>
+<li>🛠 <strong>PyGetWindow</strong> — необходим, если нужно получать информацию не только о курсоре, но и о геометрии окон.</li>
+</ul>
+
+<blockquote>⚠️ Внимание: Некоторые антивирусные программы могут блокировать доступ к API управления мышью, считая это подозрительной активностью. При запуске скрипта обязательно добавьте папку проекта в исключения.</blockquote>
+
+<h2 id="базовое-получение-координат-с-помощью-pyautogui">Базовое получение координат с помощью pyautogui</h2>
+
+<p>Библиотека <em>pyautogui</em> является стандартом де-факто для большинства задач, связанных с автоматизацией интерфейса. Для получения текущих координат достаточно вызвать функцию <code>position()</code>. Она возвращает объект, содержащий два целых числа: <code>x</code> (горизонтальная ось) и <code>y</code> (вертикальная ось).</p>
+
+<p>Вам нужно импортировать модуль и вызвать метод в цикле или по событию. Важно отметить, что функция работает мгновенно и не требует сложной настройки. Однако, при частом вызове в бесконечном цикле, скрипт может начать потреблять значительные ресурсы процессора без пауз.</p>
+
+<pre><code>import pyautogui
+<p>coords = pyautogui.position()</p>
+<p>print(f"Текущая позиция: X={coords.x}, Y={coords.y}")</code></pre></p>
+
+<p>Результатом выполнения будет вывод чисел, соответствующих положению курсора в момент вызова функции. Если курсор находится за пределами видимой области, значения могут быть отрицательными или превышать размер экрана, в зависимости от настройки системы.</p>
+
+<div class="poll-widget" id="poll-c415b031"><div class="poll-widget-question">📊 Какой язык программирования вы используете для автоматизации?</div><div class="poll-widget-option" data-poll="c415b031" data-idx="0" onclick="pbPollVote(this)"><span class="poll-widget-label">Python</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="c415b031" data-idx="1" onclick="pbPollVote(this)"><span class="poll-widget-label">JavaScript</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="c415b031" data-idx="2" onclick="pbPollVote(this)"><span class="poll-widget-label">C#</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="c415b031" data-idx="3" onclick="pbPollVote(this)"><span class="poll-widget-label">AutoHotKey</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="c415b031" data-idx="4" onclick="pbPollVote(this)"><span class="poll-widget-label">Другой</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div></div>
+
+<h2 id="работа-с-несколькими-мониторами-и-масштабированием">Работа с несколькими мониторами и масштабированием</h2>
+
+<p>Современные пользователи часто используют конфигурации с несколькими дисплеями, что создает проблемы с системой координат. В Python <strong>pyautogui</strong> по умолчанию рассматривает все мониторы как единое виртуальное полотно. Это значит, что координата <code>x</code> может быть больше ширины основного монитора, если курсор находится на втором экране.</p>
+
+<p>Вам нужно учитывать масштабирование интерфейса (DPI scaling), которое часто включено в Windows для экранов с высоким разрешением. Без правильной настройки координаты курсора могут не совпадать с реальным положением на экране при работе с <em>pyautogui</em>. Функция <code>pyautogui.size()</code> поможет определить суммарный размер всех подключенных экранов.</p>
+
+<p>Если вы пишете приложение для конкретного монитора, необходимо программно определить его границы и смещение. Это позволит корректно интерпретировать координаты курсора относительно локального пространства конкретного устройства.</p>
+
+<div class="checklist-block"><h4>☑️ Проверка настройки мульти-мониторной системы</h4><label class="check-item"><input type="checkbox"><span>Определить количество экранов</span></label><label class="check-item"><input type="checkbox"><span>Узнать смещение каждого монитора</span></label><label class="check-item"><input type="checkbox"><span>Настроить масштабирование DPI</span></label><label class="check-item"><input type="checkbox"><span>Протестировать координаты курсора на всех экранах</span></label><div class="check-progress">Выполнено: <span class="check-count">0</span> / 4</div></div>
+
+<p>Игнорирование настроек масштабирования может привести к тому, что скрипт будет кликать не туда, где находится курсор. Например, при 150% масштабировании реальная координата может отличаться от программной в полтора раза.</p>
+
+  <p>💡 <strong>Совет:</strong> Используйте утилиту <code>pyautogui.displayMousePosition()</code> для отладки. Она выводит текущие координаты, цвет пикселя под курсором и размер экрана в реальном времени.</p>
+
+<details class="faq-item"><summary>Что делать, если координаты не совпадают?</summary><div class="faq-answer"><p>Если вы видите рассинхронизацию, проверьте настройки масштабирования в Windows (Параметры -> Система -> Дисплей). Также убедитесь, что вы не используете виртуальные машины с неправильными сеттингами DPI.</p></div></details>
+
+<h2 id="таблица-сравнения-методов-получения-координат">Таблица сравнения методов получения координат</h2>
+
+<p>Для наглядности сравним различные подходы к получению информации о курсоре. Выбор метода зависит от того, нужно ли вам просто узнать координаты разово или отслеживать движение постоянно.</p>
+
+<table>
+<thead>
+<tr>
+<th>Метод</th>
+<th>Библиотека</th>
+<th>Кроссплатформенность</th>
+<th>Сложность</th>
+<th>Производительность</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>position()</code></td>
+<td><em>pyautogui</em></td>
+<td>Высокая</td>
+<td>Низкая</td>
+<td>Средняя</td>
+</tr>
+<tr>
+<td>Слушатель событий</td>
+<td><em>pynput</em></td>
+<td>Высокая</td>
+<td>Средняя</td>
+<td>Высокая</td>
+</tr>
+<tr>
+<td>WinAPI</td>
+<td><em>windows-calls</em></td>
+<td>Только Windows</td>
+<td>Высокая</td>
+<td>Максимальная</td>
+</tr>
+<tr>
+<td>MousePos</td>
+<td><em>PyAutoGUI</em></td>
+<td>Высокая</td>
+<td>Низкая</td>
+<td>Средняя</td>
+</tr>
+</tbody>
+</table>
+
+<p>Как видно из таблицы, <em>pynput</em> часто является более предпочтительным вариантом для фоновых процессов, так как он работает через событийный цикл и не загружает процессор так сильно, как постоянный опрос функции <code>position()</code>.</p>
+
+<div class="attention-box attention-tip"><span class="attention-icon">💡</span><p>Использование событийных слушателей (listeners) снижает нагрузку на ЦП по сравнению с постоянным опросом функции получения координат в цикле while.</p></div>
+
+<h2 id="отслеживание-движения-курсора-в-реальном-времени">Отслеживание движения курсора в реальном времени</h2>
+
+<p>Если ваша задача — не просто узнать координаты, а реагировать на движение мыши, вам понадобится создать слушатель событий. Библиотека <em>pynput</em> предоставляет класс <code>Listener</code>, который позволяет перехватывать события нажатия и перемещения. Это позволяет создать скрипт, который будет выполнять действия только при определенных условиях.</p>
+
+<p>Вам нужно определить функцию-обработчик, которая будет вызываться при каждом изменении позиции курсора. В этой функции можно реализовать логику проверки координат, запуская другие действия при достижении курсором заданной области экрана.</p>
+
+<pre><code>from pynput.mouse import Listener
+
+<p>def on_move(x, y):</p>
+<p>print(f"Курсор переместился на: {x}, {y}")</p>
+
+<p>with Listener(on_move=on_move) as listener:</p>
+<p>listener.join()</code></pre></p>
+
+<p>Такой подход обеспечивает максимальную отзывчивость и позволяет избежать постоянного опроса системы, что критично для энергоэффективных ноутбуков. Однако, убедитесь, что ваш обработчик выполняется быстро, чтобы не замедлять работу всей системы.</p>
+
+<blockquote>⚠️ Внимание: При работе в фоновом режиме убедитесь, что скрипт имеет необходимые права доступа. В macOS требуется предоставить программе разрешение на "Специальные возможности" в настройках безопасности.</blockquote>
+
+<h2 id="применение-координат-курсора-для-автоматизации">Применение координат курсора для автоматизации</h2>
+
+<p>Знание координат курсора открывает огромные возможности для автоматизации рутинных задач. Вы можете создавать скрипты для автоматического заполнения форм, перетаскивания объектов или игровых ботов. Главное условие — точное понимание того, как система интерпретирует положение указателя.</p>
+
+<p>Вам нужно учитывать, что заголовки окон и системные панели могут занимать часть экрана. Координаты часто считаются от левого верхнего угла всего рабочего стола, а не от активного окна. Это требует дополнительных вычислений для получения относительных координат внутри конкретного приложения.</p>
+
+<p>Используйте <strong>хэш-суммы</strong> пикселей в определенных точках для проверки того, что интерфейс находится в ожидаемом состоянии перед выполнением действия. Это повышает надежность автоматизации и защищает от ошибок, связанных с изменением расположения элементов.</p>
+
+<ul>
+<li>🎯 Автоматическое заполнение веб-форм на основе динамически вычисляемых координат полей.</li>
+<li>🖱 Эмуляция кликов в труднодоступных местах интерфейса, скрытых за другими окнами.</li>
+<li>🛡 Создание системных утилит для мониторинга активности пользователя и времени простоя.</li>
+</ul>
+
+<h2 id="ошибки-и-способы-их-устранения">Ошибки и способы их устранения</h2>
+
+<p>При работе с координатами курсора часто возникают проблемы, связанные с правами доступа или особенностями конкретной версии операционной системы. Самая частая ошибка — отсутствие прав администратора, необходимых для перехвата системных событий.</p>
+
+<p>Вам нужно запускать скрипт с повышенными привилегиями, если вы хотите отслеживать действия в системных утилитах или играх с защитой от читов. Также обратите внимание на то, что некоторые антивирусы могут блокировать вызовы API управления мышью без явного разрешения пользователя.</p>
+
+<p>Если вы получаете значения <code>None</code> или нули вместо координат, проверьте наличие драйверов мыши и правильность подключения устройства. В редких случаях проблема может быть вызвана конфликтом стороннего ПО для настройки чувствительности мыши.</p>
+
+<div class="attention-box attention-tip"><span class="attention-icon">💡</span><p>Перед запуском тяжелого скрипта автоматизации закройте лишние приложения, чтобы минимизировать риск задержек и рассинхронизации координат курсора.</p></div>
+
+<h2 id="безопасность-при-работе-с-системным-вводом">Безопасность при работе с системным вводом</h2>
+
+<p>Использование библиотек, контролирующих курсор, требует соблюдения мер безопасности. Скрипты, получающие доступ к управлению мышью, могут быть использованы злоумышленниками для кражи данных или контроля над системой. Всегда проверяйте код, который вы запускаете.</p>
+
+<p>Вам нужно убедиться, что ваш скрипт не может быть использован для скрытого управления компьютером. Ограничивайте функционал только необходимыми задачами и не давайте скриптам доступ к конфиденциальным данным без необходимости. Использование песочниц для тестирования — хорошая практика.</p>
+
+<p>Помните, что любой код, имеющий права на управление курсором, может стать инструментом для вредоносной активности. Регулярно обновляйте зависимости и следите за предупреждениями антивирусов при запуске ваших инструментов.</p>
+
+<blockquote>⚠️ Внимание: Никогда не запускайте скрипты автоматизации от имени администратора, если в этом нет критической необходимости. Это снижает уровень защиты вашей системы.</blockquote>
+
+<div class="attention-box attention-tip"><span class="attention-icon">💡</span><p>Безопасность при работе с системным вводом требует строгого контроля за правами доступа и регулярного обновления зависимостей скрипта.</p></div>
+
+<h2 id="заключение-и-лучшие-практики">Заключение и лучшие практики</h2>
+
+<p>Определение положения курсора на мониторе с помощью <strong>Python</strong> — это мощная задача, решаемая несколькими проверенными методами. Выбор между <em>pyautogui</em> и <em>pynput</em> зависит от требований к производительности и типу взаимодействия с пользовательским интерфейсом.</p>
+
+<p>Вам нужно помнить о важности учета масштабирования экрана и работы с несколькими мониторами. Игнорирование этих факторов может привести к неработоспособности скрипта на системах с нестандартными настройками разрешения.</p>
+
+<p>Следуя описанным рекомендациям, вы сможете создавать надежные и эффективные инструменты для автоматизации. Экспериментируйте с различными библиотеками, чтобы найти оптимальное решение для ваших конкретных задач и конфигурации оборудования.</p>
+
+<details>
+<summary>Какая библиотека лучше для простого получения координат?</summary>
+<p>Для разового или простого получения координат лучше всего подходит библиотека <strong>pyautogui</strong>. Функция <code>pyautogui.position()</code> работает быстро и не требует настройки слушателей событий.</p>
+</details>
+
+<details>
+<summary>Как получить координаты курсора, если экран масштабирован?</summary>
+<p>Вам нужно учесть коэффициент масштабирования (DPI scaling). Библиотека <strong>pyautogui</strong> обычно делает это автоматически, но в некоторых случаях может потребоваться использование <strong>PyGetWindow</strong> для точного вычисления реальных пиксельных координат.</p>
+</details>
+
+<details>
+<summary>Можно ли отслеживать курсор в играх?</summary>
+<p>Многие игры с античит-системами блокируют доступ к управлению мышью сторонними программами. Библиотека <strong>pynput</strong> может не работать в таких случаях, и для решения задачи потребуются более низкоуровневые методы или специализированный софт.</p>
+</details></div>
+                    <!--#include virtual="/ssi/article_after.html" -->
+
+                </article>
+                <aside class="article-sidebar"><!--#include virtual="/ssi/sidebar_top.html" --><nav class="sidebar-search"><div class="sidebar-search-box"><input type="text" id="globalSearchInput" placeholder="🔍 Поиск статей..." autocomplete="off"><div class="search-dropdown" id="globalSearchDropdown"></div></div></nav><!--#include virtual="/ssi/sidebar_before_toc.html" --><nav class="sidebar-toc" id="sidebarToc"><h3>Содержание</h3><ul><li><a href="#выбор-подходящей-библиотеки-для-получения-координат">Выбор подходящей библиотеки для получения координат</a></li><li><a href="#базовое-получение-координат-с-помощью-pyautogui">Базовое получение координат с помощью pyautogui</a></li><li><a href="#работа-с-несколькими-мониторами-и-масштабированием">Работа с несколькими мониторами и масштабированием</a></li><li><a href="#таблица-сравнения-методов-получения-координат">Таблица сравнения методов получения координат</a></li><li><a href="#отслеживание-движения-курсора-в-реальном-времени">Отслеживание движения курсора в реальном времени</a></li><li><a href="#применение-координат-курсора-для-автоматизации">Применение координат курсора для автоматизации</a></li><li><a href="#ошибки-и-способы-их-устранения">Ошибки и способы их устранения</a></li><li><a href="#безопасность-при-работе-с-системным-вводом">Безопасность при работе с системным вводом</a></li><li><a href="#заключение-и-лучшие-практики">Заключение и лучшие практики</a></li></ul></nav><!--#include virtual="/ssi/sidebar_before_related.html" --><nav class="sidebar-related"><h3>Похожие статьи</h3><ul><li><a href="/articles/k/ka/kak-perevesti-tekst-s-ekrana-monitora.html" class="related-card">Как перевести текст с экрана: лучшие способы OCR и инструменты</a></li><li><a href="/articles/s/si/sistemnyj-monitor-kak-otkryt-v-windows-10.html" class="related-card">Системный монитор в Windows 10: как открыть и использовать</a></li><li><a href="/articles/k/ka/kak-sdelat-pritsel-na-ekrane-monitora-nvidia.html" class="related-card">Как сделать прицел на экране монитора: настройки NVIDIA и софт</a></li><li><a href="/articles/k/ka/kakaya-kombinatsiya-klavish-pozvolyaet-otkryt-sistemnyj-monitor.html" class="related-card">Как открыть системный монитор: горячие клавиши для Windows, Linux и macOS</a></li><li><a href="/articles/k/ka/kak-otkryt-sistemnyj-monitor-linux-mint.html" class="related-card">Как открыть системный монитор в Linux Mint: 5 способов</a></li></ul></nav><!--#include virtual="/ssi/sidebar_after_related.html" --></aside>
+            </div>
+        </div>
+    </main>
+
+    <!--#include virtual="/ssi/before_related_bottom.html" -->
+    <section class="related-bottom">
+        <div class="container">
+            <h2 class="related-bottom-heading">📖 Читайте также</h2>
+            <div class="related-bottom-grid"><a href="/articles/k/ka/kak-perevesti-tekst-s-ekrana-monitora.html" class="related-bottom-card"><span class="related-bottom-title">Как перевести текст с экрана: лучшие способы OCR и инструменты</span><span class="related-bottom-desc">Узнайте, как скопировать и перевести текст с монитора. Обзор OCR-сервисов, встроенных функций Window</span></a><a href="/articles/s/si/sistemnyj-monitor-kak-otkryt-v-windows-10.html" class="related-bottom-card"><span class="related-bottom-title">Системный монитор в Windows 10: как открыть и использовать</span><span class="related-bottom-desc">Пошаговые инструкции по запуску системного монитора в Windows 10: 5 способов, горячие клавиши, анали</span></a><a href="/articles/k/ka/kak-sdelat-pritsel-na-ekrane-monitora-nvidia.html" class="related-bottom-card"><span class="related-bottom-title">Как сделать прицел на экране монитора: настройки NVIDIA и софт</span><span class="related-bottom-desc">Подробная инструкция: как настроить прицел на мониторе с видеокартой NVIDIA. Обзор системных оверлее</span></a><a href="/articles/k/ka/kakaya-kombinatsiya-klavish-pozvolyaet-otkryt-sistemnyj-monitor.html" class="related-bottom-card"><span class="related-bottom-title">Как открыть системный монитор: горячие клавиши для Windows, Linux и macOS</span><span class="related-bottom-desc">Узнайте, какая комбинация клавиш открывает системный монитор в разных ОС. Полный гид по горячим клав</span></a><a href="/articles/k/ka/kak-otkryt-sistemnyj-monitor-linux-mint.html" class="related-bottom-card"><span class="related-bottom-title">Как открыть системный монитор в Linux Mint: 5 способов</span><span class="related-bottom-desc">Пошаговая инструкция по запуску системного монитора в Linux Mint через меню, терминал и горячие клав</span></a><a href="/articles/k/ka/kak-razblokirovat-monitor-kompyutera-s-pomoshchyu-klaviatury.html" class="related-bottom-card"><span class="related-bottom-title">Как разблокировать монитор ПК клавиатурой: 5 методов и решения проблем</span><span class="related-bottom-desc">Пошаговая инструкция: какие комбинации клавиш разблокируют Windows и экранную защиту. Решения для за</span></a></div>
+        </div>
+    </section>
+    <!--#include virtual="/ssi/after_related_bottom.html" -->
+
+    <footer class="site-footer-premium">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-col">
+                    <div class="footer-brand">🖥️ Мониторум</div>
+                    <p class="footer-about">Полный справочник по настройке, ремонту и выбору компьютерных мониторов для любых задач.</p>
+                </div>
+                <div class="footer-col">
+                    <h4>Разделы</h4>
+                    <ul><li><a href="/category/nastrojka-ekrana/">⚙️ Настройка экрана</a></li>
+<li><a href="/category/podklyuchenie-ustrojstv/">🔌 Подключение устройств</a></li>
+<li><a href="/category/mnozhestvennye-ekrany/">🖥️🖥️ Множественные экраны</a></li>
+<li><a href="/category/zvuk-i-audio/">🔊 Звук и аудио</a></li>
+<li><a href="/category/remont-i-polomki/">🔧 Ремонт и поломки</a></li>
+<li><a href="/category/ukhod-i-chistka/">🧼 Уход и чистка</a></li></ul>
+                </div>
+                <div class="footer-col">
+                    <h4>Информация</h4>
+                    <ul>
+                        <li><a href="/">Главная</a></li>
+                        <li><a href="/about.html">О проекте</a></li>
+                        <li><a href="/categories.html">Все разделы</a></li>
+                        <li><a href="/contact.html">Контакты</a></li>
+                        <li><a href="/privacy.html">Конфиденциальность</a></li>
+                        <li><a href="/sitemap.xml">Карта сайта</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>© Мониторум. Все права защищены.</p>
+                <!--LiveInternet counter--><div style="margin-top:10px;"><a href="https://www.liveinternet.ru/click"
+                target="_blank"><img id="licnt06C4" width="88" height="15" style="border:0" 
+                title="LiveInternet: показано число посетителей за сегодня"
+                src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAEALAAAAAABAAEAAAIBTAA7"
+                alt=""/></a><script>(function(d,s){d.getElementById("licnt06C4").src=
+                "https://counter.yadro.ru/hit?t26.5;r"+escape(d.referrer)+
+                ((typeof(s)=="undefined")?"":";s"+s.width+"*"+s.height+"*"+
+                (s.colorDepth?s.colorDepth:s.pixelDepth))+";u"+escape(d.URL)+
+                ";h"+escape(d.title.substring(0,150))+";"+Math.random()})(document,screen)</script></div><!--/LiveInternet-->
+            </div>
+        </div>
+    </footer>
+    <div id="cookie-consent" class="cookie-popup">
+        <div class="cookie-inner">
+            <span>🍪 Мы используем файлы cookie для улучшения работы сайта.</span>
+            <button id="cookie-accept" class="cookie-btn">Принять</button>
+        </div>
+    </div>
+    <script src="/static/js/main.js"></script>
+    <script>
+    (function() {
+        const popup = document.getElementById('cookie-consent');
+        const btn = document.getElementById('cookie-accept');
+        if (popup && btn && !localStorage.getItem('cookie-accepted')) {
+            popup.classList.add('visible');
+            btn.onclick = () => {
+                localStorage.setItem('cookie-accepted', 'true');
+                popup.classList.remove('visible');
+            };
+        }
+    })();
+    </script>
+    <script>
+    function pbPollVote(el) {
+        var poll = el.closest('.poll-widget');
+        if (poll.classList.contains('voted')) return;
+        poll.classList.add('voted');
+        el.classList.add('selected');
+        var opts = poll.querySelectorAll('.poll-widget-option');
+        var n = opts.length;
+        var raw = [];
+        var sum = 0;
+        for (var i = 0; i < n; i++) {
+            var v = Math.random() * 50 + 5;
+            if (opts[i] === el) v += 30;
+            raw.push(v);
+            sum += v;
+        }
+        var pcts = raw.map(function(v) { return Math.round(v / sum * 100); });
+        var diff = 100 - pcts.reduce(function(a,b){ return a+b; }, 0);
+        pcts[Array.from(opts).indexOf(el)] += diff;
+        setTimeout(function() {
+            opts.forEach(function(opt, i) {
+                opt.querySelector('.poll-widget-bar').style.width = pcts[i] + '%';
+                opt.querySelector('.poll-widget-pct').textContent = pcts[i] + '%';
+            });
+        }, 50);
+    }
+    </script>
+    <!--#include virtual="/ssi/body_bottom.html" -->
+    <script src="/static/js/inject.js" defer></script>
+</body>
+</html>

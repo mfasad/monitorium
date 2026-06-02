@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27><text y=%27.9em%27 font-size=%2790%27>🖥️</text></svg>">
+    <title>Как мониторить цены в аптеке: методы, сервисы и автоматизация — Мониторум</title>
+    <meta name="description" content="Полное руководство по отслеживанию цен на лекарства. Обзор скриптов, парсеров и сервисов для контроля стоимости в аптечных сетях.">
+    <link rel="canonical" href="https://monitorium.vercel.app/articles/k/ka/kak-monitorit-tseny-v-apteke.html">
+
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="Как мониторить цены в аптеке: методы, сервисы и автоматизация">
+    <meta property="og:description" content="Полное руководство по отслеживанию цен на лекарства. Обзор скриптов, парсеров и сервисов для контроля стоимости в аптечных сетях.">
+    <meta property="og:locale" content="ru_RU">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css?v=1780420684">
+    <style>
+    .site-footer-premium {
+        margin-top: 60px; padding: 40px 0 0; background: #1e293b; color: #94a3b8;
+    }
+    .footer-grid {
+        display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 40px;
+        padding-bottom: 32px; border-bottom: 1px solid #334155;
+    }
+    .footer-brand { font-size: 1.2rem; font-weight: 700; color: #f1f5f9; margin-bottom: 12px; }
+    .footer-about { font-size: 0.9rem; line-height: 1.6; margin-bottom: 8px; }
+    .footer-updated { font-size: 0.8rem; color: #64748b; }
+    .footer-col h4 { color: #f1f5f9; font-size: 0.95rem; margin-bottom: 16px; }
+    .footer-col ul { list-style: none; }
+    .footer-col li { margin-bottom: 8px; }
+    .footer-col a { color: #94a3b8; font-size: 0.9rem; transition: color 0.2s; }
+    .footer-col a:hover { color: #60a5fa; }
+    .footer-bottom { padding: 20px 0; text-align: center; font-size: 0.85rem; }
+    @media (max-width: 640px) {
+        .footer-grid { grid-template-columns: 1fr; gap: 24px; }
+    }
+    .cookie-popup {
+        position: fixed; bottom: 0; left: 0; right: 0; background: #1e293b; color: #fff;
+        padding: 16px; transition: transform 0.5s ease; z-index: 9999; border-top: 2px solid #2563eb;
+        transform: translateY(100%);
+    }
+    .cookie-popup.visible { transform: translateY(0); }
+    .cookie-inner { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; gap: 16px; font-size: 0.9rem; }
+    .cookie-btn { background: #2563eb; color: #fff; border: none; padding: 8px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+    .cookie-btn:hover { background: #1d4ed8; }
+    @media (max-width: 640px) {
+        .cookie-inner { flex-direction: column; text-align: center; }
+    }
+</style>
+    
+    <!--#include virtual="/ssi/head.html" -->
+</head>
+<body>
+        <!--#include virtual="/ssi/body_top.html" -->
+    <style>
+    .nav-dropdown { position: relative; display: inline-block; }
+    .dropdown-toggle {
+        background: none; border: none; cursor: pointer;
+        font: inherit; color: inherit; padding: 8px 12px;
+        border-radius: 8px; transition: background 0.2s;
+    }
+    .dropdown-toggle:hover { background: rgba(0,0,0,0.05); }
+    .dropdown-menu {
+        display: none; position: absolute; right: 0; top: 100%;
+        min-width: 240px; max-height: 70vh; overflow-y: auto;
+        background: var(--card-bg, #fff); border: 1px solid var(--border, #e5e7eb);
+        border-radius: 12px; box-shadow: 0 12px 40px rgba(0,0,0,0.12);
+        padding: 8px 0; z-index: 1000;
+    }
+    .nav-dropdown::after {
+        content: ''; position: absolute; left: 0; right: 0;
+        top: 100%; height: 12px;
+    }
+    .nav-dropdown:hover .dropdown-menu,
+    .nav-dropdown:focus-within .dropdown-menu { display: block; }
+    .dropdown-item {
+        display: block; padding: 10px 20px; color: var(--text, #1f2937);
+        text-decoration: none; font-size: 0.95rem; transition: background 0.15s;
+        white-space: nowrap;
+    }
+    .dropdown-item:hover { background: rgba(37,99,235,0.06); color: var(--primary, #2563eb); }
+    @media (max-width: 768px) {
+        .main-nav > .nav-link { display: none; }
+        .dropdown-toggle { display: none; }
+        .dropdown-menu {
+            display: block !important; position: static;
+            box-shadow: none; border: none; border-radius: 0;
+            min-width: auto; max-height: none; padding: 0;
+            background: transparent;
+        }
+        .dropdown-item {
+            padding: 8px 0; font-size: 1rem;
+        }
+    }
+    </style>
+    <header class="site-header">
+        <div class="container header-inner">
+            <a href="/" class="logo">
+                <span class="logo-icon">🖥️</span>
+                <span>Мониторум</span>
+            </a>
+            <button class="mobile-menu-btn" aria-label="Меню" id="menuBtn">☰</button>
+            <nav class="main-nav" id="mainNav">
+                <a href="/category/nastrojka-ekrana/" class="nav-link">⚙️ Настройка экрана</a>
+<a href="/category/podklyuchenie-ustrojstv/" class="nav-link">🔌 Подключение устройств</a>
+<a href="/category/mnozhestvennye-ekrany/" class="nav-link">🖥️🖥️ Множественные экраны</a>
+<a href="/category/zvuk-i-audio/" class="nav-link">🔊 Звук и аудио</a>
+<div class="nav-dropdown">
+            <button class="nav-link dropdown-toggle">📂 Все разделы ▾</button>
+            <div class="dropdown-menu"><a href="/category/nastrojka-ekrana/" class="dropdown-item">⚙️ Настройка экрана</a>
+<a href="/category/podklyuchenie-ustrojstv/" class="dropdown-item">🔌 Подключение устройств</a>
+<a href="/category/mnozhestvennye-ekrany/" class="dropdown-item">🖥️🖥️ Множественные экраны</a>
+<a href="/category/zvuk-i-audio/" class="dropdown-item">🔊 Звук и аудио</a>
+<a href="/category/remont-i-polomki/" class="dropdown-item">🔧 Ремонт и поломки</a>
+<a href="/category/ukhod-i-chistka/" class="dropdown-item">🧼 Уход и чистка</a>
+<a href="/category/vybor-i-kharakteristiki/" class="dropdown-item">📊 Выбор и характеристики</a>
+<a href="/category/drajvery-i-po/" class="dropdown-item">💿 Драйверы и ПО</a>
+<a href="/category/krepleniya-i-ustanovka/" class="dropdown-item">🔩 Крепления и установка</a>
+<a href="/category/utilizatsiya-i-prodazha/" class="dropdown-item">♻️ Утилизация и продажа</a>
+<a href="/category/spetsialnye-rezhimy/" class="dropdown-item">🎮 Специальные режимы</a>
+<a href="/category/drugoe/" class="dropdown-item">📁 Другое</a></div>
+        </div>
+            </nav>
+        </div>
+    </header>
+
+    <nav class="breadcrumbs" aria-label="Навигация">
+        <div class="container"><a href="/">Главная</a><span class="breadcrumb-sep">›</span><a href="/category/drugoe/">Другое</a><span class="breadcrumb-sep">›</span><span class="breadcrumb-current">Как мониторить цены в аптеке: методы, сервисы и автоматизация</span></div>
+    </nav>
+
+    <main class="site-main">
+        <div class="container">
+            <div class="article-layout">
+                <article class="article-main">
+                    
+                    <h1>Как мониторить цены в аптеке: стратегии контроля и автоматизации</h1>
+                    <nav class="mobile-toc"><details><summary>📋 Содержание</summary><ul><li><a href="#методы-сбора-данных-от-ручного-поиска-до-автоматизации">Методы сбора данных: от ручного поиска до автоматизации</a></li><li><a href="#техническая-реализация-парсинга-аптечных-сайтов">Техническая реализация парсинга аптечных сайтов</a></li><li><a href="#работа-с-динамическим-контентом-и-ajax">Работа с динамическим контентом и AJAX</a></li><li><a href="#юридические-аспекты-и-ограничения-доступа">Юридические аспекты и ограничения доступа</a></li><li><a href="#анализ-полученных-данных-и-визуализация">Анализ полученных данных и визуализация</a></li><li><a href="#практические-советы-по-оптимизации-процесса">Практические советы по оптимизации процесса</a></li><li><a href="#faq-часто-задаваемые-вопросы">FAQ: Часто задаваемые вопросы</a></li></ul></details></nav>
+                    <!--#include virtual="/ssi/article_before.html" -->
+                    <div class="article-body">
+
+<p>Регулярный мониторинг стоимости лекарственных препаратов стал необходимостью как для фармацевтических ритейлеров, так и для конечных потребителей. В условиях высокой конкуренции и постоянного изменения ассортимента, вручную отслеживать изменения в тысячах позиций невозможно. <strong>Ценообразование в аптеках</strong> зависит от множества факторов: логистики, дистрибьюторских наценок, сезонного спроса и государственного регулирования.</p>
+
+<p>Эффективная система мониторинга позволяет выявлять демпинг, контролировать соблюдение <strong>максимальных отпускных цен</strong> и анализировать конкурентную среду. Для бизнеса это инструмент оптимизации маржинальности, а для частников — способ сэкономить на покупке жизненно важных медикаментов. <em>Автоматизация процессов</em> сбора данных сегодня является стандартом индустрии.</p>
+
+<p>В этой статье мы разберем технические и методологические подходы к сбору информации о ценах. Вы узнаете, как настроить <strong>парсинг данных</strong>, какие инструменты использовать для анализа и как избежать блокировок при массовом запросе информации.</p>
+
+<h2 id="методы-сбора-данных-от-ручного-поиска-до-автоматизации">Методы сбора данных: от ручного поиска до автоматизации</h2>
+
+<p>Существует несколько способов получения актуальной информации о стоимости препаратов. Самый примитивный метод — ручной обход сайтов крупных сетей. Этот подход подходит для разовых проверок, но неэффективен для системного анализа. Вы тратите часы на перебор страниц, часто сталкиваясь с капчей или сложной навигацией.</p>
+
+<p>Более продвинутый уровень — использование специализированных агрегаторов. Сервисы типа «ЕАптека» или «Аптека.ру» уже агрегируют данные, но их информация может иметь задержку в несколько часов. Для бизнеса критична оперативность, поэтому требуется прямой доступ к <strong>API аптечных систем</strong> или использование собственных парсеров.</p>
+
+<p>Автоматизированный сбор данных требует настройки скриптов, которые имитируют действия пользователя. Современные <em>роботы</em> способны обходить простые защиты, брать данные из динамически загружаемых блоков (AJAX) и сохранять результаты в структурированные базы данных. Это позволяет вести <strong>историю изменений цен</strong> в режиме реального времени.</p>
+
+<blockquote>
+<p>⚠️ Внимание: Законы о защите персональных данных и правила использования сайтов ( robots.txt) строго регулируют доступ к информации. Массовый сбор данных без ведома владельца ресурса может привести к юридическим последствиям или блокировке IP-адреса.</p>
+</blockquote>
+
+<h2 id="техническая-реализация-парсинга-аптечных-сайтов">Техническая реализация парсинга аптечных сайтов</h2>
+
+<p>Для реализации задачи мониторинга необходимо выбрать правильный стек технологий. <strong>Язык программирования Python</strong> является де-факто стандартом в этой области благодаря библиотекам <em>BeautifulSoup</em> и <em>Selenium</em>. Первая библиотека отлично подходит для статических страниц, где HTML-код загружается полностью, а вторая необходима для работы с динамическими ресурсами, требующими выполнения JavaScript.</p>
+
+<p>Процесс начинается с анализа структуры целевого сайта. Вам нужно найти уникальные классы или ID элементов, содержащих цену и название товара. Часто аптеки используют <code>data-price</code> атрибуты или скрытые JSON-объекты внутри <code>script</code> тегов. Неправильный селектор приведет к сбору мусорных данных.</p>
+
+<p>Важным этапом является настройка заголовков запросов (User-Agent). Если скрипт будет отправлять запросы с дефолтным идентификатором, сервер быстро распознает бота. Необходимо <strong>симулировать поведение реального браузера</strong>, подменяя заголовки и используя прокси-серверы для распределения нагрузки.</p>
+
+<p>Ниже представлена таблица сравнения популярных инструментов для мониторинга:</p>
+
+<table>
+<thead>
+<tr>
+<th>Инструмент</th>
+<th>Тип работы</th>
+<th>Скорость</th>
+<th>Сложность настройки</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Python + BeautifulSoup</td>
+<td>Статический парсинг</td>
+<td>Высокая</td>
+<td>Низкая</td>
+</tr>
+<tr>
+<td>Selenium / Playwright</td>
+<td>Динамический парсинг</td>
+<td>Средняя</td>
+<td>Высокая</td>
+</tr>
+<tr>
+<td>JMeter</td>
+<td>Нагрузочное тестирование</td>
+<td>Очень высокая</td>
+<td>Средняя</td>
+</tr>
+<tr>
+<td>Ready-made решения</td>
+<td>SaaS-сервисы</td>
+<td>Высокая</td>
+<td>Минимальная</td>
+</tr>
+</tbody>
+</table>
+
+<div class="poll-widget" id="poll-2fd20461"><div class="poll-widget-question">📊 Какой метод сбора данных вы используете?</div><div class="poll-widget-option" data-poll="2fd20461" data-idx="0" onclick="pbPollVote(this)"><span class="poll-widget-label">Ручной обход</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="2fd20461" data-idx="1" onclick="pbPollVote(this)"><span class="poll-widget-label">Агрегаторы</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="2fd20461" data-idx="2" onclick="pbPollVote(this)"><span class="poll-widget-label">Свой скрипт</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="2fd20461" data-idx="3" onclick="pbPollVote(this)"><span class="poll-widget-label">Покупаю данные</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div></div>
+
+<h2 id="работа-с-динамическим-контентом-и-ajax">Работа с динамическим контентом и AJAX</h2>
+
+<p>Современные интернет-аптеки редко используют простые статические страницы. Список товаров часто подгружается динамически при прокрутке или переключении страниц пагинации. Стандартные методы чтения HTML-кода здесь бессильны. Вам придется анализировать сетевой трафик через <code>Developer Tools</code> в браузере, чтобы найти скрытые API-эндпоинты.</p>
+
+<p>Обычно запросы к серверу содержат параметры поискового запроса, раздела и страницы. Например, запрос может выглядеть как <code>/api/v1/products?category=123&sort=price</code>. Научиться формировать такие запросы вручную — значит получить доступ к «сырым» данным без лишней визуальной обертки. Это существенно ускоряет работу <strong>скрипта мониторинга</strong>.</p>
+
+<p>Однако, динамический контент требует обработки. Данные могут приходить в формате JSON, где цены могут быть закодированы или разделены на символы. Необходимо написать <em>функцию парсера</em>, которая очистит данные, уберет валютные символы и приведёт цифры к числовому типу для корректного анализа.</p>
+
+<details class="faq-item"><summary>Что делать, если цена скрыта за капчей?</summary><div class="faq-answer"><p>Если на сайте установлена сложная защита (рекапча), используйте сервисы автоматического распознавания капчи или смените стратегию на работу через мобильное приложение (Reverse Engineering API).</p></div></details>
+
+<div class="checklist-block"><h4>☑️ Подготовка скрипта парсинга</h4><label class="check-item"><input type="checkbox"><span>Проанализировать структуру страницы</span></label><label class="check-item"><input type="checkbox"><span>Найти API-запросы</span></label><label class="check-item"><input type="checkbox"><span>Настроить User-Agent</span></label><label class="check-item"><input type="checkbox"><span>Подобрать прокси-сервер</span></label><label class="check-item"><input type="checkbox"><span>Тестовый запуск на 10 товарах</span></label><div class="check-progress">Выполнено: <span class="check-count">0</span> / 5</div></div>
+
+<h2 id="юридические-аспекты-и-ограничения-доступа">Юридические аспекты и ограничения доступа</h2>
+
+<p>Мониторинг цен — это тонкая грань между сбором открытой информации и нарушением прав владельца ресурса. Администраторы аптек активно используют системы защиты от ботов (WAF, Cloudflare). <strong>IP-блокировки</strong> происходят мгновенно при обнаружении аномально высокой частоты запросов.</p>
+
+<p>Важно понимать, что парсинг коммерческих данных часто регулируется пользовательскими соглашениями (Terms of Service). Нарушение этих правил может привести к судебным иски, особенно если вы используете данные для создания конкурентного сервиса или демпинга. Рекомендуется работать в рамках <em>интерфейсов API</em>, предоставляемых самими аптечными сетями, если они открыты для партнеров.</p>
+
+<p>Для легального сбора данных используйте ротацию IP-адресов и ограничивайте скорость запросов. Например, делайте паузу между обращениями в <code>time.sleep(5)</code> секунд. Это имитирует человеческое поведение и снижает риск попадания в черный список.</p>
+
+<blockquote>
+<p>⚠️ Внимание: Сбор персональных данных сотрудников или покупателей под видом мониторинга цен строго запрещен законом. Убедитесь, что ваш скрипт собирает только публичные параметры товаров.</p>
+</blockquote>
+
+<div class="attention-box attention-tip"><span class="attention-icon">💡</span><p>Используйте ротацию User-Agent не только для IP, но и для операционных систем (Windows, macOS, Android, iOS). Это сделает ваш трафик максимально естественным для серверов защиты.</p></div>
+
+<h2 id="анализ-полученных-данных-и-визуализация">Анализ полученных данных и визуализация</h2>
+
+<p>Собранные данные сами по себе бесполезны без анализа. Ваша задача — превратить сырой массив цен в понятную аналитику. Необходимо реализовать систему сравнения: сопоставление цен на один и тот же <strong>международное непатентованное наименование (МНН)</strong> у разных конкурентов.</p>
+
+<p>Создавайте дашборды, которые отображают динамику изменения цен за неделю, месяц или год. Вы увидите, как реагируют аптеки на сезонные всплески спроса (например, на противовирусные препараты в осенне-зимний период). Это позволит прогнозировать <strong>ценовые тренды</strong> и корректировать свою стратегию закупок.</p>
+
+<p>Используйте библиотеки визуализации, такие как Matplotlib или Plotly для Python, чтобы строить графики. Вы сможете наглядно показать, где ваш товар дороже или дешевле аналогов. Это помогает в переговорах с поставщиками и в маркетинговых кампаниях. <em>Гистограммы распределения цен</em> — отличный инструмент для принятия решений.</p>
+
+<div class="attention-box attention-tip"><span class="attention-icon">💡</span><p>Систематический анализ динамики цен позволяет не только реагировать на действия конкурентов, но и прогнозировать их действия, формируя упреждающую стратегию ценообразования.</p></div>
+
+<h2 id="практические-советы-по-оптимизации-процесса">Практические советы по оптимизации процесса</h2>
+
+<p>Для стабильной работы системы мониторинга важно учитывать технические нюансы. Во-первых, всегда обрабатывайте ошибки соединения и тайм-ауты. Скрипт не должен падать при единичной потере связи с сервером. Реализуйте <strong>механизм повторных попыток</strong> (retry logic) с экспоненциальной задержкой.</p>
+
+<p>Во-вторых, храните данные в удобном формате. Базы данных типа <em>PostgreSQL</em> или <em>SQLite</em> позволяют быстро выполнять сложные запросы и агрегации. CSV-файлы удобны для разовых отчетов, но не масштабируются. Подумайте о создании <strong>хранилища истории</strong>, чтобы видеть не только текущую цену, но и ее изменения во времени.</p>
+
+<p>В-третьих, периодически пересматривайте структуру целевых сайтов. Аптеки часто обновляют дизайн, меняют классы и ID элементов. Ваш парсер может перестать работать без изменения кода. Настройте систему оповещения об ошибках парсинга, чтобы оперативно реагировать на изменения в верстке.</p>
+
+<blockquote>
+<p>⚠️ Внимание: Изменения в структуре HTML-кода целевого сайта требуют немедленного обновления селекторов в вашем скрипте. Иначе вы рискуете получить пустые или некорректные данные в течение нескольких часов после обновления сайта.</p>
+</blockquote>
+
+<details class="faq-item"><summary>Как обойти капчу без сторонних сервисов?</summary><div class="faq-answer"><p>Попробуйте снизить частоту запросов до минимума (1 запрос в минуту) и использовать «человеческие» задержки, иногда этого достаточно для прохождения простых проверок.</p></div></details>
+
+<h2 id="faq-часто-задаваемые-вопросы">FAQ: Часто задаваемые вопросы</h2>
+
+<details>
+<summary>Можно ли мониторить цены в одной аптеке без использования прокси?</summary>
+<p>Технически это возможно для небольшого объема данных (до 50-100 запросов в день), но для масштабного мониторинга лучше использовать прокси, чтобы избежать блокировки IP-адреса.</p>
+</details>
+
+<details>
+<summary>Какая частота обновлений данных считается оптимальной?</summary>
+<p>Для аптечного рынка частота раз в 24 часа обычно достаточна, так как цены меняются редко. Однако в период промо-акций или дефицита рекомендуется обновлять данные каждые 4-6 часов.</p>
+</details>
+
+<details>
+<summary>Как отличить цену с акцией от базовой цены?</summary>
+<p>Обычно на сайтах аптек указываются два значения: зачеркнутая старая цена и текущая акционная. В HTML-коде они часто имеют разные CSS-классы (например, <code>old-price</code> и <code>promo-price</code>), которые нужно парсить отдельно.</p>
+</details>
+
+<details>
+<summary>Нужно ли платить за использование API аптечных сетей?</summary>
+<p>Публичные API для внешних пользователей часто недоступны или платны. Большинство компаний используют собственный парсинг сайтов, так как это экономически выгоднее, чем покупка корпоративных API-ключей.</p>
+</details></div>
+                    <!--#include virtual="/ssi/article_after.html" -->
+
+                </article>
+                <aside class="article-sidebar"><!--#include virtual="/ssi/sidebar_top.html" --><nav class="sidebar-search"><div class="sidebar-search-box"><input type="text" id="globalSearchInput" placeholder="🔍 Поиск статей..." autocomplete="off"><div class="search-dropdown" id="globalSearchDropdown"></div></div></nav><!--#include virtual="/ssi/sidebar_before_toc.html" --><nav class="sidebar-toc" id="sidebarToc"><h3>Содержание</h3><ul><li><a href="#методы-сбора-данных-от-ручного-поиска-до-автоматизации">Методы сбора данных: от ручного поиска до автоматизации</a></li><li><a href="#техническая-реализация-парсинга-аптечных-сайтов">Техническая реализация парсинга аптечных сайтов</a></li><li><a href="#работа-с-динамическим-контентом-и-ajax">Работа с динамическим контентом и AJAX</a></li><li><a href="#юридические-аспекты-и-ограничения-доступа">Юридические аспекты и ограничения доступа</a></li><li><a href="#анализ-полученных-данных-и-визуализация">Анализ полученных данных и визуализация</a></li><li><a href="#практические-советы-по-оптимизации-процесса">Практические советы по оптимизации процесса</a></li><li><a href="#faq-часто-задаваемые-вопросы">FAQ: Часто задаваемые вопросы</a></li></ul></nav><!--#include virtual="/ssi/sidebar_before_related.html" --><nav class="sidebar-related"><h3>Похожие статьи</h3><ul><li><a href="/articles/t/te/televizor-s-funktsiej-monitora-dlya-kompyutera-chto-eto-takoe.html" class="related-card">Телевизор как монитор: плюсы, минусы и особенности использования</a></li><li><a href="/articles/k/ka/kak-uznat-kharakteristiki-monitora-v-vindovs.html" class="related-card">Как узнать характеристики монитора в Windows: 5 проверенных способов</a></li><li><a href="/articles/k/ka/kak-otklyuchit-kolonki-monitora.html" class="related-card">Как отключить встроенные колонки монитора: 5 эффективных способов</a></li><li><a href="/articles/o/ot/ot-chego-zavisit-tsvetoperedacha-monitora.html" class="related-card">От чего зависит цветопередача монитора: 8 ключевых факторов</a></li><li><a href="/articles/k/ka/kak-merit-ekran-monitora.html" class="related-card">Как правильно измерить диагональ и разрешение монитора: полная инструкция</a></li></ul></nav><!--#include virtual="/ssi/sidebar_after_related.html" --></aside>
+            </div>
+        </div>
+    </main>
+
+    <!--#include virtual="/ssi/before_related_bottom.html" -->
+    <section class="related-bottom">
+        <div class="container">
+            <h2 class="related-bottom-heading">📖 Читайте также</h2>
+            <div class="related-bottom-grid"><a href="/articles/t/te/televizor-s-funktsiej-monitora-dlya-kompyutera-chto-eto-takoe.html" class="related-bottom-card"><span class="related-bottom-title">Телевизор как монитор: плюсы, минусы и особенности использования</span><span class="related-bottom-desc">Можно ли использовать телевизор вместо монитора? Разбор разрешения, герцовки, задержки ввода и интер</span></a><a href="/articles/k/ka/kak-uznat-kharakteristiki-monitora-v-vindovs.html" class="related-bottom-card"><span class="related-bottom-title">Как узнать характеристики монитора в Windows: 5 проверенных способов</span><span class="related-bottom-desc">Узнайте точное разрешение, частоту обновления и модель экрана в Windows. Инструкции для стандартных </span></a><a href="/articles/k/ka/kak-otklyuchit-kolonki-monitora.html" class="related-bottom-card"><span class="related-bottom-title">Как отключить встроенные колонки монитора: 5 эффективных способов</span><span class="related-bottom-desc">Подробная инструкция по отключению звука на мониторе. Программные настройки Windows, OSD-меню и аппа</span></a><a href="/articles/o/ot/ot-chego-zavisit-tsvetoperedacha-monitora.html" class="related-bottom-card"><span class="related-bottom-title">От чего зависит цветопередача монитора: 8 ключевых факторов</span><span class="related-bottom-desc">Разбираемся, как матрица, калибровка, цветовые профили и настройки Windows влияют на точность цветов</span></a><a href="/articles/k/ka/kak-merit-ekran-monitora.html" class="related-bottom-card"><span class="related-bottom-title">Как правильно измерить диагональ и разрешение монитора: полная инструкция</span><span class="related-bottom-desc">Узнайте, как точно измерить экран монитора в дюймах и сантиметрах самостоятельно. Инструкция по заме</span></a><a href="/articles/k/ka/kak-nastroit-monitor-dlya-pravilnoj-tsvetoperedachi-v-fotoshope.html" class="related-bottom-card"><span class="related-bottom-title">Как настроить монитор для правильной цветопередачи в Фотошопе</span><span class="related-bottom-desc">Пошаговая инструкция: калибровка монитора, настройки профиля ICC, гамма и цветовое пространство для </span></a></div>
+        </div>
+    </section>
+    <!--#include virtual="/ssi/after_related_bottom.html" -->
+
+    <footer class="site-footer-premium">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-col">
+                    <div class="footer-brand">🖥️ Мониторум</div>
+                    <p class="footer-about">Полный справочник по настройке, ремонту и выбору компьютерных мониторов для любых задач.</p>
+                </div>
+                <div class="footer-col">
+                    <h4>Разделы</h4>
+                    <ul><li><a href="/category/nastrojka-ekrana/">⚙️ Настройка экрана</a></li>
+<li><a href="/category/podklyuchenie-ustrojstv/">🔌 Подключение устройств</a></li>
+<li><a href="/category/mnozhestvennye-ekrany/">🖥️🖥️ Множественные экраны</a></li>
+<li><a href="/category/zvuk-i-audio/">🔊 Звук и аудио</a></li>
+<li><a href="/category/remont-i-polomki/">🔧 Ремонт и поломки</a></li>
+<li><a href="/category/ukhod-i-chistka/">🧼 Уход и чистка</a></li></ul>
+                </div>
+                <div class="footer-col">
+                    <h4>Информация</h4>
+                    <ul>
+                        <li><a href="/">Главная</a></li>
+                        <li><a href="/about.html">О проекте</a></li>
+                        <li><a href="/categories.html">Все разделы</a></li>
+                        <li><a href="/contact.html">Контакты</a></li>
+                        <li><a href="/privacy.html">Конфиденциальность</a></li>
+                        <li><a href="/sitemap.xml">Карта сайта</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>© Мониторум. Все права защищены.</p>
+                <!--LiveInternet counter--><div style="margin-top:10px;"><a href="https://www.liveinternet.ru/click"
+                target="_blank"><img id="licnt06C4" width="88" height="15" style="border:0" 
+                title="LiveInternet: показано число посетителей за сегодня"
+                src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAEALAAAAAABAAEAAAIBTAA7"
+                alt=""/></a><script>(function(d,s){d.getElementById("licnt06C4").src=
+                "https://counter.yadro.ru/hit?t26.5;r"+escape(d.referrer)+
+                ((typeof(s)=="undefined")?"":";s"+s.width+"*"+s.height+"*"+
+                (s.colorDepth?s.colorDepth:s.pixelDepth))+";u"+escape(d.URL)+
+                ";h"+escape(d.title.substring(0,150))+";"+Math.random()})(document,screen)</script></div><!--/LiveInternet-->
+            </div>
+        </div>
+    </footer>
+    <div id="cookie-consent" class="cookie-popup">
+        <div class="cookie-inner">
+            <span>🍪 Мы используем файлы cookie для улучшения работы сайта.</span>
+            <button id="cookie-accept" class="cookie-btn">Принять</button>
+        </div>
+    </div>
+    <script src="/static/js/main.js"></script>
+    <script>
+    (function() {
+        const popup = document.getElementById('cookie-consent');
+        const btn = document.getElementById('cookie-accept');
+        if (popup && btn && !localStorage.getItem('cookie-accepted')) {
+            popup.classList.add('visible');
+            btn.onclick = () => {
+                localStorage.setItem('cookie-accepted', 'true');
+                popup.classList.remove('visible');
+            };
+        }
+    })();
+    </script>
+    <script>
+    function pbPollVote(el) {
+        var poll = el.closest('.poll-widget');
+        if (poll.classList.contains('voted')) return;
+        poll.classList.add('voted');
+        el.classList.add('selected');
+        var opts = poll.querySelectorAll('.poll-widget-option');
+        var n = opts.length;
+        var raw = [];
+        var sum = 0;
+        for (var i = 0; i < n; i++) {
+            var v = Math.random() * 50 + 5;
+            if (opts[i] === el) v += 30;
+            raw.push(v);
+            sum += v;
+        }
+        var pcts = raw.map(function(v) { return Math.round(v / sum * 100); });
+        var diff = 100 - pcts.reduce(function(a,b){ return a+b; }, 0);
+        pcts[Array.from(opts).indexOf(el)] += diff;
+        setTimeout(function() {
+            opts.forEach(function(opt, i) {
+                opt.querySelector('.poll-widget-bar').style.width = pcts[i] + '%';
+                opt.querySelector('.poll-widget-pct').textContent = pcts[i] + '%';
+            });
+        }, 50);
+    }
+    </script>
+    <!--#include virtual="/ssi/body_bottom.html" -->
+    <script src="/static/js/inject.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27><text y=%27.9em%27 font-size=%2790%27>🖥️</text></svg>">
+    <title>Калибровка монитора в Ubuntu: пошаговая инструкция — Мониторум</title>
+    <meta name="description" content="Как настроить цветопередачу и гамму в Ubuntu. Инструменты GNOME, ArgyllCMS и создание ICC-профилей для профессиональной работы.">
+    <link rel="canonical" href="https://monitorium.vercel.app/articles/k/ka/kak-otkalibrovat-monitor-v-ubuntu.html">
+
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="Калибровка монитора в Ubuntu: пошаговая инструкция">
+    <meta property="og:description" content="Как настроить цветопередачу и гамму в Ubuntu. Инструменты GNOME, ArgyllCMS и создание ICC-профилей для профессиональной работы.">
+    <meta property="og:locale" content="ru_RU">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css?v=1780420684">
+    <style>
+    .site-footer-premium {
+        margin-top: 60px; padding: 40px 0 0; background: #1e293b; color: #94a3b8;
+    }
+    .footer-grid {
+        display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 40px;
+        padding-bottom: 32px; border-bottom: 1px solid #334155;
+    }
+    .footer-brand { font-size: 1.2rem; font-weight: 700; color: #f1f5f9; margin-bottom: 12px; }
+    .footer-about { font-size: 0.9rem; line-height: 1.6; margin-bottom: 8px; }
+    .footer-updated { font-size: 0.8rem; color: #64748b; }
+    .footer-col h4 { color: #f1f5f9; font-size: 0.95rem; margin-bottom: 16px; }
+    .footer-col ul { list-style: none; }
+    .footer-col li { margin-bottom: 8px; }
+    .footer-col a { color: #94a3b8; font-size: 0.9rem; transition: color 0.2s; }
+    .footer-col a:hover { color: #60a5fa; }
+    .footer-bottom { padding: 20px 0; text-align: center; font-size: 0.85rem; }
+    @media (max-width: 640px) {
+        .footer-grid { grid-template-columns: 1fr; gap: 24px; }
+    }
+    .cookie-popup {
+        position: fixed; bottom: 0; left: 0; right: 0; background: #1e293b; color: #fff;
+        padding: 16px; transition: transform 0.5s ease; z-index: 9999; border-top: 2px solid #2563eb;
+        transform: translateY(100%);
+    }
+    .cookie-popup.visible { transform: translateY(0); }
+    .cookie-inner { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; gap: 16px; font-size: 0.9rem; }
+    .cookie-btn { background: #2563eb; color: #fff; border: none; padding: 8px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+    .cookie-btn:hover { background: #1d4ed8; }
+    @media (max-width: 640px) {
+        .cookie-inner { flex-direction: column; text-align: center; }
+    }
+</style>
+    
+    <!--#include virtual="/ssi/head.html" -->
+</head>
+<body>
+        <!--#include virtual="/ssi/body_top.html" -->
+    <style>
+    .nav-dropdown { position: relative; display: inline-block; }
+    .dropdown-toggle {
+        background: none; border: none; cursor: pointer;
+        font: inherit; color: inherit; padding: 8px 12px;
+        border-radius: 8px; transition: background 0.2s;
+    }
+    .dropdown-toggle:hover { background: rgba(0,0,0,0.05); }
+    .dropdown-menu {
+        display: none; position: absolute; right: 0; top: 100%;
+        min-width: 240px; max-height: 70vh; overflow-y: auto;
+        background: var(--card-bg, #fff); border: 1px solid var(--border, #e5e7eb);
+        border-radius: 12px; box-shadow: 0 12px 40px rgba(0,0,0,0.12);
+        padding: 8px 0; z-index: 1000;
+    }
+    .nav-dropdown::after {
+        content: ''; position: absolute; left: 0; right: 0;
+        top: 100%; height: 12px;
+    }
+    .nav-dropdown:hover .dropdown-menu,
+    .nav-dropdown:focus-within .dropdown-menu { display: block; }
+    .dropdown-item {
+        display: block; padding: 10px 20px; color: var(--text, #1f2937);
+        text-decoration: none; font-size: 0.95rem; transition: background 0.15s;
+        white-space: nowrap;
+    }
+    .dropdown-item:hover { background: rgba(37,99,235,0.06); color: var(--primary, #2563eb); }
+    @media (max-width: 768px) {
+        .main-nav > .nav-link { display: none; }
+        .dropdown-toggle { display: none; }
+        .dropdown-menu {
+            display: block !important; position: static;
+            box-shadow: none; border: none; border-radius: 0;
+            min-width: auto; max-height: none; padding: 0;
+            background: transparent;
+        }
+        .dropdown-item {
+            padding: 8px 0; font-size: 1rem;
+        }
+    }
+    </style>
+    <header class="site-header">
+        <div class="container header-inner">
+            <a href="/" class="logo">
+                <span class="logo-icon">🖥️</span>
+                <span>Мониторум</span>
+            </a>
+            <button class="mobile-menu-btn" aria-label="Меню" id="menuBtn">☰</button>
+            <nav class="main-nav" id="mainNav">
+                <a href="/category/nastrojka-ekrana/" class="nav-link">⚙️ Настройка экрана</a>
+<a href="/category/podklyuchenie-ustrojstv/" class="nav-link">🔌 Подключение устройств</a>
+<a href="/category/mnozhestvennye-ekrany/" class="nav-link">🖥️🖥️ Множественные экраны</a>
+<a href="/category/zvuk-i-audio/" class="nav-link">🔊 Звук и аудио</a>
+<div class="nav-dropdown">
+            <button class="nav-link dropdown-toggle">📂 Все разделы ▾</button>
+            <div class="dropdown-menu"><a href="/category/nastrojka-ekrana/" class="dropdown-item">⚙️ Настройка экрана</a>
+<a href="/category/podklyuchenie-ustrojstv/" class="dropdown-item">🔌 Подключение устройств</a>
+<a href="/category/mnozhestvennye-ekrany/" class="dropdown-item">🖥️🖥️ Множественные экраны</a>
+<a href="/category/zvuk-i-audio/" class="dropdown-item">🔊 Звук и аудио</a>
+<a href="/category/remont-i-polomki/" class="dropdown-item">🔧 Ремонт и поломки</a>
+<a href="/category/ukhod-i-chistka/" class="dropdown-item">🧼 Уход и чистка</a>
+<a href="/category/vybor-i-kharakteristiki/" class="dropdown-item">📊 Выбор и характеристики</a>
+<a href="/category/drajvery-i-po/" class="dropdown-item">💿 Драйверы и ПО</a>
+<a href="/category/krepleniya-i-ustanovka/" class="dropdown-item">🔩 Крепления и установка</a>
+<a href="/category/utilizatsiya-i-prodazha/" class="dropdown-item">♻️ Утилизация и продажа</a>
+<a href="/category/spetsialnye-rezhimy/" class="dropdown-item">🎮 Специальные режимы</a>
+<a href="/category/drugoe/" class="dropdown-item">📁 Другое</a></div>
+        </div>
+            </nav>
+        </div>
+    </header>
+
+    <nav class="breadcrumbs" aria-label="Навигация">
+        <div class="container"><a href="/">Главная</a><span class="breadcrumb-sep">›</span><a href="/category/nastrojka-ekrana/">Настройка экрана</a><span class="breadcrumb-sep">›</span><span class="breadcrumb-current">Калибровка монитора в Ubuntu: пошаговая инструкция</span></div>
+    </nav>
+
+    <main class="site-main">
+        <div class="container">
+            <div class="article-layout">
+                <article class="article-main">
+                    
+                    <h1>Полное руководство по калибровке монитора в Ubuntu</h1>
+                    <nav class="mobile-toc"><details><summary>📋 Содержание</summary><ul><li><a href="#почему-стандартные-настройки-не-всегда-достаточны">Почему стандартные настройки не всегда достаточны</a></li><li><a href="#использование-встроенной-утилиты-gnome">Использование встроенной утилиты GNOME</a></li><li><a href="#профессиональная-калибровка-с-помощью-argyllcms">Профессиональная калибровка с помощью ArgyllCMS</a></li><li><a href="#настройка-цветового-пространства-и-гаммы">Настройка цветового пространства и гаммы</a></li><li><a href="#таблица-типовых-значений-для-различных-задач">Таблица типовых значений для различных задач</a></li><li><a href="#автоматизация-и-запуск-при-старте-системы">Автоматизация и запуск при старте системы</a></li><li><a href="#решение-распространенных-проблем">Решение распространенных проблем</a></li><li><a href="#faq-частые-вопросы-по-калибровке">FAQ: Частые вопросы по калибровке</a></li></ul></details></nav>
+                    <!--#include virtual="/ssi/article_before.html" -->
+                    <div class="article-body">
+
+<p>Многие пользователи Linux-систем полагают, что Linux-интерфейсы ограничены в возможностях работы с цветом, однако это глубокое заблуждение. <strong>Цветопередача</strong> в Ubuntu может быть настроена с профессиональной точностью, если использовать специализированный инструментарий. Даже стандартная утилита графической оболочки позволяет проводить базовую настройку, но для серьезной работы требуется более глубокий подход.</p>
+
+<p>Калибровка экрана необходима не только для дизайнеров или фотографов, но и для любого специалиста, работающего с графикой. Без корректных настроек вы можете увидеть искаженные оттенки, что приведет к ошибкам при печати или публикации контента. В этой статье мы разберем методы от простой настройки через интерфейс до использования мощных консольных утилит.</p>
+
+<h2 id="почему-стандартные-настройки-не-всегда-достаточны">Почему стандартные настройки не всегда достаточны</h2>
+
+<p>В графической среде GNOME, которая является де-факто стандартом для многих дистрибутивов Ubuntu, есть встроенный инструмент управления цветом. Он позволяет загружать готовые профили и применять их к дисплеям. Однако эта утилита часто работает только с <strong>общими настройками</strong> яркости и контраста, не затрагивая сложные матричные характеристики.</p>
+
+<p>Если ваш монитор <em>Dell UltraSharp</em> или <em>EIZO ColorEdge</em> имеет уникальные цветовые профили от производителя, их необходимо загрузить вручную. Стандартный интерфейс может не распознать специфические параметры <em>гаммы</em> или <em>температуры белого</em> без дополнительных настроек в реестре системы. Именно здесь возникает необходимость в ручном вмешательстве или автоматизированных скриптах.</p>
+
+<p>Важно понимать, что программная калибровка ограничена возможностями вашей видеокарты. Например, встроенные графики Intel могут иметь свои особенности в обработке цветовых пространств, отличные от дискретных карт NVIDIA или AMD. Это напрямую влияет на точность цветопередачи.</p>
+
+<h2 id="использование-встроенной-утилиты-gnome">Использование встроенной утилиты GNOME</h2>
+
+<p>Самый простой способ начать работу — это использование стандартного приложения <code>Настройки</code> в Ubuntu. Перейдите в раздел <code>Мониторы</code> и найдите вкладку <code>Цвет</code>. Здесь вы можете выбрать готовый профиль или добавить новый, если он был скачан с сайта производителя вашего дисплея.</p>
+
+<p>Процесс выглядит следующим образом: система сканирует подключенные устройства и предлагает доступные опции. Если у вас подключено несколько экранов, необходимо убедиться, что вы выбрали правильный <strong>устройство</strong> для настройки. Часто пользователи ошибаются, меняя параметры на втором мониторе, который не требует коррекции.</p>
+
+<p>Для более точной настройки нажмите кнопку <code>Добавить профиль</code>. Это откроет меню, где можно выбрать профиль из списка или загрузить файл с расширением <code>.icc</code> или <code>.icm</code>. После выбора профиля система применит его автоматически при следующей сессии входа.</p>
+
+<blockquote>⚠️ Внимание: Некоторые драйверы видеокарт могут блокировать изменение цветовых профилей через графический интерфейс. Если кнопки неактивны, проверьте установленные драйверы и права доступа пользователя.</blockquote>
+
+<div class="poll-widget" id="poll-94af643b"><div class="poll-widget-question">📊 Какой у вас монитор?</div><div class="poll-widget-option" data-poll="94af643b" data-idx="0" onclick="pbPollVote(this)"><span class="poll-widget-label">IPS</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="94af643b" data-idx="1" onclick="pbPollVote(this)"><span class="poll-widget-label">VA</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="94af643b" data-idx="2" onclick="pbPollVote(this)"><span class="poll-widget-label">TN</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="94af643b" data-idx="3" onclick="pbPollVote(this)"><span class="poll-widget-label">OLED</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="94af643b" data-idx="4" onclick="pbPollVote(this)"><span class="poll-widget-label">Другой</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div></div>
+
+<h2 id="профессиональная-калибровка-с-помощью-argyllcms">Профессиональная калибровка с помощью ArgyllCMS</h2>
+
+<p>Для получения эталонного качества изображения необходимо использовать консольный инструмент <em>ArgyllCMS</em>. Это мощный пакет утилит с открытым исходным кодом, который позволяет проводить полную калибровку с использованием спектрофотометра или колориметра. Установка производится через терминал одной командой.</p>
+
+<pre><code>sudo apt update && sudo apt install argyllcms</code></pre>
+
+<p>После установки вам потребуется оборудование для измерений, так как программными методами добиться идеальной точности невозможно. Утилита <code>dispcalgui</code> является графической оберткой для ArgyllCMS, что значительно упрощает процесс. Она создает <strong>ICC-профиль</strong>, который корректирует выходной сигнал видеокарты.</p>
+
+<p>Процесс калибровки включает в себя несколько этапов: измерение черного уровня, построение кривой гаммы и создание профиля. Утилита автоматически переключает оттенки, чтобы измерить их отклик. Это долгий процесс, который может занять от 15 до 40 минут в зависимости от настроек.</p>
+
+<div class="checklist-block"><h4>☑️ Подготовка к калибровке</h4><label class="check-item"><input type="checkbox"><span>Установить ArgyllCMS</span></label><label class="check-item"><input type="checkbox"><span>Подключить калибратор</span></label><label class="check-item"><input type="checkbox"><span>Запустить dispcalgui</span></label><label class="check-item"><input type="checkbox"><span>Применить профиль</span></label><div class="check-progress">Выполнено: <span class="check-count">0</span> / 4</div></div>
+
+<h2 id="настройка-цветового-пространства-и-гаммы">Настройка цветового пространства и гаммы</h2>
+
+<p>Одной из самых сложных задач является правильная настройка <strong>гаммы</strong>. Стандартное значение для большинства мониторов составляет <code>2.2</code>, однако в некоторых случаях, например при работе в затемненном помещении, может потребоваться значение <code>2.4</code>. Неправильная гамма приводит к тому, что тени становятся слишком темными или слишком светлыми.</p>
+
+<p>Также критически важно выбрать правильное цветовое пространство. Для веб-дизайна стандартом является <em>sRGB</em>, в то время как для полиграфии используется <em>Adobe RGB</em>. Если ваш монитор поддерживает широкие цветовые охваты, необходимо убедиться, что система не обрезает их для совместимости.</p>
+
+<p>Иногда приходится вручную корректировать значения в конфигурационных файлах. Вам могут потребоваться параметры <code>gamma</code>, <code>red</code>, <code>green</code> и <code>blue</code> в файле конфигурации X11 или Wayland. Это позволяет тонко настроить каждый канал цвета независимо друг от друга.</p>
+
+<blockquote>⚠️ Внимание: Изменение гаммы в консоли без создания постоянного профиля может привести к сбросу настроек после перезагрузки системы. Всегда сохраняйте результат.</blockquote>
+
+<details class="faq-item"><summary>Что такое ICC профиль?</summary><div class="faq-answer"><p>ICC (International Color Consortium) профиль — это файл, который содержит информацию о цветовых характеристиках устройства и позволяет операционной системе интерпретировать цвета корректно.</p></div></details>
+
+<h2 id="таблица-типовых-значений-для-различных-задач">Таблица типовых значений для различных задач</h2>
+
+<p>Чтобы упростить выбор настроек, ниже приведена таблица с рекомендуемыми параметрами для разных сценариев использования. Эти значения являются базовыми и могут потребовать корректировки в зависимости от модели вашего <em>дисплея</em>.</p>
+
+<table>
+<thead>
+<tr>
+<th>Задача</th>
+<th>Цветовое пространство</th>
+<th>Гамма</th>
+<th>Температура белого</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Веб-дизайн и интернет</td>
+<td>sRGB</td>
+<td>2.2</td>
+<td>6500K</td>
+</tr>
+<tr>
+<td>Полиграфия (печать)</td>
+<td>Adobe RGB</td>
+<td>2.4</td>
+<td>5000K</td>
+</tr>
+<tr>
+<td>Обработка фото</td>
+<td>DCI-P3</td>
+<td>2.2</td>
+<td>6500K</td>
+</tr>
+<tr>
+<td>Работа с видео (HDR)</td>
+<td>Rec.2020</td>
+<td>ST 2084</td>
+<td>6300K</td>
+</tr>
+</tbody>
+</table>
+
+<p>Обратите внимание, что для работы с HDR-контентом требуются специфические настройки, которые поддерживаются не всеми версиями Ubuntu из коробки. В таких случаях рекомендуется использовать специальные режимы вывода.</p>
+
+<blockquote>⚠️ Внимание: Если вы работаете с видео в HDR, убедитесь, что ваш монитор поддерживает данный стандарт, а видеокарта имеет актуальные драйверы с поддержкой цветового пространства Rec.2020.</blockquote>
+
+<div class="attention-box attention-tip"><span class="attention-icon">💡</span><p>Перед началом калибровки прогрейте монитор минимум 30 минут. Холодная матрица может давать искажения цветов, которые исчезнут после прогрева.</p></div>
+
+<h2 id="автоматизация-и-запуск-при-старте-системы">Автоматизация и запуск при старте системы</h2>
+
+<p>После создания профиля необходимо убедиться, что он загружается автоматически при каждом входе в систему. В среде GNOME это можно настроить через <code>Приложения при запуске</code>. Добавьте команду, которая применяет созданный профиль с помощью утилиты <code>colormgr</code>.</p>
+
+<p>Для этого откройте терминал и введите команду для получения пути к профилю:
+<pre><code>colormgr get-devices</code></pre>
+<p>Затем используйте полученный ID устройства для создания скрипта запуска.</p></p>
+
+<p>Если вы используете пользовательский скрипт, убедитесь, что у него есть права на выполнение. Можно создать файл <code>~/.config/autostart/calibrate.desktop</code> и прописать там путь к скрипту. Это гарантирует, что цвета будут правильными сразу после загрузки рабочего стола.</p>
+
+<div class="attention-box attention-tip"><span class="attention-icon">💡</span><p>Автоматическая загрузка ICC-профиля критична для стабильной работы, так как без неё система может сбрасывать настройки до заводских при каждой перезагрузке.</p></div>
+
+<h2 id="решение-распространенных-проблем">Решение распространенных проблем</h2>
+
+<p>Часто пользователи сталкиваются с тем, что после применения профиля экран становится слишком красным или синим. Это может быть связано с тем, что программа <em>dispcalgui</em> применила инвертированные настройки или неправильно определила тип матрицы. В таком случае необходимо удалить старый профиль и провести калибровку заново.</p>
+
+<p>Еще одна частая проблема — отсутствие поддержки нескольких мониторов. Если у вас настроено расширение рабочего стола, система может применять профиль только к одному экрану. Вам потребуется запустить процесс калибровки для каждого устройства отдельно, указывая их ID.</p>
+
+<p>Если после всех манипуляций изменения не сохраняются, проверьте права доступа к файлам конфигурации. Иногда системные обновления могут сбрасывать права на чтение и запись для профилей цвета. В этом случае поможет команда <code>sudo chown $USER:$USER ~/.local/share/color/icc/</code>.</p>
+
+<details class="faq-item"><summary>Как проверить, работает ли профиль?</summary><div class="faq-answer"><p>Вы можете использовать утилиту <code>xrandr --verbose</code> или проверить настройки в <code>Настройки -> Мониторы -> Цвет</code>, где активный профиль будет выделен.</p></div></details>
+
+<h2 id="faq-частые-вопросы-по-калибровке">FAQ: Частые вопросы по калибровке</h2>
+
+<details>
+<summary>Нужен ли специальный калибратор для работы в Ubuntu?</summary>
+<p>Для профессиональной калибровки да, вам потребуется устройство типа Datacolor Spyder или X-Rite i1Display. Без физического измерителя точная настройка невозможна, так как программные методы лишь имитируют коррекцию.</p>
+</details>
+
+<details>
+<summary>Можно ли калибровать монитор без колориметра?</summary>
+<p>Только базовую настройку. Вы можете визуально подогнать яркость и контрастность, но точность цветопередачи будет низкой. Встроенные утилиты позволяют лишь выбирать готовые профили, которые могут не подходить вашей конкретной панели.</p>
+</details>
+
+<details>
+<summary>Как удалить старый ICC-профиль?</summary>
+<p>Пройдите в <code>Настройки -> Цвет -> Удалить профиль</code>. В консоли можно использовать команду <code>colormgr remove-profile</code> с указанием ID профиля. Убедитесь, что вы удаляете именно тот файл, который больше не нужен.</p>
+</details>
+
+<details>
+<summary>Влияет ли калибровка на производительность графики?</summary>
+<p>Нет, применение ICC-профиля не нагружает видеокарту. Коррекция цветов происходит на уровне вывода сигнала и практически не влияет на FPS в играх или скорость рендеринга.</p>
+</details></div>
+                    <!--#include virtual="/ssi/article_after.html" -->
+
+                </article>
+                <aside class="article-sidebar"><!--#include virtual="/ssi/sidebar_top.html" --><nav class="sidebar-search"><div class="sidebar-search-box"><input type="text" id="globalSearchInput" placeholder="🔍 Поиск статей..." autocomplete="off"><div class="search-dropdown" id="globalSearchDropdown"></div></div></nav><!--#include virtual="/ssi/sidebar_before_toc.html" --><nav class="sidebar-toc" id="sidebarToc"><h3>Содержание</h3><ul><li><a href="#почему-стандартные-настройки-не-всегда-достаточны">Почему стандартные настройки не всегда достаточны</a></li><li><a href="#использование-встроенной-утилиты-gnome">Использование встроенной утилиты GNOME</a></li><li><a href="#профессиональная-калибровка-с-помощью-argyllcms">Профессиональная калибровка с помощью ArgyllCMS</a></li><li><a href="#настройка-цветового-пространства-и-гаммы">Настройка цветового пространства и гаммы</a></li><li><a href="#таблица-типовых-значений-для-различных-задач">Таблица типовых значений для различных задач</a></li><li><a href="#автоматизация-и-запуск-при-старте-системы">Автоматизация и запуск при старте системы</a></li><li><a href="#решение-распространенных-проблем">Решение распространенных проблем</a></li><li><a href="#faq-частые-вопросы-по-калибровке">FAQ: Частые вопросы по калибровке</a></li></ul></nav><!--#include virtual="/ssi/sidebar_before_related.html" --><nav class="sidebar-related"><h3>Похожие статьи</h3><ul><li><a href="/articles/i/ig/igra-na-monitore-ne-na-ves-ekran-kak-nastroit.html" class="related-card">Игра на мониторе не на весь экран: как настроить растягивание и убрать черные полосы</a></li><li><a href="/articles/k/ka/kak-podobrat-razreshenie-ekrana-dlya-monitora-vindovs-7.html" class="related-card">Как подобрать разрешение экрана для монитора в Windows 7: полная инструкция</a></li><li><a href="/articles/k/ka/kak-sbrosit-vse-nastrojki-monitora-na-vindovs-10.html" class="related-card">Как сбросить настройки монитора в Windows 10: полная инструкция</a></li><li><a href="/articles/k/ka/kak-sdelat-avtoregulirovku-monitora-esli-net-knopki.html" class="related-card">Как настроить автокалибровку монитора без кнопки: 5 способов</a></li><li><a href="/articles/k/ka/kak-povernut-ekran-monitora-na-90.html" class="related-card">Как повернуть экран монитора на 90 градусов: пошаговая инструкция</a></li></ul></nav><!--#include virtual="/ssi/sidebar_after_related.html" --></aside>
+            </div>
+        </div>
+    </main>
+
+    <!--#include virtual="/ssi/before_related_bottom.html" -->
+    <section class="related-bottom">
+        <div class="container">
+            <h2 class="related-bottom-heading">📖 Читайте также</h2>
+            <div class="related-bottom-grid"><a href="/articles/i/ig/igra-na-monitore-ne-na-ves-ekran-kak-nastroit.html" class="related-bottom-card"><span class="related-bottom-title">Игра на мониторе не на весь экран: как настроить растягивание и убрать черные полосы</span><span class="related-bottom-desc">Узнайте, почему игра не заполняет монитор и как исправить проблему. Пошаговые настройки в Windows, д</span></a><a href="/articles/k/ka/kak-podobrat-razreshenie-ekrana-dlya-monitora-vindovs-7.html" class="related-bottom-card"><span class="related-bottom-title">Как подобрать разрешение экрана для монитора в Windows 7: полная инструкция</span><span class="related-bottom-desc">Пошаговое руководство по настройке оптимального разрешения экрана в Windows 7. Как найти нативные на</span></a><a href="/articles/k/ka/kak-sbrosit-vse-nastrojki-monitora-na-vindovs-10.html" class="related-bottom-card"><span class="related-bottom-title">Как сбросить настройки монитора в Windows 10: полная инструкция</span><span class="related-bottom-desc">Пошаговое руководство по возвращению заводских параметров монитора через Windows 10. Сброс яркости, </span></a><a href="/articles/k/ka/kak-sdelat-avtoregulirovku-monitora-esli-net-knopki.html" class="related-bottom-card"><span class="related-bottom-title">Как настроить автокалибровку монитора без кнопки: 5 способов</span><span class="related-bottom-desc">Узнайте, как включить автостартовую калибровку и настроить изображение на мониторе без физической кн</span></a><a href="/articles/k/ka/kak-povernut-ekran-monitora-na-90.html" class="related-bottom-card"><span class="related-bottom-title">Как повернуть экран монитора на 90 градусов: пошаговая инструкция</span><span class="related-bottom-desc">Полное руководство по повороту экрана: настройки Windows, Mac, драйверы NVIDIA и AMD. Решаем проблем</span></a><a href="/articles/k/ka/kak-perevernut-izobrazhenie-na-ekrane-monitora.html" class="related-bottom-card"><span class="related-bottom-title">Как перевернуть изображение на мониторе: полные инструкции для Windows и macOS</span><span class="related-bottom-desc">Узнайте, как перевернуть экран монитора с помощью горячих клавиш и настроек системы. Пошаговая инстр</span></a></div>
+        </div>
+    </section>
+    <!--#include virtual="/ssi/after_related_bottom.html" -->
+
+    <footer class="site-footer-premium">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-col">
+                    <div class="footer-brand">🖥️ Мониторум</div>
+                    <p class="footer-about">Полный справочник по настройке, ремонту и выбору компьютерных мониторов для любых задач.</p>
+                </div>
+                <div class="footer-col">
+                    <h4>Разделы</h4>
+                    <ul><li><a href="/category/nastrojka-ekrana/">⚙️ Настройка экрана</a></li>
+<li><a href="/category/podklyuchenie-ustrojstv/">🔌 Подключение устройств</a></li>
+<li><a href="/category/mnozhestvennye-ekrany/">🖥️🖥️ Множественные экраны</a></li>
+<li><a href="/category/zvuk-i-audio/">🔊 Звук и аудио</a></li>
+<li><a href="/category/remont-i-polomki/">🔧 Ремонт и поломки</a></li>
+<li><a href="/category/ukhod-i-chistka/">🧼 Уход и чистка</a></li></ul>
+                </div>
+                <div class="footer-col">
+                    <h4>Информация</h4>
+                    <ul>
+                        <li><a href="/">Главная</a></li>
+                        <li><a href="/about.html">О проекте</a></li>
+                        <li><a href="/categories.html">Все разделы</a></li>
+                        <li><a href="/contact.html">Контакты</a></li>
+                        <li><a href="/privacy.html">Конфиденциальность</a></li>
+                        <li><a href="/sitemap.xml">Карта сайта</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>© Мониторум. Все права защищены.</p>
+                <!--LiveInternet counter--><div style="margin-top:10px;"><a href="https://www.liveinternet.ru/click"
+                target="_blank"><img id="licnt06C4" width="88" height="15" style="border:0" 
+                title="LiveInternet: показано число посетителей за сегодня"
+                src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAEALAAAAAABAAEAAAIBTAA7"
+                alt=""/></a><script>(function(d,s){d.getElementById("licnt06C4").src=
+                "https://counter.yadro.ru/hit?t26.5;r"+escape(d.referrer)+
+                ((typeof(s)=="undefined")?"":";s"+s.width+"*"+s.height+"*"+
+                (s.colorDepth?s.colorDepth:s.pixelDepth))+";u"+escape(d.URL)+
+                ";h"+escape(d.title.substring(0,150))+";"+Math.random()})(document,screen)</script></div><!--/LiveInternet-->
+            </div>
+        </div>
+    </footer>
+    <div id="cookie-consent" class="cookie-popup">
+        <div class="cookie-inner">
+            <span>🍪 Мы используем файлы cookie для улучшения работы сайта.</span>
+            <button id="cookie-accept" class="cookie-btn">Принять</button>
+        </div>
+    </div>
+    <script src="/static/js/main.js"></script>
+    <script>
+    (function() {
+        const popup = document.getElementById('cookie-consent');
+        const btn = document.getElementById('cookie-accept');
+        if (popup && btn && !localStorage.getItem('cookie-accepted')) {
+            popup.classList.add('visible');
+            btn.onclick = () => {
+                localStorage.setItem('cookie-accepted', 'true');
+                popup.classList.remove('visible');
+            };
+        }
+    })();
+    </script>
+    <script>
+    function pbPollVote(el) {
+        var poll = el.closest('.poll-widget');
+        if (poll.classList.contains('voted')) return;
+        poll.classList.add('voted');
+        el.classList.add('selected');
+        var opts = poll.querySelectorAll('.poll-widget-option');
+        var n = opts.length;
+        var raw = [];
+        var sum = 0;
+        for (var i = 0; i < n; i++) {
+            var v = Math.random() * 50 + 5;
+            if (opts[i] === el) v += 30;
+            raw.push(v);
+            sum += v;
+        }
+        var pcts = raw.map(function(v) { return Math.round(v / sum * 100); });
+        var diff = 100 - pcts.reduce(function(a,b){ return a+b; }, 0);
+        pcts[Array.from(opts).indexOf(el)] += diff;
+        setTimeout(function() {
+            opts.forEach(function(opt, i) {
+                opt.querySelector('.poll-widget-bar').style.width = pcts[i] + '%';
+                opt.querySelector('.poll-widget-pct').textContent = pcts[i] + '%';
+            });
+        }, 50);
+    }
+    </script>
+    <!--#include virtual="/ssi/body_bottom.html" -->
+    <script src="/static/js/inject.js" defer></script>
+</body>
+</html>

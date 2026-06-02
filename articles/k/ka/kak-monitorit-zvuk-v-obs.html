@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27><text y=%27.9em%27 font-size=%2790%27>🖥️</text></svg>">
+    <title>Мониторинг звука в OBS: как настроить уровни и избежать клиппинга — Мониторум</title>
+    <meta name="description" content="Полное руководство по настройке аудиомикшера OBS Studio. Узнайте, как контролировать уровни громкости, использовать фильтры и настроить мониторинг без задержек.">
+    <link rel="canonical" href="https://monitorium.vercel.app/articles/k/ka/kak-monitorit-zvuk-v-obs.html">
+
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="Мониторинг звука в OBS: как настроить уровни и избежать клиппинга">
+    <meta property="og:description" content="Полное руководство по настройке аудиомикшера OBS Studio. Узнайте, как контролировать уровни громкости, использовать фильтры и настроить мониторинг без задержек.">
+    <meta property="og:locale" content="ru_RU">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css?v=1780420684">
+    <style>
+    .site-footer-premium {
+        margin-top: 60px; padding: 40px 0 0; background: #1e293b; color: #94a3b8;
+    }
+    .footer-grid {
+        display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 40px;
+        padding-bottom: 32px; border-bottom: 1px solid #334155;
+    }
+    .footer-brand { font-size: 1.2rem; font-weight: 700; color: #f1f5f9; margin-bottom: 12px; }
+    .footer-about { font-size: 0.9rem; line-height: 1.6; margin-bottom: 8px; }
+    .footer-updated { font-size: 0.8rem; color: #64748b; }
+    .footer-col h4 { color: #f1f5f9; font-size: 0.95rem; margin-bottom: 16px; }
+    .footer-col ul { list-style: none; }
+    .footer-col li { margin-bottom: 8px; }
+    .footer-col a { color: #94a3b8; font-size: 0.9rem; transition: color 0.2s; }
+    .footer-col a:hover { color: #60a5fa; }
+    .footer-bottom { padding: 20px 0; text-align: center; font-size: 0.85rem; }
+    @media (max-width: 640px) {
+        .footer-grid { grid-template-columns: 1fr; gap: 24px; }
+    }
+    .cookie-popup {
+        position: fixed; bottom: 0; left: 0; right: 0; background: #1e293b; color: #fff;
+        padding: 16px; transition: transform 0.5s ease; z-index: 9999; border-top: 2px solid #2563eb;
+        transform: translateY(100%);
+    }
+    .cookie-popup.visible { transform: translateY(0); }
+    .cookie-inner { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; gap: 16px; font-size: 0.9rem; }
+    .cookie-btn { background: #2563eb; color: #fff; border: none; padding: 8px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+    .cookie-btn:hover { background: #1d4ed8; }
+    @media (max-width: 640px) {
+        .cookie-inner { flex-direction: column; text-align: center; }
+    }
+</style>
+    
+    <!--#include virtual="/ssi/head.html" -->
+</head>
+<body>
+        <!--#include virtual="/ssi/body_top.html" -->
+    <style>
+    .nav-dropdown { position: relative; display: inline-block; }
+    .dropdown-toggle {
+        background: none; border: none; cursor: pointer;
+        font: inherit; color: inherit; padding: 8px 12px;
+        border-radius: 8px; transition: background 0.2s;
+    }
+    .dropdown-toggle:hover { background: rgba(0,0,0,0.05); }
+    .dropdown-menu {
+        display: none; position: absolute; right: 0; top: 100%;
+        min-width: 240px; max-height: 70vh; overflow-y: auto;
+        background: var(--card-bg, #fff); border: 1px solid var(--border, #e5e7eb);
+        border-radius: 12px; box-shadow: 0 12px 40px rgba(0,0,0,0.12);
+        padding: 8px 0; z-index: 1000;
+    }
+    .nav-dropdown::after {
+        content: ''; position: absolute; left: 0; right: 0;
+        top: 100%; height: 12px;
+    }
+    .nav-dropdown:hover .dropdown-menu,
+    .nav-dropdown:focus-within .dropdown-menu { display: block; }
+    .dropdown-item {
+        display: block; padding: 10px 20px; color: var(--text, #1f2937);
+        text-decoration: none; font-size: 0.95rem; transition: background 0.15s;
+        white-space: nowrap;
+    }
+    .dropdown-item:hover { background: rgba(37,99,235,0.06); color: var(--primary, #2563eb); }
+    @media (max-width: 768px) {
+        .main-nav > .nav-link { display: none; }
+        .dropdown-toggle { display: none; }
+        .dropdown-menu {
+            display: block !important; position: static;
+            box-shadow: none; border: none; border-radius: 0;
+            min-width: auto; max-height: none; padding: 0;
+            background: transparent;
+        }
+        .dropdown-item {
+            padding: 8px 0; font-size: 1rem;
+        }
+    }
+    </style>
+    <header class="site-header">
+        <div class="container header-inner">
+            <a href="/" class="logo">
+                <span class="logo-icon">🖥️</span>
+                <span>Мониторум</span>
+            </a>
+            <button class="mobile-menu-btn" aria-label="Меню" id="menuBtn">☰</button>
+            <nav class="main-nav" id="mainNav">
+                <a href="/category/nastrojka-ekrana/" class="nav-link">⚙️ Настройка экрана</a>
+<a href="/category/podklyuchenie-ustrojstv/" class="nav-link">🔌 Подключение устройств</a>
+<a href="/category/mnozhestvennye-ekrany/" class="nav-link">🖥️🖥️ Множественные экраны</a>
+<a href="/category/zvuk-i-audio/" class="nav-link">🔊 Звук и аудио</a>
+<div class="nav-dropdown">
+            <button class="nav-link dropdown-toggle">📂 Все разделы ▾</button>
+            <div class="dropdown-menu"><a href="/category/nastrojka-ekrana/" class="dropdown-item">⚙️ Настройка экрана</a>
+<a href="/category/podklyuchenie-ustrojstv/" class="dropdown-item">🔌 Подключение устройств</a>
+<a href="/category/mnozhestvennye-ekrany/" class="dropdown-item">🖥️🖥️ Множественные экраны</a>
+<a href="/category/zvuk-i-audio/" class="dropdown-item">🔊 Звук и аудио</a>
+<a href="/category/remont-i-polomki/" class="dropdown-item">🔧 Ремонт и поломки</a>
+<a href="/category/ukhod-i-chistka/" class="dropdown-item">🧼 Уход и чистка</a>
+<a href="/category/vybor-i-kharakteristiki/" class="dropdown-item">📊 Выбор и характеристики</a>
+<a href="/category/drajvery-i-po/" class="dropdown-item">💿 Драйверы и ПО</a>
+<a href="/category/krepleniya-i-ustanovka/" class="dropdown-item">🔩 Крепления и установка</a>
+<a href="/category/utilizatsiya-i-prodazha/" class="dropdown-item">♻️ Утилизация и продажа</a>
+<a href="/category/spetsialnye-rezhimy/" class="dropdown-item">🎮 Специальные режимы</a>
+<a href="/category/drugoe/" class="dropdown-item">📁 Другое</a></div>
+        </div>
+            </nav>
+        </div>
+    </header>
+
+    <nav class="breadcrumbs" aria-label="Навигация">
+        <div class="container"><a href="/">Главная</a><span class="breadcrumb-sep">›</span><a href="/category/drugoe/">Другое</a><span class="breadcrumb-sep">›</span><span class="breadcrumb-current">Мониторинг звука в OBS: как настроить уровни и избежать клиппинга</span></div>
+    </nav>
+
+    <main class="site-main">
+        <div class="container">
+            <div class="article-layout">
+                <article class="article-main">
+                    
+                    <h1>Как правильно мониторить звук в OBS Studio для стрима и записи</h1>
+                    <nav class="mobile-toc"><details><summary>📋 Содержание</summary><ul><li><a href="#основы-работы-с-аудиомикшером-obs">Основы работы с аудиомикшером OBS</a></li><li><a href="#настройка-мониторинга-звука-как-избежать-эха">Настройка мониторинга звука: как избежать эха</a></li><li><a href="#использование-фильтров-для-чистоты-звука">Использование фильтров для чистоты звука</a></li><li><a href="#таблица-рекомендуемых-уровней-громкости">Таблица рекомендуемых уровней громкости</a></li><li><a href="#проблемы-задержки-звука-и-их-решение">Проблемы задержки звука и их решение</a></li><li><a href="#тестирование-и-анализ-перед-эфиром">Тестирование и анализ перед эфиром</a></li><li><a href="#частые-вопросы-по-настройке-звука">Частые вопросы по настройке звука</a></li></ul></details></nav>
+                    <!--#include virtual="/ssi/article_before.html" -->
+                    <div class="article-body">
+
+<p>Качество трансляции напрямую зависит от того, насколько чисто и понятно звучит ваш голос. Даже самая красивая картинка в <em>OBS Studio</em> не спасет эфир, если зрители будут слышать шипение, перегрузку или тишину. Правильная настройка аудио — это фундамент профессионального вещания.</p>
+
+<p>Многие начинающие стримеры совершают ошибку, полагаясь исключительно на индикаторы громкости в микшере. Однако визуальный контроль — это лишь часть задачи. Необходимо понимать, как работает <strong>аудиомониторинг</strong>, какие параметры влияют на <strong>динамический диапазон</strong> и как избежать искажений при резких звуках.</p>
+
+<p>В этом материале мы разберем все аспекты настройки звука. Вы узнаете, как настроить <strong>аудиоинтерфейс</strong> для корректной передачи сигнала, как использовать встроенные фильтры для очистки канала и что делать, если вы слышите эхо в наушниках во время трансляции.</p>
+
+<h2 id="основы-работы-с-аудиомикшером-obs">Основы работы с аудиомикшером OBS</h2>
+
+<p>Сердцем настройки звука в программе является панель <em>Аудиомикшер</em>. Каждый подключенный источник звука, будь то микрофон или игровой звук, отображается здесь в виде отдельного канала с собственным фейдером. Настройка уровней осуществляется в реальном времени, что позволяет гибко управлять балансом между голосом и фоновым шумом.</p>
+
+<p>Обратите внимание на вертикальные шкалы громкости справа от фейдеров. Они показывают текущий уровень сигнала в децибелах (дБ). Оптимальная работа микрофона происходит, когда пиковые значения колеблются в районе <code>-12 дБ</code> и <code>-6 дБ</code>. Если индикатор заходит в красную зону, это означает <strong>перегрузку сигнала</strong>, что приведет к грубым искажениям.</p>
+
+<p>Важно не просто выкрутить громкость на максимум, а найти баланс. Слишком тихий звук заставит зрителя крутить колесико громкости, а слишком громкий — вызовет дискомфорт. Используйте <strong>аудиофильтры</strong> для автоматической коррекции динамики, но всегда оставляйте запас по громкости для неожиданных криков или смеха.</p>
+
+<p>Для каждого канала можно настроить мониторинг индивидуально. Эти параметры скрываются в выпадающем меню иконки шестеренки. Если вы выберете вариант <code>Мониторинг: только мониторинг</code>, звук будет слышен только вам, но не пойдет в эфир. Это полезно, когда нужно проверить звук системных уведомлений, не отвлекая аудиторию.</p>
+
+<blockquote>⚠️ Внимание: Не игнорируйте индикаторы перегрузки. Если шкала постоянно горит красным, даже встроенная компрессия не спасет от цифровых искажений. Снизьте громкость входа.</blockquote>
+
+<div class="poll-widget" id="poll-c2792b37"><div class="poll-widget-question">📊 Как часто вы проверяете уровни звука перед стримом?</div><div class="poll-widget-option" data-poll="c2792b37" data-idx="0" onclick="pbPollVote(this)"><span class="poll-widget-label">Всегда перед каждым выходом</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="c2792b37" data-idx="1" onclick="pbPollVote(this)"><span class="poll-widget-label">Только при начале работы</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="c2792b37" data-idx="2" onclick="pbPollVote(this)"><span class="poll-widget-label">Редко, если все звучит нормально</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="c2792b37" data-idx="3" onclick="pbPollVote(this)"><span class="poll-widget-label">Никогда, полагаюсь на удачу</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div></div>
+
+<h2 id="настройка-мониторинга-звука-как-избежать-эха">Настройка мониторинга звука: как избежать эха</h2>
+
+<p>Одной из самых частых проблем при работе с <em>аудиоинтерфейсом</em> является появление эха. Это происходит, когда вы слышите свой голос с задержкой через наушники, а программа транслирует его дважды: напрямую с микрофона и повторно через мониторирование. Чтобы избежать этого, необходимо правильно настроить <strong>настройки мониторинга</em>.</p>
+
+<p>Зайдите в меню <code>Настройки → Аудио</code> и проверьте параметр <code>Устройства мониторинга</code>. Здесь вы должны выбрать то выходное устройство, к которому подключены ваши наушники или колонки. Если поле пустое, функция мониторинга просто не будет работать, что приведет к тишине в ваших наушниках при включенном мониторинге.</p>
+
+<p>Каждый микрофон в микшере имеет свой параметр мониторинга. Вы можете выбрать три режима: <em>Выкл</em>, <em>Монитор и вывод</em>, <em>Только мониторинг</em>. Для основного микрофона стримера обычно выбирают режим <code>Монитор и вывод</code>, чтобы слышать себя и транслировать голос зрителям. Но если у вас есть "говорящий" второй микрофон, лучше оставить его на <em>Выкл</strong>, чтобы не создавать петлю обратной связи.</p>
+
+<p>Иногда проблема эха кроется не в настройках OBS, а в драйверах звуковой карты. Убедитесь, что в системе не включена дополнительная функция прослушивания устройства. Также проверьте, чтобы в <code>Входных устройствах</code> не было выбрано одно и то же устройство дважды.</p>
+
+<div class="checklist-block"><h4>☑️ Проверка настроек мониторинга</h4><label class="check-item"><input type="checkbox"><span>Выбрать устройство вывода в Настройках→Аудио</span></label><label class="check-item"><input type="checkbox"><span>Установить режим "Монитор и вывод" для микрофона</span></label><label class="check-item"><input type="checkbox"><span>Отключить "Прослушивание" в драйвере Windows</span></label><label class="check-item"><input type="checkbox"><span>Проверить отсутствие петель в микшере</span></label><div class="check-progress">Выполнено: <span class="check-count">0</span> / 4</div></div>
+
+<h2 id="использование-фильтров-для-чистоты-звука">Использование фильтров для чистоты звука</h2>
+
+<p>Чтобы звук был профессиональным, одного мониторинга недостаточно. Необходимо использовать встроенные <strong>аудиофильтры</strong>, которые очищают сигнал от нежелательных артефактов. Перейдите в меню настроек источника звука и выберите пункт <code>Фильтры</code>. Именно здесь происходит магия превращения "каши" в чистый голос.</p>
+
+<p>Самый первый фильтр, который стоит добавить — это <strong>шумоподавление</strong>. Он убирает постоянный гул вентиляторов, треск клавиатуры или фоновый шум улицы. В современных версиях OBS доступен выбор между алгоритмом RNNoise и Speex, причем первый часто дает лучший результат при наличии сложного фона.</p>
+
+<p>Второй критически важный элемент — <strong>компрессор</strong>. Он выравнивает уровень громкости, делая тихие шепоты слышными, а громкие крики — сдержанными. Это предотвращает резкие скачки звука, которые могут неприятно ударить по ушам зрителя. Настройте порог срабатывания так, чтобы компрессор начинал работать при громкости выше -25 дБ.</p>
+
+<p>Не забывайте также про <strong>границу шума</em> (Noise Gate). Этот фильтр полностью отключает микрофон, когда вы молчите, предотвращая попадание в эфир тихих фоновых шумов. Важно настроить порог так, чтобы микрофон замолкал в паузах, но сразу включался при начале речи.</p>
+
+<blockquote>⚠️ Внимание: Чрезмерное использование шумоподавления может сделать голос роботизированным. Всегда тестируйте настройки на записи, чтобы убедиться, что естественные нюансы речи сохранены.</blockquote>
+
+<details class="faq-item"><summary>Как работает компрессор?|Компрессор снижает громкость только тех участков сигнала, которые превышают заданный порог. Это позволяет поднять общую громкость голоса, не вызывая клиппинга, и делает речь более плотной и выразительной.-->
+
+<h2 id="таблица-рекомендуемых-уровней-громкости">Таблица рекомендуемых уровней громкости</h2>
+
+<p>Для удобства настройки мы составили сводную таблицу, которая поможет вам сориентироваться в параметрах микшера. Эти значения являются усредненными нормами для стриминга и профессиональных записей.</p>
+
+<table>
+<thead>
+<tr>
+<th>Тип источника</th>
+<th>Средний уровень (дБ)</th>
+<th>Пиковый уровень (дБ)</th>
+<th>Рекомендуемый фильтр</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Голос (Микрофон)</td>
+<td>-18 — -12</td>
+<td>-6</td>
+<td>Компрессор, Шумоподавление</td>
+</tr>
+<tr>
+<td>Игровой звук</td>
+<td>-20 — -15</td>
+<td>-10</td>
+<td>Баланс, Граница шума</td>
+</tr>
+<tr>
+<td>Музыка (Фон)</td>
+<td>-25 — -20</td>
+<td>-15</td>
+<td>Компрессор, Эквалайзер</td>
+</tr>
+<tr>
+<td>Системные звуки</td>
+<td>-30 — -25</td>
+<td>-20</td>
+<td>Граница шума</td>
+</tr>
+</tbody>
+</table>
+
+<p>Помните, что цифры на шкале — это лишь ориентир. Самое главное — это субъективное восприятие звука. Если микрофон звучит слишком тихо, увеличивайте гейн на физической карте или в настройках OBS, но следите, чтобы пики не выходили за пределы <code>-6 дБ</code>.</p>
+
+<p>Также важно учитывать, что разные платформы стриминга имеют свои алгоритмы сжатия. То, что звучит идеально в OBS, может быть обрезано серверами Twitch или YouTube. Всегда проверяйте запись после завершения эфира, чтобы убедиться, что все уровни сохранились корректно.</p>
+
+<!--WIDGET</summary><div class="faq-answer"><p>keypoint:Идеальный баланс звука достигается, когда голос находится на 6-10 дБ громче игровых эффектов, а пиковые значения не превышают -6 дБ.</p></div></details>
+
+<h2 id="проблемы-задержки-звука-и-их-решение">Проблемы задержки звука и их решение</h2>
+
+<p>Задержка звука между картинкой и голосом — это критическая ошибка, которая мгновенно разрушает впечатление от просмотра. Если вы заметили рассинхрон, сначала проверьте настройки буфера в драйвере вашей звуковой карты. Слишком большой размер буфера может вызывать задержку в десятки миллисекунд.</p>
+
+<p>В OBS также можно вручную скорректировать синхронизацию для каждого источника. Нажмите на иконку шестеренки в микшере и выберите <code>Дополнительные свойства аудио</code>. В поле "Смещение (мс)" вы можете добавить или убрать миллисекунды, чтобы выровнять звук с видеорядом.</p>
+
+<p>Частой причиной проблем является использование виртуальных аудиокабелей или сторонних программ для маршрутизации звука. Каждый такой слой добавляет собственную задержку. По возможности старайтесь подключать микрофон напрямую к компьютеру или используйте качественные USB-микрофоны.</p>
+
+<p>Если вы используете <em>аудиоинтерфейс</em> с собственным мониторингом (Direct Monitor), убедитесь, что он не конфликтует с программным мониторингом OBS. Иногда включение аппаратного мониторинга в сочетании с программным создает двойное эхо, которое сложно уловить на слух, но которое видно на спектрограмме.</p>
+
+<blockquote>⚠️ Внимание: Если вы видите задержку более 100 мс, это уже заметно глазу. Используйте тестовую запись на 5 минут с хлопком в ладоши, чтобы точно измерить рассинхрон.</blockquote>
+
+<h2 id="тестирование-и-анализ-перед-эфиром">Тестирование и анализ перед эфиром</h2>
+
+<p>Никогда не выходите в эфир без предварительного тестирования. Запишите короткое видео, поговорите с разной громкостью, покричите и прошепчите. Воспроизведите запись и внимательно оцените, как работает <strong>компрессия</strong> и <strong>шумоподавление</strong> в реальных условиях.</p>
+
+<p>Обратите внимание на <code>Визуализатор спектра</code>. Это отличный инструмент для оценки частот. Если вы видите, что низкие частоты перегружены, возможно, стоит добавить фильтр <em>High Pass</em> (Высокочастотный фильтр), чтобы убрать гул. Если высокие частоты "режут" ухо, проверьте настройки эквалайзера.</p>
+
+<p>Также полезно попросить друга или коллегу послушать звук со стороны. Ваше восприятие может быть искажено из-за акустики комнаты или особенностей ваших наушников. Внешний аудит поможет выявить проблемы, которые вы не замечаете в процессе работы.</p>
+
+<div class="attention-box attention-tip"><span class="attention-icon">💡</span><p>Перед началом стрима сделайте тестовую запись на 1 минуту и отправьте файл другу. Свежий взгляд поможет заметить проблемы с балансом, которые вы пропускаете из-за привыкания к своему голосу.</p></div>
+
+<h2 id="частые-вопросы-по-настройке-звука">Частые вопросы по настройке звука</h2>
+
+<details>
+<summary>Почему мой микрофон не виден в OBS?</summary>
+<p>Проверьте, выбрано ли устройство по умолчанию в настройках Windows. В OBS перейдите в Настройки → Аудио и убедитесь, что в поле "Глобальные устройства аудио" выбран именно ваш микрофон, а не "По умолчанию", если система не определила его корректно.</p>
+</details>
+
+<details>
+<summary>Как убрать эхо, если я слышу звук из колонок в микрофоне?</summary>
+<p>Это эффект обратной связи. Немедленно отключите колонки и перейдите на наушники. Если эхо остается, в настройках Windows отключите функцию "Прослушивать это устройство" в свойствах вашего микрофона.</p>
+</details>
+
+<details>
+<summary>Какой битрейт звука лучше выбрать для стрима?</summary>
+<p>Для большинства платформ достаточно <code>160 кбит/с</code> или <code>320 кбит/с</code>. Использование битрейта выше 320 кбит/с не даст заметного улучшения качества, но займет лишнюю полосу пропускания интернета, что может привести к потере кадров при стриме.</p>
+</details>
+
+<details>
+<summary>Почему звук в записи тише, чем в эфире?</summary>
+<p>Это может быть связано с настройками монитора и записывающего устройства. Проверьте настройки "Аудиомониторинга" в OBS и убедитесь, что для записываемого трека не установлено ограничение громкости в настройках самого файла.</p>
+</details>
+
+<p>Настройка звука в OBS — это процесс, требующий внимательности и терпения. Понимание работы <strong>аудиомикшера</strong>, правильное использование фильтров и постоянный <strong>мониторинг уровней</strong> позволят вам достичь профессионального качества звучания. Не бойтесь экспериментировать с параметрами, но всегда проверяйте результат на практике.</p></div>
+                    <!--#include virtual="/ssi/article_after.html" -->
+
+                </article>
+                <aside class="article-sidebar"><!--#include virtual="/ssi/sidebar_top.html" --><nav class="sidebar-search"><div class="sidebar-search-box"><input type="text" id="globalSearchInput" placeholder="🔍 Поиск статей..." autocomplete="off"><div class="search-dropdown" id="globalSearchDropdown"></div></div></nav><!--#include virtual="/ssi/sidebar_before_toc.html" --><nav class="sidebar-toc" id="sidebarToc"><h3>Содержание</h3><ul><li><a href="#основы-работы-с-аудиомикшером-obs">Основы работы с аудиомикшером OBS</a></li><li><a href="#настройка-мониторинга-звука-как-избежать-эха">Настройка мониторинга звука: как избежать эха</a></li><li><a href="#использование-фильтров-для-чистоты-звука">Использование фильтров для чистоты звука</a></li><li><a href="#таблица-рекомендуемых-уровней-громкости">Таблица рекомендуемых уровней громкости</a></li><li><a href="#проблемы-задержки-звука-и-их-решение">Проблемы задержки звука и их решение</a></li><li><a href="#тестирование-и-анализ-перед-эфиром">Тестирование и анализ перед эфиром</a></li><li><a href="#частые-вопросы-по-настройке-звука">Частые вопросы по настройке звука</a></li></ul></nav><!--#include virtual="/ssi/sidebar_before_related.html" --><nav class="sidebar-related"><h3>Похожие статьи</h3><ul><li><a href="/articles/k/ka/kak-sdelat-dva-rabochikh-stola-na-dvukh-monitorakh.html" class="related-card">Как настроить два рабочих стола на двух мониторах в Windows</a></li><li><a href="/articles/m/ms/msi-monitor-mprt-chto-eto.html" class="related-card">MSI MPRT в мониторах: что это, как работает и зачем нужно</a></li><li><a href="/articles/p/po/pochemu-bolyat-glaza-i-golova-ot-monitora.html" class="related-card">Почему болят глаза и голова от монитора: причины и лечение</a></li><li><a href="/articles/k/ka/kak-podklyuchit-dva-monitora-linux.html" class="related-card">Как подключить два монитора в Linux: пошаговая инструкция 2026</a></li><li><a href="/articles/m/mo/monitor-loc-kak-ubrat-pritsel.html" class="related-card">Как убрать прицел и сетку на мониторе: полное руководство</a></li></ul></nav><!--#include virtual="/ssi/sidebar_after_related.html" --></aside>
+            </div>
+        </div>
+    </main>
+
+    <!--#include virtual="/ssi/before_related_bottom.html" -->
+    <section class="related-bottom">
+        <div class="container">
+            <h2 class="related-bottom-heading">📖 Читайте также</h2>
+            <div class="related-bottom-grid"><a href="/articles/k/ka/kak-sdelat-dva-rabochikh-stola-na-dvukh-monitorakh.html" class="related-bottom-card"><span class="related-bottom-title">Как настроить два рабочих стола на двух мониторах в Windows</span><span class="related-bottom-desc">Пошаговая инструкция по созданию двух независимых рабочих столов на двух мониторах в Windows 10/11. </span></a><a href="/articles/m/ms/msi-monitor-mprt-chto-eto.html" class="related-bottom-card"><span class="related-bottom-title">MSI MPRT в мониторах: что это, как работает и зачем нужно</span><span class="related-bottom-desc">Разбираемся, что такое MPRT в мониторах MSI: отличие от GTG, влияние на размытие, как проверить и на</span></a><a href="/articles/p/po/pochemu-bolyat-glaza-i-golova-ot-monitora.html" class="related-bottom-card"><span class="related-bottom-title">Почему болят глаза и голова от монитора: причины и лечение</span><span class="related-bottom-desc">Узнайте, почему устают глаза и возникает головная боль при работе за ПК. Причины, связанные с мерцан</span></a><a href="/articles/k/ka/kak-podklyuchit-dva-monitora-linux.html" class="related-bottom-card"><span class="related-bottom-title">Как подключить два монитора в Linux: пошаговая инструкция 2026</span><span class="related-bottom-desc">Подробное руководство по настройке двух мониторов в Linux: от выбора кабелей до конфигурации X11/Way</span></a><a href="/articles/m/mo/monitor-loc-kak-ubrat-pritsel.html" class="related-bottom-card"><span class="related-bottom-title">Как убрать прицел и сетку на мониторе: полное руководство</span><span class="related-bottom-desc">Узнайте, как отключить встроенный прицел (crosshair) на игровых мониторах. Пошаговые инструкции для </span></a><a href="/articles/c/ch/chto-delat-esli-ekran-vylezaet-za-ramki-monitora.html" class="related-bottom-card"><span class="related-bottom-title">Экран за рамками монитора: как исправить масштабирование</span><span class="related-bottom-desc">Полная инструкция: настройка разрешения, масштабирования и оверскана. Исправляем проблему, когда кар</span></a></div>
+        </div>
+    </section>
+    <!--#include virtual="/ssi/after_related_bottom.html" -->
+
+    <footer class="site-footer-premium">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-col">
+                    <div class="footer-brand">🖥️ Мониторум</div>
+                    <p class="footer-about">Полный справочник по настройке, ремонту и выбору компьютерных мониторов для любых задач.</p>
+                </div>
+                <div class="footer-col">
+                    <h4>Разделы</h4>
+                    <ul><li><a href="/category/nastrojka-ekrana/">⚙️ Настройка экрана</a></li>
+<li><a href="/category/podklyuchenie-ustrojstv/">🔌 Подключение устройств</a></li>
+<li><a href="/category/mnozhestvennye-ekrany/">🖥️🖥️ Множественные экраны</a></li>
+<li><a href="/category/zvuk-i-audio/">🔊 Звук и аудио</a></li>
+<li><a href="/category/remont-i-polomki/">🔧 Ремонт и поломки</a></li>
+<li><a href="/category/ukhod-i-chistka/">🧼 Уход и чистка</a></li></ul>
+                </div>
+                <div class="footer-col">
+                    <h4>Информация</h4>
+                    <ul>
+                        <li><a href="/">Главная</a></li>
+                        <li><a href="/about.html">О проекте</a></li>
+                        <li><a href="/categories.html">Все разделы</a></li>
+                        <li><a href="/contact.html">Контакты</a></li>
+                        <li><a href="/privacy.html">Конфиденциальность</a></li>
+                        <li><a href="/sitemap.xml">Карта сайта</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>© Мониторум. Все права защищены.</p>
+                <!--LiveInternet counter--><div style="margin-top:10px;"><a href="https://www.liveinternet.ru/click"
+                target="_blank"><img id="licnt06C4" width="88" height="15" style="border:0" 
+                title="LiveInternet: показано число посетителей за сегодня"
+                src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAEALAAAAAABAAEAAAIBTAA7"
+                alt=""/></a><script>(function(d,s){d.getElementById("licnt06C4").src=
+                "https://counter.yadro.ru/hit?t26.5;r"+escape(d.referrer)+
+                ((typeof(s)=="undefined")?"":";s"+s.width+"*"+s.height+"*"+
+                (s.colorDepth?s.colorDepth:s.pixelDepth))+";u"+escape(d.URL)+
+                ";h"+escape(d.title.substring(0,150))+";"+Math.random()})(document,screen)</script></div><!--/LiveInternet-->
+            </div>
+        </div>
+    </footer>
+    <div id="cookie-consent" class="cookie-popup">
+        <div class="cookie-inner">
+            <span>🍪 Мы используем файлы cookie для улучшения работы сайта.</span>
+            <button id="cookie-accept" class="cookie-btn">Принять</button>
+        </div>
+    </div>
+    <script src="/static/js/main.js"></script>
+    <script>
+    (function() {
+        const popup = document.getElementById('cookie-consent');
+        const btn = document.getElementById('cookie-accept');
+        if (popup && btn && !localStorage.getItem('cookie-accepted')) {
+            popup.classList.add('visible');
+            btn.onclick = () => {
+                localStorage.setItem('cookie-accepted', 'true');
+                popup.classList.remove('visible');
+            };
+        }
+    })();
+    </script>
+    <script>
+    function pbPollVote(el) {
+        var poll = el.closest('.poll-widget');
+        if (poll.classList.contains('voted')) return;
+        poll.classList.add('voted');
+        el.classList.add('selected');
+        var opts = poll.querySelectorAll('.poll-widget-option');
+        var n = opts.length;
+        var raw = [];
+        var sum = 0;
+        for (var i = 0; i < n; i++) {
+            var v = Math.random() * 50 + 5;
+            if (opts[i] === el) v += 30;
+            raw.push(v);
+            sum += v;
+        }
+        var pcts = raw.map(function(v) { return Math.round(v / sum * 100); });
+        var diff = 100 - pcts.reduce(function(a,b){ return a+b; }, 0);
+        pcts[Array.from(opts).indexOf(el)] += diff;
+        setTimeout(function() {
+            opts.forEach(function(opt, i) {
+                opt.querySelector('.poll-widget-bar').style.width = pcts[i] + '%';
+                opt.querySelector('.poll-widget-pct').textContent = pcts[i] + '%';
+            });
+        }, 50);
+    }
+    </script>
+    <!--#include virtual="/ssi/body_bottom.html" -->
+    <script src="/static/js/inject.js" defer></script>
+</body>
+</html>

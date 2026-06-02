@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27><text y=%27.9em%27 font-size=%2790%27>🖥️</text></svg>">
+    <title>Как настроить удаленный стол на 2 монитора в RDP и TeamViewer — Мониторум</title>
+    <meta name="description" content="Полная инструкция: как расширить удаленный рабочий стол на 2 монитора. Настройка RDP, Group Policy, устранение ошибок масштабирования и проблемы с курсором.">
+    <link rel="canonical" href="https://monitorium.vercel.app/articles/k/ka/kak-rasshirit-udalennyj-rabochij-stol-na-2-monitora.html">
+
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="Как настроить удаленный стол на 2 монитора в RDP и TeamViewer">
+    <meta property="og:description" content="Полная инструкция: как расширить удаленный рабочий стол на 2 монитора. Настройка RDP, Group Policy, устранение ошибок масштабирования и проблемы с курсором.">
+    <meta property="og:locale" content="ru_RU">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css?v=1780420684">
+    <style>
+    .site-footer-premium {
+        margin-top: 60px; padding: 40px 0 0; background: #1e293b; color: #94a3b8;
+    }
+    .footer-grid {
+        display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 40px;
+        padding-bottom: 32px; border-bottom: 1px solid #334155;
+    }
+    .footer-brand { font-size: 1.2rem; font-weight: 700; color: #f1f5f9; margin-bottom: 12px; }
+    .footer-about { font-size: 0.9rem; line-height: 1.6; margin-bottom: 8px; }
+    .footer-updated { font-size: 0.8rem; color: #64748b; }
+    .footer-col h4 { color: #f1f5f9; font-size: 0.95rem; margin-bottom: 16px; }
+    .footer-col ul { list-style: none; }
+    .footer-col li { margin-bottom: 8px; }
+    .footer-col a { color: #94a3b8; font-size: 0.9rem; transition: color 0.2s; }
+    .footer-col a:hover { color: #60a5fa; }
+    .footer-bottom { padding: 20px 0; text-align: center; font-size: 0.85rem; }
+    @media (max-width: 640px) {
+        .footer-grid { grid-template-columns: 1fr; gap: 24px; }
+    }
+    .cookie-popup {
+        position: fixed; bottom: 0; left: 0; right: 0; background: #1e293b; color: #fff;
+        padding: 16px; transition: transform 0.5s ease; z-index: 9999; border-top: 2px solid #2563eb;
+        transform: translateY(100%);
+    }
+    .cookie-popup.visible { transform: translateY(0); }
+    .cookie-inner { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; gap: 16px; font-size: 0.9rem; }
+    .cookie-btn { background: #2563eb; color: #fff; border: none; padding: 8px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+    .cookie-btn:hover { background: #1d4ed8; }
+    @media (max-width: 640px) {
+        .cookie-inner { flex-direction: column; text-align: center; }
+    }
+</style>
+    
+    <!--#include virtual="/ssi/head.html" -->
+</head>
+<body>
+        <!--#include virtual="/ssi/body_top.html" -->
+    <style>
+    .nav-dropdown { position: relative; display: inline-block; }
+    .dropdown-toggle {
+        background: none; border: none; cursor: pointer;
+        font: inherit; color: inherit; padding: 8px 12px;
+        border-radius: 8px; transition: background 0.2s;
+    }
+    .dropdown-toggle:hover { background: rgba(0,0,0,0.05); }
+    .dropdown-menu {
+        display: none; position: absolute; right: 0; top: 100%;
+        min-width: 240px; max-height: 70vh; overflow-y: auto;
+        background: var(--card-bg, #fff); border: 1px solid var(--border, #e5e7eb);
+        border-radius: 12px; box-shadow: 0 12px 40px rgba(0,0,0,0.12);
+        padding: 8px 0; z-index: 1000;
+    }
+    .nav-dropdown::after {
+        content: ''; position: absolute; left: 0; right: 0;
+        top: 100%; height: 12px;
+    }
+    .nav-dropdown:hover .dropdown-menu,
+    .nav-dropdown:focus-within .dropdown-menu { display: block; }
+    .dropdown-item {
+        display: block; padding: 10px 20px; color: var(--text, #1f2937);
+        text-decoration: none; font-size: 0.95rem; transition: background 0.15s;
+        white-space: nowrap;
+    }
+    .dropdown-item:hover { background: rgba(37,99,235,0.06); color: var(--primary, #2563eb); }
+    @media (max-width: 768px) {
+        .main-nav > .nav-link { display: none; }
+        .dropdown-toggle { display: none; }
+        .dropdown-menu {
+            display: block !important; position: static;
+            box-shadow: none; border: none; border-radius: 0;
+            min-width: auto; max-height: none; padding: 0;
+            background: transparent;
+        }
+        .dropdown-item {
+            padding: 8px 0; font-size: 1rem;
+        }
+    }
+    </style>
+    <header class="site-header">
+        <div class="container header-inner">
+            <a href="/" class="logo">
+                <span class="logo-icon">🖥️</span>
+                <span>Мониторум</span>
+            </a>
+            <button class="mobile-menu-btn" aria-label="Меню" id="menuBtn">☰</button>
+            <nav class="main-nav" id="mainNav">
+                <a href="/category/nastrojka-ekrana/" class="nav-link">⚙️ Настройка экрана</a>
+<a href="/category/podklyuchenie-ustrojstv/" class="nav-link">🔌 Подключение устройств</a>
+<a href="/category/mnozhestvennye-ekrany/" class="nav-link">🖥️🖥️ Множественные экраны</a>
+<a href="/category/zvuk-i-audio/" class="nav-link">🔊 Звук и аудио</a>
+<div class="nav-dropdown">
+            <button class="nav-link dropdown-toggle">📂 Все разделы ▾</button>
+            <div class="dropdown-menu"><a href="/category/nastrojka-ekrana/" class="dropdown-item">⚙️ Настройка экрана</a>
+<a href="/category/podklyuchenie-ustrojstv/" class="dropdown-item">🔌 Подключение устройств</a>
+<a href="/category/mnozhestvennye-ekrany/" class="dropdown-item">🖥️🖥️ Множественные экраны</a>
+<a href="/category/zvuk-i-audio/" class="dropdown-item">🔊 Звук и аудио</a>
+<a href="/category/remont-i-polomki/" class="dropdown-item">🔧 Ремонт и поломки</a>
+<a href="/category/ukhod-i-chistka/" class="dropdown-item">🧼 Уход и чистка</a>
+<a href="/category/vybor-i-kharakteristiki/" class="dropdown-item">📊 Выбор и характеристики</a>
+<a href="/category/drajvery-i-po/" class="dropdown-item">💿 Драйверы и ПО</a>
+<a href="/category/krepleniya-i-ustanovka/" class="dropdown-item">🔩 Крепления и установка</a>
+<a href="/category/utilizatsiya-i-prodazha/" class="dropdown-item">♻️ Утилизация и продажа</a>
+<a href="/category/spetsialnye-rezhimy/" class="dropdown-item">🎮 Специальные режимы</a>
+<a href="/category/drugoe/" class="dropdown-item">📁 Другое</a></div>
+        </div>
+            </nav>
+        </div>
+    </header>
+
+    <nav class="breadcrumbs" aria-label="Навигация">
+        <div class="container"><a href="/">Главная</a><span class="breadcrumb-sep">›</span><a href="/category/drugoe/">Другое</a><span class="breadcrumb-sep">›</span><span class="breadcrumb-current">Как настроить удаленный стол на 2 монитора в RDP и TeamViewer</span></div>
+    </nav>
+
+    <main class="site-main">
+        <div class="container">
+            <div class="article-layout">
+                <article class="article-main">
+                    
+                    <h1>Как расширить удаленный рабочий стол на 2 монитора: полное руководство</h1>
+                    <nav class="mobile-toc"><details><summary>📋 Содержание</summary><ul><li><a href="#базовая-настройка-подключения-через-стандартный-rdp-клиент">Базовая настройка подключения через стандартный RDP-клиент</a></li><li><a href="#редактирование-групповых-политик-на-хосте">Редактирование групповых политик на хосте</a></li><li><a href="#проблемы-масштабирования-и-dpi-в-многомониторной-конфигурации">Проблемы масштабирования и DPI в многомониторной конфигурации</a></li><li><a href="#настройка-через-реестр-windows">Настройка через реестр Windows</a></li><li><a href="#работа-с-курсором-и-перетаскиванием-между-экранами">Работа с курсором и перетаскиванием между экранами</a></li><li><a href="#альтернативные-решения-и-сторонний-софт">Альтернативные решения и сторонний софт</a></li><li><a href="#устранение-типичных-ошибок-и-зависаний">Устранение типичных ошибок и зависаний</a></li><li><a href="#faq-часто-задаваемые-вопросы">FAQ: Часто задаваемые вопросы</a></li></ul></details></nav>
+                    <!--#include virtual="/ssi/article_before.html" -->
+                    <div class="article-body"><p>Ошибка «Удаленный рабочий стол не может отобразить изображение на втором дисплее» часто возникает, если в настройках подключения не включена опция <strong>использовать все мои мониторы</strong>. При попытке запустить сессию без этой галочки система принудительно сжимает рабочий стол до размеров одного экрана, делая невозможным полноценную работу с двумя физическими устройствами отображения. Это ограничение относится к стандартному протоколу <em>RDP (Remote Desktop Protocol)</em>, который по умолчанию стремится минимизировать потребление сетевых ресурсов, игнорируя конфигурацию клиентской части.</p>
+<p>Для корректного отображения изображения необходимо изменить конфигурацию как на стороне клиента, так и, в некоторых случаях, на стороне хоста. Если вы видите только один экран, проблема кроется в параметрах <code>use multimon</code> или в групповых политиках, запрещающих перенаправление нескольких дисплеев. <mark>Критически важно проверить версию протокола RDP, так как старые клиенты могут не поддерживать динамическое изменение разрешения при расширении на несколько мониторов.</mark></p>
+
+<h2 id="базовая-настройка-подключения-через-стандартный-rdp-клиент">Базовая настройка подключения через стандартный RDP-клиент</h2>
+<p>Самый надежный способ расширить удаленный рабочий стол на 2 монитора — использовать встроенное приложение <em>Подключение к удаленному рабочему столу</em> в Windows. В открывшемся окне нажмите кнопку <strong>Показать параметры</strong> в нижнем левом углу, чтобы развернуть дополнительные настройки. Перейдите на вкладку <code>Экран</code>, где находится ползунок настройки разрешения.</p>
+<p>В нижней части этой вкладки найдите галочку с текстом <strong>Использовать все мои мониторы для удаленного сеанса</strong>. Именно этот параметр отвечает за распределение изображения между всеми подключенными к вашему компьютеру дисплеями. После активации опции система автоматически определит текущее разрешение и развернет удаленную сессию на весь доступный фон.</p>
+<ul>
+  <li>✅ Убедитесь, что в настройках мониторов на локальном ПК оба экрана активны и настроены как «Расширить эти экраны».</li>
+  <li>✅ Разрешение удаленного сеанса должно соответствовать сумме разрешений ваших физических мониторов.</li>
+  <li>✅ При изменении настроек галочка может сбрасываться, поэтому проверяйте её перед каждым запуском.</li>
+</ul>
+<p>Если вы работаете через командную строку, используйте аргумент <code>/multimon</code> при запуске <code>mstsc.exe</code>. Это принудительно включает режим мульти-монитора, обходя некоторые графические интерфейсы настроек. Скрипт запуска будет выглядеть следующим образом: <pre><code>mstsc.exe /v:192.168.1.10 /multimon</code></pre>. Такой подход часто эффективнее, чем ручное изменение настроек в графическом интерфейсе.</p>
+
+<div class="attention-box attention-tip"><span class="attention-icon">💡</span><p>Если вы используете ноутбук, подключенный к внешнему монитору, убедитесь, что экран ноутбука не отключен в настройках Windows, иначе RDP может не увидеть второй дисплей как активный.</p></div>
+
+<h2 id="редактирование-групповых-политик-на-хосте">Редактирование групповых политик на хосте</h2>
+<p>Иногда пользователь включает все нужные опции на клиенте, но удаленный компьютер (хост) блокирует эту функцию на уровне системы. Это происходит из-за настроек <strong>Групповых политик</strong>, которые могут ограничивать перенаправление мониторов. Для проверки откройте редактор локальной групповой политики, набрав <code>gpedit.msc</code> в меню «Выполнить».</p>
+<p>Перейдите по пути: <strong>Конфигурация компьютера</strong> -> <strong>Административные шаблоны</strong> -> <strong>Компоненты Windows</strong> -> <strong>Службы удаленных рабочих столов</strong> -> <strong>Узел сеансов удаленных рабочих столов</strong> -> <strong>Удаленный сеанс</strong>. Найдите параметр <code>Разрешить использование нескольких мониторов для удаленного сеанса</code>.</p>
+<blockquote>
+<p>⚠️ Внимание: Если этот параметр установлен в значение «Отключено», удаленный стол не сможет использовать второй монитор, даже если вы настроили клиента правильно.</p>
+</blockquote>
+<p>Дважды кликните по параметру и выберите <strong>Включено</strong>. После этого необходимо перезапустить службу удаленных рабочих столов или перезагрузить сервер. Нередко эта настройка сбивается после обновлений Windows, поэтому ее стоит проверять регулярно.</p>
+<ul>
+  <li>🛠 Проверьте также параметр «Использовать все мониторы для удаленного сеанса» в разделе «Параметры подключения».</li>
+  <li>🛠 Убедитесь, что на хосте не включено ограничение на количество подключенных мониторов (обычно лимит 2-3).</li>
+  <li>🛠 Если хост — сервер, проверьте права доступа пользователя к параметрам RDP.</li>
+</ul>
+
+<details class="faq-item"><summary>Важные нюансы лицензирования</summary><div class="faq-answer"><p> В некоторых корпоративных версиях Windows Server функционал мульти-мониторов может требовать наличия CAL-лицензий на терминальные серверах. Проверьте лицензирование, если функция отключена без видимых причин.</p></div></details>
+
+<h2 id="проблемы-масштабирования-и-dpi-в-многомониторной-конфигурации">Проблемы масштабирования и DPI в многомониторной конфигурации</h2>
+<p>Одной из самых частых проблем при расширении удаленного стола является рассинхронизация масштабирования (DPI). Если ваш локальный компьютер имеет экран с высоким разрешением (4K) и масштаб 150%, а удаленный сервер — обычный 1920x1080 с масштабом 100%, интерфейс может выглядеть размытым или не помещаться в рамки.</p>
+<p>Для решения этой проблемы в настройках <em>Подключения к удаленному рабочему столу</em> перейдите на вкладку <strong>Дополнительно</strong>. В разделе «Масштабирование» выберите опцию <strong>Не применять масштабирование</strong> или <strong>Управлять настройками масштабирования на удаленном компьютере</strong>. Это заставит систему рендерить интерфейс с нативным разрешением, избегая программного масштабирования, которое часто вызывает искажения.</p>
+<table>
+  <thead>
+    <tr>
+      <th>Проблема</th>
+      <th>Причина</th>
+      <th>Решение</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Размытый текст</td>
+      <td>Разные DPI на клиенте и хосте</td>
+      <td>Отключить масштабирование в настройках RDP</td>
+    </tr>
+    <tr>
+      <td>Меню не помещается</td>
+      <td>Неправильное разрешение</td>
+      <td>Установить «Полный экран» и проверить галочку</td>
+    </tr>
+    <tr>
+      <td>Черные полосы</td>
+      <td>Несоответствие соотношения сторон</td>
+      <td>Настроить разрешение вручную в «Показать параметры»</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="poll-widget" id="poll-d5fb0d19"><div class="poll-widget-question">📊 Какое разрешение вы используете на локальных мониторах?</div><div class="poll-widget-option" data-poll="d5fb0d19" data-idx="0" onclick="pbPollVote(this)"><span class="poll-widget-label">1920x1080 (Full HD)</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="d5fb0d19" data-idx="1" onclick="pbPollVote(this)"><span class="poll-widget-label">2560x1440 (2K)</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="d5fb0d19" data-idx="2" onclick="pbPollVote(this)"><span class="poll-widget-label">3840x2160 (4K)</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div></div>
+
+<h2 id="настройка-через-реестр-windows">Настройка через реестр Windows</h2>
+<p>Если графический интерфейс не сохраняет настройки, можно принудительно прописать параметры в реестре. Запустите редактор реестра командой <code>regedit</code> и перейдите по пути <code>HKEY_CURRENT_USER\Software\Microsoft\Terminal Server Client\Default</code>.</p>
+<p>Создайте или измените параметр <strong>MonitorCount</strong>, установив ему значение <code>2</code> (или больше, если у вас более двух экранов). Это указывает системе на необходимость инициализации нескольких дисплеев при запуске сессии. Также проверьте раздел <code>HKEY_CURRENT_USER\Software\Microsoft\Terminal Server Client</code>, где может находиться параметр <code>EnableMirageMode</code>, влияющий на производительность графики.</p>
+<blockquote>
+<p>⚠️ Внимание: Неправильное изменение реестра может привести к нестабильной работе системы. Перед внесением изменений создайте точку восстановления или экспортируйте ветку реестра.</p>
+</blockquote>
+<p>После изменения ключей перезапустите компьютер и попробуйте снова запустить подключение. Этот метод часто помогает в случаях, когда групповые политики недоступны, например, на Windows Home Edition, где редактор gpedit отсутствует по умолчанию.</p>
+
+<div class="checklist-block"><h4>☑️ Чек-лист проверки реестра</h4><label class="check-item"><input type="checkbox"><span>Проверить путь Default</span></label><label class="check-item"><input type="checkbox"><span>Создать MonitorCount</span></label><label class="check-item"><input type="checkbox"><span>Значение 2</span></label><label class="check-item"><input type="checkbox"><span>Перезагрузка системы</span></label><div class="check-progress">Выполнено: <span class="check-count">0</span> / 4</div></div>
+
+<h2 id="работа-с-курсором-и-перетаскиванием-между-экранами">Работа с курсором и перетаскиванием между экранами</h2>
+<p>Даже после успешного расширения рабочего стола пользователи часто сталкиваются с проблемой, когда курсор мыши «застревает» на одном экране и не переходит на второй. Это происходит из-за того, что удаленная сессия перехватывает управление указателем, но не корректно обрабатывает границы между мониторами.</p>
+<p>Чтобы курсор свободно перемещался, убедитесь, что в настройках мыши на удаленном компьютере не включен режим «Захват курсора» в полноэкранном режиме. Также проверьте настройки <strong>Расположение мониторов</strong> на удаленной машине. Они должны точно соответствовать реальному расположению на вашем столе. Если на удаленном ПК монитор 2 находится слева от монитора 1, а вы настроили их справа — курсор будет упираться в стену.</p>
+<ul>
+  <li>🖱 Нажмите правой кнопкой мыши на рабочий стол удаленного ПК -> «Параметры экрана».</li>
+  <li>🖱 Перетащите блоки экранов так, как они стоят у вас физически.</li>
+  <li>🖱 Сохраните изменения и проверьте прохождение курсора через границу.</li>
+</ul>
+
+<div class="attention-box attention-tip"><span class="attention-icon">💡</span><p>Правильное расположение экранов в настройках Windows на удаленном компьютере критично для корректного перемещения курсора мыши между монитор 1 и монитор 2.</p></div>
+
+<h2 id="альтернативные-решения-и-сторонний-софт">Альтернативные решения и сторонний софт</h2>
+<p>Если стандартный RDP не справляется с задачами, рассмотрите использование специализированного ПО для удаленного доступа, такого как <em>TeamViewer</em>, <em>AnyDesk</em> или <em>Chrome Remote Desktop</em>. Эти программы часто имеют более гибкие алгоритмы обработки многомониторных конфигураций без необходимости глубокой настройки реестра.</p>
+<p>В TeamViewer, например, в меню «Экран» можно выбрать «Показать все мониторы» или переключаться между ними отдельными клавишами. AnyDesk позволяет автоматически определять количество мониторов и предлагать режим «Многосекторный экран». Однако стоит помнить, что эти программы работают через собственные протоколы, которые могут отличаться по задержкам и качеству передачи изображения.</p>
+<p>Для профессиональной работы с графикой и видео часто требуется использование проприетарных решений, таких как <em>Teradici PCoIP</em> или <em>NICE DCV</em>, которые обеспечивают аппаратное ускорение и поддерживают сложные конфигурации дисплеев с высокой частотой обновления.</p>
+
+<details class="faq-item"><summary>Сравнение протоколов</summary><div class="faq-answer"><p> RDP идеален для офисных задач, но PCoIP и Blast Extreme от VMware лучше подходят для работы с графическими интерфейсами и 3D-приложениями на нескольких мониторах.</p></div></details>
+
+<h2 id="устранение-типичных-ошибок-и-зависаний">Устранение типичных ошибок и зависаний</h2>
+<p>Иногда при расширении на два монитора удаленная сессия начинает «фризить» или отображаться только на одном экране после смены разрешения. Это может быть связано с конфликтом драйверов видеокарты на клиентской машине. Убедитесь, что установлены последние драйверы для вашей видеокарты (NVIDIA, AMD или Intel).</p>
+<p>Попробуйте отключить аппаратное ускорение в настройках RDP-клиента. Для этого в окне свойств <code>mstsc.exe</code> перейдите на вкладку <strong>Дополнительно</strong> и отключите галочку <strong>Использовать аппаратное ускорение</strong>. Это может снизить производительность, но стабилизирует работу при работе с двумя дисплеями.</p>
+<blockquote>
+<p>⚠️ Внимание: Отключение аппаратного ускорения может значительно повысить нагрузку на процессор, особенно при передаче видео-контента. Используйте это решение только для диагностики.</p>
+</blockquote>
+<p>Если проблема сохраняется, проверьте сетевое соединение. Высокая задержка или потеря пакетов могут приводить к тому, что система перестает обновлять изображение на одном из мониторов, считая его недоступным. Используйте команду <code>ping</code> для проверки стабильности канала до удаленного хоста.</p>
+
+<h2 id="faq-часто-задаваемые-вопросы">FAQ: Часто задаваемые вопросы</h2>
+<details>
+  <summary>Почему второй монитор не появляется после подключения?</summary>
+  <p>Скорее всего, не включена галочка «Использовать все мои мониторы» в настройках подключения или в групповых политиках хоста.</p>
+</details>
+<details>
+  <summary>Можно ли расширить RDP на 3 монитора?</summary>
+  <p>Да, стандартный протокол RDP поддерживает до 16 мониторов, если клиентская ОС и хост поддерживают эту конфигурацию и настроены соответствующие параметры.</p>
+</details>
+<details>
+  <summary>Как работать в окне, а не на весь экран с двумя мониторами?</summary>
+  <p>Не ставьте галочку «Использовать все мои мониторы» и выберите в настройках разрешения «Полный экран» для каждого монитора по отдельности или работайте в оконном режиме, вручную растягивая окно.</p>
+</details>
+<details>
+  <summary>Работает ли это на Windows Home Edition?</summary>
+  <p>Windows Home не может выступать в роли хоста (сервера) для RDP, но может быть клиентом, если установить сторонний сервер (например, RDP Wrapper).</p>
+</details>
+<details>
+  <summary>Что делать, если текст размыт на одном из экранов?</summary>
+  <p>Это проблема DPI. Настройте масштабирование на удаленном компьютере так, чтобы оно совпадало с локальным, или отключите масштабирование в настройках RDP.</p>
+</details></div>
+                    <!--#include virtual="/ssi/article_after.html" -->
+
+                </article>
+                <aside class="article-sidebar"><!--#include virtual="/ssi/sidebar_top.html" --><nav class="sidebar-search"><div class="sidebar-search-box"><input type="text" id="globalSearchInput" placeholder="🔍 Поиск статей..." autocomplete="off"><div class="search-dropdown" id="globalSearchDropdown"></div></div></nav><!--#include virtual="/ssi/sidebar_before_toc.html" --><nav class="sidebar-toc" id="sidebarToc"><h3>Содержание</h3><ul><li><a href="#базовая-настройка-подключения-через-стандартный-rdp-клиент">Базовая настройка подключения через стандартный RDP-клиент</a></li><li><a href="#редактирование-групповых-политик-на-хосте">Редактирование групповых политик на хосте</a></li><li><a href="#проблемы-масштабирования-и-dpi-в-многомониторной-конфигурации">Проблемы масштабирования и DPI в многомониторной конфигурации</a></li><li><a href="#настройка-через-реестр-windows">Настройка через реестр Windows</a></li><li><a href="#работа-с-курсором-и-перетаскиванием-между-экранами">Работа с курсором и перетаскиванием между экранами</a></li><li><a href="#альтернативные-решения-и-сторонний-софт">Альтернативные решения и сторонний софт</a></li><li><a href="#устранение-типичных-ошибок-и-зависаний">Устранение типичных ошибок и зависаний</a></li><li><a href="#faq-часто-задаваемые-вопросы">FAQ: Часто задаваемые вопросы</a></li></ul></nav><!--#include virtual="/ssi/sidebar_before_related.html" --><nav class="sidebar-related"><h3>Похожие статьи</h3><ul><li><a href="/articles/p/po/pochemu-kartinka-ukhodit-za-ramki-monitora.html" class="related-card">Картинка уходит за рамки монитора: причины и решение</a></li><li><a href="/articles/o/ot/ot-chego-zavisit-razreshenie-ekrana-monitora.html" class="related-card">От чего зависит разрешение экрана монитора: физические и программные факторы</a></li><li><a href="/articles/c/ch/chto-takoe-ndr-v-monitore.html" class="related-card">Что такое NDR в мониторе: технология и настройка</a></li><li><a href="/articles/c/ch/chto-takoe-ergonomichnyj-monitor.html" class="related-card">Что такое эргономичный монитор: выбор и настройка для здоровья</a></li><li><a href="/articles/c/ch/chto-luchshe-monitor-ili-televizor-4k.html" class="related-card">Монитор или телевизор 4K: что выбрать для работы и игр в 2026 году</a></li></ul></nav><!--#include virtual="/ssi/sidebar_after_related.html" --></aside>
+            </div>
+        </div>
+    </main>
+
+    <!--#include virtual="/ssi/before_related_bottom.html" -->
+    <section class="related-bottom">
+        <div class="container">
+            <h2 class="related-bottom-heading">📖 Читайте также</h2>
+            <div class="related-bottom-grid"><a href="/articles/p/po/pochemu-kartinka-ukhodit-za-ramki-monitora.html" class="related-bottom-card"><span class="related-bottom-title">Картинка уходит за рамки монитора: причины и решение</span><span class="related-bottom-desc">Почему изображение выходит за пределы экрана? Разбираем настройки масштабирования, HDMI/DP кабель и </span></a><a href="/articles/o/ot/ot-chego-zavisit-razreshenie-ekrana-monitora.html" class="related-bottom-card"><span class="related-bottom-title">От чего зависит разрешение экрана монитора: физические и программные факторы</span><span class="related-bottom-desc">Разбираем, как физическая матрица, видеокарта и драйверы влияют на максимальное разрешение экрана. У</span></a><a href="/articles/c/ch/chto-takoe-ndr-v-monitore.html" class="related-bottom-card"><span class="related-bottom-title">Что такое NDR в мониторе: технология и настройка</span><span class="related-bottom-desc">Разбираем технологию NDR в мониторах. Узнайте, как работает обратная связь по динамическому диапазон</span></a><a href="/articles/c/ch/chto-takoe-ergonomichnyj-monitor.html" class="related-bottom-card"><span class="related-bottom-title">Что такое эргономичный монитор: выбор и настройка для здоровья</span><span class="related-bottom-desc">Разбираем, что такое эргономичный монитор и как его регулировка защищает зрение и спину. Характерист</span></a><a href="/articles/c/ch/chto-luchshe-monitor-ili-televizor-4k.html" class="related-bottom-card"><span class="related-bottom-title">Монитор или телевизор 4K: что выбрать для работы и игр в 2026 году</span><span class="related-bottom-desc">Сравнение мониторов и телевизоров 4K. Разбор частоты обновления, технологии матриц, задержки ввода и</span></a><a href="/articles/k/ka/kak-vklyuchit-sistemnyj-monitor-na-vindovs-8.html" class="related-bottom-card"><span class="related-bottom-title">Как включить системный монитор на Windows 8: полный гайд</span><span class="related-bottom-desc">Подробная инструкция по запуску системного монитора в Windows 8. Узнайте, как отслеживать нагрузку н</span></a></div>
+        </div>
+    </section>
+    <!--#include virtual="/ssi/after_related_bottom.html" -->
+
+    <footer class="site-footer-premium">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-col">
+                    <div class="footer-brand">🖥️ Мониторум</div>
+                    <p class="footer-about">Полный справочник по настройке, ремонту и выбору компьютерных мониторов для любых задач.</p>
+                </div>
+                <div class="footer-col">
+                    <h4>Разделы</h4>
+                    <ul><li><a href="/category/nastrojka-ekrana/">⚙️ Настройка экрана</a></li>
+<li><a href="/category/podklyuchenie-ustrojstv/">🔌 Подключение устройств</a></li>
+<li><a href="/category/mnozhestvennye-ekrany/">🖥️🖥️ Множественные экраны</a></li>
+<li><a href="/category/zvuk-i-audio/">🔊 Звук и аудио</a></li>
+<li><a href="/category/remont-i-polomki/">🔧 Ремонт и поломки</a></li>
+<li><a href="/category/ukhod-i-chistka/">🧼 Уход и чистка</a></li></ul>
+                </div>
+                <div class="footer-col">
+                    <h4>Информация</h4>
+                    <ul>
+                        <li><a href="/">Главная</a></li>
+                        <li><a href="/about.html">О проекте</a></li>
+                        <li><a href="/categories.html">Все разделы</a></li>
+                        <li><a href="/contact.html">Контакты</a></li>
+                        <li><a href="/privacy.html">Конфиденциальность</a></li>
+                        <li><a href="/sitemap.xml">Карта сайта</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>© Мониторум. Все права защищены.</p>
+                <!--LiveInternet counter--><div style="margin-top:10px;"><a href="https://www.liveinternet.ru/click"
+                target="_blank"><img id="licnt06C4" width="88" height="15" style="border:0" 
+                title="LiveInternet: показано число посетителей за сегодня"
+                src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAEALAAAAAABAAEAAAIBTAA7"
+                alt=""/></a><script>(function(d,s){d.getElementById("licnt06C4").src=
+                "https://counter.yadro.ru/hit?t26.5;r"+escape(d.referrer)+
+                ((typeof(s)=="undefined")?"":";s"+s.width+"*"+s.height+"*"+
+                (s.colorDepth?s.colorDepth:s.pixelDepth))+";u"+escape(d.URL)+
+                ";h"+escape(d.title.substring(0,150))+";"+Math.random()})(document,screen)</script></div><!--/LiveInternet-->
+            </div>
+        </div>
+    </footer>
+    <div id="cookie-consent" class="cookie-popup">
+        <div class="cookie-inner">
+            <span>🍪 Мы используем файлы cookie для улучшения работы сайта.</span>
+            <button id="cookie-accept" class="cookie-btn">Принять</button>
+        </div>
+    </div>
+    <script src="/static/js/main.js"></script>
+    <script>
+    (function() {
+        const popup = document.getElementById('cookie-consent');
+        const btn = document.getElementById('cookie-accept');
+        if (popup && btn && !localStorage.getItem('cookie-accepted')) {
+            popup.classList.add('visible');
+            btn.onclick = () => {
+                localStorage.setItem('cookie-accepted', 'true');
+                popup.classList.remove('visible');
+            };
+        }
+    })();
+    </script>
+    <script>
+    function pbPollVote(el) {
+        var poll = el.closest('.poll-widget');
+        if (poll.classList.contains('voted')) return;
+        poll.classList.add('voted');
+        el.classList.add('selected');
+        var opts = poll.querySelectorAll('.poll-widget-option');
+        var n = opts.length;
+        var raw = [];
+        var sum = 0;
+        for (var i = 0; i < n; i++) {
+            var v = Math.random() * 50 + 5;
+            if (opts[i] === el) v += 30;
+            raw.push(v);
+            sum += v;
+        }
+        var pcts = raw.map(function(v) { return Math.round(v / sum * 100); });
+        var diff = 100 - pcts.reduce(function(a,b){ return a+b; }, 0);
+        pcts[Array.from(opts).indexOf(el)] += diff;
+        setTimeout(function() {
+            opts.forEach(function(opt, i) {
+                opt.querySelector('.poll-widget-bar').style.width = pcts[i] + '%';
+                opt.querySelector('.poll-widget-pct').textContent = pcts[i] + '%';
+            });
+        }, 50);
+    }
+    </script>
+    <!--#include virtual="/ssi/body_bottom.html" -->
+    <script src="/static/js/inject.js" defer></script>
+</body>
+</html>

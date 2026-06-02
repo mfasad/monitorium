@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27><text y=%27.9em%27 font-size=%2790%27>🖥️</text></svg>">
+    <title>Как кодируются пиксели: устройство матрицы и глубина цвета — Мониторум</title>
+    <meta name="description" content="Узнайте, как формируется цвет на экране монитора. Разбор RGB-модели, битности пикселя, субпиксельной структуры и принципов работы матриц IPS и OLED.">
+    <link rel="canonical" href="https://monitorium.vercel.app/articles/k/ka/kak-kodiruyutsya-pikseli-na-ekrane-monitora.html">
+
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="Как кодируются пиксели: устройство матрицы и глубина цвета">
+    <meta property="og:description" content="Узнайте, как формируется цвет на экране монитора. Разбор RGB-модели, битности пикселя, субпиксельной структуры и принципов работы матриц IPS и OLED.">
+    <meta property="og:locale" content="ru_RU">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css?v=1780420684">
+    <style>
+    .site-footer-premium {
+        margin-top: 60px; padding: 40px 0 0; background: #1e293b; color: #94a3b8;
+    }
+    .footer-grid {
+        display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 40px;
+        padding-bottom: 32px; border-bottom: 1px solid #334155;
+    }
+    .footer-brand { font-size: 1.2rem; font-weight: 700; color: #f1f5f9; margin-bottom: 12px; }
+    .footer-about { font-size: 0.9rem; line-height: 1.6; margin-bottom: 8px; }
+    .footer-updated { font-size: 0.8rem; color: #64748b; }
+    .footer-col h4 { color: #f1f5f9; font-size: 0.95rem; margin-bottom: 16px; }
+    .footer-col ul { list-style: none; }
+    .footer-col li { margin-bottom: 8px; }
+    .footer-col a { color: #94a3b8; font-size: 0.9rem; transition: color 0.2s; }
+    .footer-col a:hover { color: #60a5fa; }
+    .footer-bottom { padding: 20px 0; text-align: center; font-size: 0.85rem; }
+    @media (max-width: 640px) {
+        .footer-grid { grid-template-columns: 1fr; gap: 24px; }
+    }
+    .cookie-popup {
+        position: fixed; bottom: 0; left: 0; right: 0; background: #1e293b; color: #fff;
+        padding: 16px; transition: transform 0.5s ease; z-index: 9999; border-top: 2px solid #2563eb;
+        transform: translateY(100%);
+    }
+    .cookie-popup.visible { transform: translateY(0); }
+    .cookie-inner { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; gap: 16px; font-size: 0.9rem; }
+    .cookie-btn { background: #2563eb; color: #fff; border: none; padding: 8px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+    .cookie-btn:hover { background: #1d4ed8; }
+    @media (max-width: 640px) {
+        .cookie-inner { flex-direction: column; text-align: center; }
+    }
+</style>
+    
+    <!--#include virtual="/ssi/head.html" -->
+</head>
+<body>
+        <!--#include virtual="/ssi/body_top.html" -->
+    <style>
+    .nav-dropdown { position: relative; display: inline-block; }
+    .dropdown-toggle {
+        background: none; border: none; cursor: pointer;
+        font: inherit; color: inherit; padding: 8px 12px;
+        border-radius: 8px; transition: background 0.2s;
+    }
+    .dropdown-toggle:hover { background: rgba(0,0,0,0.05); }
+    .dropdown-menu {
+        display: none; position: absolute; right: 0; top: 100%;
+        min-width: 240px; max-height: 70vh; overflow-y: auto;
+        background: var(--card-bg, #fff); border: 1px solid var(--border, #e5e7eb);
+        border-radius: 12px; box-shadow: 0 12px 40px rgba(0,0,0,0.12);
+        padding: 8px 0; z-index: 1000;
+    }
+    .nav-dropdown::after {
+        content: ''; position: absolute; left: 0; right: 0;
+        top: 100%; height: 12px;
+    }
+    .nav-dropdown:hover .dropdown-menu,
+    .nav-dropdown:focus-within .dropdown-menu { display: block; }
+    .dropdown-item {
+        display: block; padding: 10px 20px; color: var(--text, #1f2937);
+        text-decoration: none; font-size: 0.95rem; transition: background 0.15s;
+        white-space: nowrap;
+    }
+    .dropdown-item:hover { background: rgba(37,99,235,0.06); color: var(--primary, #2563eb); }
+    @media (max-width: 768px) {
+        .main-nav > .nav-link { display: none; }
+        .dropdown-toggle { display: none; }
+        .dropdown-menu {
+            display: block !important; position: static;
+            box-shadow: none; border: none; border-radius: 0;
+            min-width: auto; max-height: none; padding: 0;
+            background: transparent;
+        }
+        .dropdown-item {
+            padding: 8px 0; font-size: 1rem;
+        }
+    }
+    </style>
+    <header class="site-header">
+        <div class="container header-inner">
+            <a href="/" class="logo">
+                <span class="logo-icon">🖥️</span>
+                <span>Мониторум</span>
+            </a>
+            <button class="mobile-menu-btn" aria-label="Меню" id="menuBtn">☰</button>
+            <nav class="main-nav" id="mainNav">
+                <a href="/category/nastrojka-ekrana/" class="nav-link">⚙️ Настройка экрана</a>
+<a href="/category/podklyuchenie-ustrojstv/" class="nav-link">🔌 Подключение устройств</a>
+<a href="/category/mnozhestvennye-ekrany/" class="nav-link">🖥️🖥️ Множественные экраны</a>
+<a href="/category/zvuk-i-audio/" class="nav-link">🔊 Звук и аудио</a>
+<div class="nav-dropdown">
+            <button class="nav-link dropdown-toggle">📂 Все разделы ▾</button>
+            <div class="dropdown-menu"><a href="/category/nastrojka-ekrana/" class="dropdown-item">⚙️ Настройка экрана</a>
+<a href="/category/podklyuchenie-ustrojstv/" class="dropdown-item">🔌 Подключение устройств</a>
+<a href="/category/mnozhestvennye-ekrany/" class="dropdown-item">🖥️🖥️ Множественные экраны</a>
+<a href="/category/zvuk-i-audio/" class="dropdown-item">🔊 Звук и аудио</a>
+<a href="/category/remont-i-polomki/" class="dropdown-item">🔧 Ремонт и поломки</a>
+<a href="/category/ukhod-i-chistka/" class="dropdown-item">🧼 Уход и чистка</a>
+<a href="/category/vybor-i-kharakteristiki/" class="dropdown-item">📊 Выбор и характеристики</a>
+<a href="/category/drajvery-i-po/" class="dropdown-item">💿 Драйверы и ПО</a>
+<a href="/category/krepleniya-i-ustanovka/" class="dropdown-item">🔩 Крепления и установка</a>
+<a href="/category/utilizatsiya-i-prodazha/" class="dropdown-item">♻️ Утилизация и продажа</a>
+<a href="/category/spetsialnye-rezhimy/" class="dropdown-item">🎮 Специальные режимы</a>
+<a href="/category/drugoe/" class="dropdown-item">📁 Другое</a></div>
+        </div>
+            </nav>
+        </div>
+    </header>
+
+    <nav class="breadcrumbs" aria-label="Навигация">
+        <div class="container"><a href="/">Главная</a><span class="breadcrumb-sep">›</span><a href="/category/vybor-i-kharakteristiki/">Выбор и характеристики</a><span class="breadcrumb-sep">›</span><span class="breadcrumb-current">Как кодируются пиксели: устройство матрицы и глубина цвета</span></div>
+    </nav>
+
+    <main class="site-main">
+        <div class="container">
+            <div class="article-layout">
+                <article class="article-main">
+                    
+                    <h1>Принципы кодирования пикселей на экране монитора</h1>
+                    <nav class="mobile-toc"><details><summary>📋 Содержание</summary><ul><li><a href="#основы-формирования-цвета-модель-rgb">Основы формирования цвета: модель RGB</a></li><li><a href="#глубина-цвета-и-битовая-глубина">Глубина цвета и битовая глубина</a></li><li><a href="#структура-пикселя-и-субпиксельная-компоновка">Структура пикселя и субпиксельная компоновка</a></li><li><a href="#квантование-сигнала-и-передача-данных">Квантование сигнала и передача данных</a></li><li><a href="#дополнительные-каналы-информации">Дополнительные каналы информации</a></li><li><a href="#влияние-технологии-матрицы-на-кодировку">Влияние технологии матрицы на кодировку</a></li><li><a href="#частые-вопросы-о-кодировании-пикселей">Частые вопросы о кодировании пикселей</a></li></ul></details></nav>
+                    <!--#include virtual="/ssi/article_before.html" -->
+                    <div class="article-body"><p>Ваш монитор превращает миллионы нулей и единиц в красочные изображения, которые вы видите каждый день. Этот процесс кажется магией, но на самом деле он основан на строгих физических законах и математических алгоритмах. Понимание того, как кодируются пиксели, поможет вам делать более осознанный выбор при покупке техники и лучше настраивать её для работы или игр.</p>
+
+<p>Каждый <strong>пиксель</strong> на экране — это не просто точка, а сложная миниатюрная система управления светом. Для того чтобы вы увидели конкретный оттенок, видеокарта отправляет данные, которые обрабатываются драйвером и преобразуются в сигналы для каждого отдельного элемента матрицы. Без этого тонкого взаимодействия невозможно было бы получить плавные градиенты и реалистичные цвета.</p>
+
+<h2 id="основы-формирования-цвета-модель-rgb">Основы формирования цвета: модель RGB</h2>
+
+<p>В основе кодирования практически всех современных экранов лежит аддитивная модель смешения цветов, известная как <strong>RGB</strong> (Red, Green, Blue). Каждый пиксель монитора состоит из трех отдельных <em>субпикселей</em>: красного, зеленого и синего. Именно сочетание интенсивности свечения этих трех элементов позволяет человеческому глазу воспринимать весь спектр видимых цветов.</p>
+
+<p>Когда все три субпикселя выключены, вы видите черный цвет. Если же они светятся с максимальной яркостью одновременно, образуется чистый белый. Весь остальной диапазон оттенков создается за счет изменения яркости каждого канала. Например, для получения желтого цвета нужно включить красный и зеленый на полную мощность, а синий — выключить или сделать его тусклым.</p>
+
+<h2 id="глубина-цвета-и-битовая-глубина">Глубина цвета и битовая глубина</h2>
+
+<p>Количество оттенков, которое может отобразить экран, напрямую зависит от <strong>битовой глубины</strong> (color depth). Это параметр, определяющий, сколько информации выделяется для хранения цвета каждого субпикселя. В старых или бюджетных мониторах часто используется 8-битная глубина, что позволяет закодировать 256 уровней яркости для каждого канала RGB.</p>
+
+<p>Математически это дает возможность получить 256 × 256 × 256 цветов, что составляет около 16,7 миллионов оттенков. Однако в профессиональных сферах, таких как полиграфия или цветокоррекция видео, этого может быть недостаточно для плавных переходов. Здесь на помощь приходят 10-битные и 12-битные панели, способные отобразить миллиарды цветов, устраняя эффект «ступенчатости» на градиентах.</p>
+
+<p>Многие пользователи путаются в маркетинговых уловках, когда видят надпись «10-bit» на мониторе за умеренную цену. Часто это панели с 8-битной матрицей, дополненной технологией <em>dithering</em> (FRC), которая имитирует большее количество цветов, быстро переключая пиксели между соседними оттенками. Глаз воспринимает это как усредненный цвет, но точность передачи может уступать нативной 10-битной матрице.</p>
+
+<div class="poll-widget" id="poll-9d5620ca"><div class="poll-widget-question">📊 Какая битовая глубина вам важна?</div><div class="poll-widget-option" data-poll="9d5620ca" data-idx="0" onclick="pbPollVote(this)"><span class="poll-widget-label">8 бит (стандарт)</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="9d5620ca" data-idx="1" onclick="pbPollVote(this)"><span class="poll-widget-label">10 бит (профи)</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="9d5620ca" data-idx="2" onclick="pbPollVote(this)"><span class="poll-widget-label">Мне без разницы</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="9d5620ca" data-idx="3" onclick="pbPollVote(this)"><span class="poll-widget-label">Не знаю</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div></div>
+
+<h2 id="структура-пикселя-и-субпиксельная-компоновка">Структура пикселя и субпиксельная компоновка</h2>
+
+<p>Физическое расположение субпикселей внутри одного пикселя может различаться в зависимости от технологии матрицы. В классических <strong>IPS</strong> и <strong>VA</strong> панелях субпиксели обычно расположены вертикально в порядке R-G-B слева направо. Это стандартная компоновка, которую поддерживают все операционные системы без дополнительных настроек.</p>
+
+<p>Однако существуют и альтернативные структуры, например, матрицы <em>PenTile</em> или <em>BGR</em>. В таких экранах субпиксели могут быть расположены по-другому или их количество может отличаться. Если вы используете монитор с нестандартной компоновкой, текст может казаться менее четким, если система не понимает специфику субпиксельной сетки.</p>
+
+<blockquote>⚠️ Внимание: Неправильная настройка субпиксельного рендеринга в операционной системе может привести к появлению цветных ореолов вокруг букв и снижению четкости текста, особенно при низком разрешении экрана.</blockquote>
+
+<p>При выборе монитора для работы с текстом или программированием стоит обращать внимание на тип матрицы и репутацию производителя в вопросах субпиксельной структуры. Некоторые технологии, такие как <em>Per-pixel dimming</em> в OLED экранах, позволяют управлять каждым пикселем независимо, что кардинально меняет подход к кодированию черного цвета.</p>
+
+<details class="faq-item"><summary>Почему в OLED черный цвет абсолютно черный?</summary><div class="faq-answer"><p>В отличие от ЖК-матриц, где подсветка работает постоянно и блокируется жидкими кристаллами, в OLED каждый пиксель является самостоятельным источником света. При необходимости отобразить черный цвет, пиксель просто отключается полностью, не пропуская ни капли света. Это дает идеальный контраст и истинно черный цвет, который невозможно получить на LCD-экранах без локального затемнения.</p></div></details>
+
+<h2 id="квантование-сигнала-и-передача-данных">Квантование сигнала и передача данных</h2>
+
+<p>Процесс кодирования не заканчивается на генерации числа цвета. Видеокарта преобразует эти числа в электрические сигналы, которые передаются по видеокабелю. Пропускная способность канала определяет, какие разрешения и частоты обновления вы сможете использовать. Например, для передачи 4K-изображения с 10-битной глубиной цвета требуется значительно больше данных, чем для Full HD.</p>
+
+<p>Если кабель или разъем не поддерживают необходимую пропускную способность, система может автоматически снизить глубину цвета до 8 бит или уменьшить частоту обновления. Это важный нюанс, который часто упускают при подключении современных мониторов к старым видеокартам или через переходники.</p>
+
+<table border="1">
+<thead>
+<tr>
+<th>Разрешение</th>
+<th>Глубина цвета</th>
+<th>Частота обновления</th>
+<th>Требуемая пропускная способность (прибл.)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1920×1080 (Full HD)</td>
+<td>8 бит</td>
+<td>60 Гц</td>
+<td>3 Гбит/с</td>
+</tr>
+<tr>
+<td>2560×1440 (QHD)</td>
+<td>8 бит</td>
+<td>144 Гц</td>
+<td>12 Гбит/с</td>
+</tr>
+<tr>
+<td>3840×2160 (4K)</td>
+<td>10 бит</td>
+<td>60 Гц</td>
+<td>18 Гбит/с</td>
+</tr>
+<tr>
+<td>3840×2160 (4K)</td>
+<td>10 бит</td>
+<td>120 Гц</td>
+<td>32 Гбит/с</td>
+</tr>
+</tbody>
+</table>
+
+<div class="checklist-block"><h4>☑️ Проверка настроек передачи сигнала</h4><label class="check-item"><input type="checkbox"><span>Подключить кабель HDMI 2.1 или DisplayPort 1.4</span></label><label class="check-item"><input type="checkbox"><span>Зайти в настройки драйвера видеокарты</span></label><label class="check-item"><input type="checkbox"><span>Убедиться, что выбрано максимальное разрешение</span></label><label class="check-item"><input type="checkbox"><span>Проверить активную частоту обновления (Гц)</span></label><label class="check-item"><input type="checkbox"><span>Включить режим «Ультра» или «Deep Color» в настройках монитора</span></label><div class="check-progress">Выполнено: <span class="check-count">0</span> / 5</div></div>
+
+<h2 id="дополнительные-каналы-информации">Дополнительные каналы информации</h2>
+
+<p>Помимо основных каналов красного, зеленого и синего, в кодировке изображения могут участвовать дополнительные данные. Например, альфа-канал (Alpha channel) отвечает за прозрачность и часто используется в графических редакторах или игровых интерфейсах. Хотя монитор физически не отображает прозрачность (он просто показывает фон позади полупрозрачного объекта), информация об альфа-канале критична для обработки изображения в памяти компьютера.</p>
+
+<p>Также существуют форматы с расширенным динамическим диапазоном (HDR), которые добавляют к обычным данным метаданные о яркости и контрастности сцены. В этом случае кодируется не просто цвет, а информация о том, насколько ярким должен быть пиксель в реальной жизни. Это позволяет монитору с поддержкой <em>Local Dimming</em> динамически изменять яркость подсветки в разных зонах экрана.</p>
+
+<blockquote>⚠️ Внимание: Включение HDR в операционной системе без наличия качественного монитора с высокой пиковой яркостью может привести к тому, что все изображение станет блеклым и серым, так как система попытается растянуть стандартные цвета на широкий диапазон, который экран физически не может отобразить.</blockquote>
+
+<p>При работе с профессиональным контентом важно, чтобы цветовой профиль монитора точно соответствовал профилю изображения. Иначе кодирование цветов будет интерпретировано неверно: красный может стать оранжевым, а синий — фиолетовым. Это особенно актуально при подготовке макетов для печати, где используется модель CMYK, а не RGB.</p>
+
+<p>Вы можете проверить, поддерживает ли ваш монитор расширенные диапазоны цветов, зайдя в <code>Настройки → Система → Дисплей → Дополнительные параметры дисплея</code>. Если там нет возможности выбрать глубину цвета выше 8 бит, значит, текущий интерфейс или кабель не поддерживают передачу расширенных данных.</p>
+
+<div class="attention-box attention-tip"><span class="attention-icon">💡</span><p>Используйте утилиты типа DisplayCal или встроенные тесты в драйверах видеокарт, чтобы визуально оценить, как ваш монитор интерпретирует градиенты. Это поможет выявить проблемы с битностью цвета, которые не видны при обычном просмотре.</p></div>
+
+<h2 id="влияние-технологии-матрицы-на-кодировку">Влияние технологии матрицы на кодировку</h2>
+
+<p>Разные типы матриц по-разному реализуют принцип кодирования света. В <strong>TN</strong> (Twisted Nematic) панелях переключение кристаллов происходит очень быстро, но углы обзора и цветовая точность часто страдают. Это означает, что одно и то же закодированное значение цвета может выглядеть по-разному в зависимости от угла, под которым вы смотрите на экран.</p>
+
+<p><strong>IPS</strong> (In-Plane Switching) матрицы обеспечивают более стабильную цветопередачу и правильную работу с субпикселями под разными углами. Однако они могут страдать от эффекта «IPS glow» — засветки в темных углах экрана, что искажает восприятие закодированного черного цвета. Это физическое ограничение технологии, с которым сложно бороться программно.</p>
+
+<p>Технология <strong>VA</strong> (Vertical Alignment) предлагает компромисс: высокий контраст и глубокий черный цвет, но иногда страдает от «смазывания» (ghosting) при быстром движении объектов. В этом случае кодирование движения требует от матрицы более длительного времени отклика, что может привести к артефактам.</p>
+
+<p>Для каждого типа матрицы существуют свои алгоритмы компенсации. Например, технология <em>Overdrive</em> в игровых мониторах пытается искусственно ускорить отклик пикселей, подавая на них повышенное напряжение. Если настройка слишком агрессивна, вы увидите инверсные ореолы вокруг движущихся объектов, что является явным признаком некорректной обработки сигнала времени.</p>
+
+<div class="attention-box attention-tip"><span class="attention-icon">💡</span><p>Тип матрицы определяет не только скорость отклика, но и то, насколько точно физическое устройство способно воспроизвести математически закодированный цвет и яркость.</p></div>
+
+<h2 id="частые-вопросы-о-кодировании-пикселей">Частые вопросы о кодировании пикселей</h2>
+
+<details>
+<summary>Почему на моем мониторе цвета выглядят бледными?</summary>
+<p>Это может быть связано с неподходящим цветовым пространством в настройках драйвера или использованием 8-битной глубины вместо 10-битной. Также проверьте режим работы монитора: иногда включен режим «Экономия энергии» снижает яркость всех каналов.</p>
+</details>
+
+<details>
+<summary>Можно ли увеличить битовую глубину программно?</summary>
+<p>Физически увеличить количество субпикселей или разрядность АЦП нельзя, но можно включить имитацию 10 бит (FRC) через настройки драйвера NVIDIA или AMD. Это улучшит плавность градиентов, но не заменит нативную панель.</p>
+</details>
+
+<details>
+<summary>Как влияет разрешение экрана на качество кодирования цвета?</summary>
+<p>Само по себе разрешение не влияет на глубину цвета, но при высоком разрешении (4K и выше) для передачи изображений требуется более мощный кабель и видеокарта. Если пропускная способность ограничена, система может автоматически снизить глубину цвета.</p>
+</details>
+
+<details>
+<summary>Что такое субпиксельный рендеринг и зачем он нужен?</summary>
+<p>Это технология, позволяющая использовать отдельные субпиксели (R, G, B) для формирования контуров текста. Это увеличивает кажущуюся четкость шрифтов. Однако на экранах с нестандартной компоновкой субпикселей (например, PenTile) это может приводить к цветным краям букв.</p>
+</details>
+
+<details>
+<summary>Влияет ли частота обновления на цветопередачу?</summary>
+<p>Прямого влияния нет, но при низком обновлении (менее 60 Гц) плавность движения цветных объектов страдает, что может создавать ощущение мерцания или рывков, особенно на контрастных переходах. Высокая частота обновления улучшает восприятие динамических сцен.</p>
+</details></div>
+                    <!--#include virtual="/ssi/article_after.html" -->
+
+                </article>
+                <aside class="article-sidebar"><!--#include virtual="/ssi/sidebar_top.html" --><nav class="sidebar-search"><div class="sidebar-search-box"><input type="text" id="globalSearchInput" placeholder="🔍 Поиск статей..." autocomplete="off"><div class="search-dropdown" id="globalSearchDropdown"></div></div></nav><!--#include virtual="/ssi/sidebar_before_toc.html" --><nav class="sidebar-toc" id="sidebarToc"><h3>Содержание</h3><ul><li><a href="#основы-формирования-цвета-модель-rgb">Основы формирования цвета: модель RGB</a></li><li><a href="#глубина-цвета-и-битовая-глубина">Глубина цвета и битовая глубина</a></li><li><a href="#структура-пикселя-и-субпиксельная-компоновка">Структура пикселя и субпиксельная компоновка</a></li><li><a href="#квантование-сигнала-и-передача-данных">Квантование сигнала и передача данных</a></li><li><a href="#дополнительные-каналы-информации">Дополнительные каналы информации</a></li><li><a href="#влияние-технологии-матрицы-на-кодировку">Влияние технологии матрицы на кодировку</a></li><li><a href="#частые-вопросы-о-кодировании-пикселей">Частые вопросы о кодировании пикселей</a></li></ul></nav><!--#include virtual="/ssi/sidebar_before_related.html" --><nav class="sidebar-related"><h3>Похожие статьи</h3><ul><li><a href="/articles/k/ka/kak-posmotret-god-vypuska-monitora.html" class="related-card">Как узнать год выпуска монитора: 5 надежных способов</a></li><li><a href="/articles/k/ko/kompyuternoe-kreslo-s-monitorom-kak-nazyvaetsya.html" class="related-card">Как называется компьютерное кресло с монитором: названия, типы и характеристики</a></li><li><a href="/articles/k/ka/kak-testirovat-monitor-na-bitye-pikseli.html" class="related-card">Как проверить монитор на битые пиксели: полное руководство 2026</a></li><li><a href="/articles/k/ka/kak-opredelit-monitory-na-vindovs-10.html" class="related-card">Как определить мониторы в Windows 10: полное руководство по проверке</a></li><li><a href="/articles/k/ka/kak-vyglyadit-monitor-32-dyujma.html" class="related-card">Как выглядит монитор 32 дюйма: фото, размеры, сравнение с другими диагоналями</a></li></ul></nav><!--#include virtual="/ssi/sidebar_after_related.html" --></aside>
+            </div>
+        </div>
+    </main>
+
+    <!--#include virtual="/ssi/before_related_bottom.html" -->
+    <section class="related-bottom">
+        <div class="container">
+            <h2 class="related-bottom-heading">📖 Читайте также</h2>
+            <div class="related-bottom-grid"><a href="/articles/k/ka/kak-posmotret-god-vypuska-monitora.html" class="related-bottom-card"><span class="related-bottom-title">Как узнать год выпуска монитора: 5 надежных способов</span><span class="related-bottom-desc">Узнайте точную дату производства экрана по серийному номеру, наклейке, свойствам системы или докумен</span></a><a href="/articles/k/ko/kompyuternoe-kreslo-s-monitorom-kak-nazyvaetsya.html" class="related-bottom-card"><span class="related-bottom-title">Как называется компьютерное кресло с монитором: названия, типы и характеристики</span><span class="related-bottom-desc">Узнайте, как правильно называется мебель с интегрированным экраном. Разбор геймерских терминалов, ра</span></a><a href="/articles/k/ka/kak-testirovat-monitor-na-bitye-pikseli.html" class="related-bottom-card"><span class="related-bottom-title">Как проверить монитор на битые пиксели: полное руководство 2026</span><span class="related-bottom-desc">Пошаговая инструкция по выявлению дефектов матрицы. Методы проверки перед покупкой, программные утил</span></a><a href="/articles/k/ka/kak-opredelit-monitory-na-vindovs-10.html" class="related-bottom-card"><span class="related-bottom-title">Как определить мониторы в Windows 10: полное руководство по проверке</span><span class="related-bottom-desc">Узнайте, как узнать точную модель, серийный номер и характеристики подключенных мониторов в Windows </span></a><a href="/articles/k/ka/kak-vyglyadit-monitor-32-dyujma.html" class="related-bottom-card"><span class="related-bottom-title">Как выглядит монитор 32 дюйма: фото, размеры, сравнение с другими диагоналями</span><span class="related-bottom-desc">Подробный разбор внешнего вида 32-дюймового монитора: реальные габариты, соотношение сторон, примеры</span></a><a href="/articles/k/ka/kakoj-monitor-luchshe-belyj-ili-chernyj.html" class="related-bottom-card"><span class="related-bottom-title">Белый или черный монитор: что выбрать для дома и работы</span><span class="related-bottom-desc">Полное сравнение белых и черных мониторов. Разбор влияния цвета корпуса на дизайн, пыль, тепло и сто</span></a></div>
+        </div>
+    </section>
+    <!--#include virtual="/ssi/after_related_bottom.html" -->
+
+    <footer class="site-footer-premium">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-col">
+                    <div class="footer-brand">🖥️ Мониторум</div>
+                    <p class="footer-about">Полный справочник по настройке, ремонту и выбору компьютерных мониторов для любых задач.</p>
+                </div>
+                <div class="footer-col">
+                    <h4>Разделы</h4>
+                    <ul><li><a href="/category/nastrojka-ekrana/">⚙️ Настройка экрана</a></li>
+<li><a href="/category/podklyuchenie-ustrojstv/">🔌 Подключение устройств</a></li>
+<li><a href="/category/mnozhestvennye-ekrany/">🖥️🖥️ Множественные экраны</a></li>
+<li><a href="/category/zvuk-i-audio/">🔊 Звук и аудио</a></li>
+<li><a href="/category/remont-i-polomki/">🔧 Ремонт и поломки</a></li>
+<li><a href="/category/ukhod-i-chistka/">🧼 Уход и чистка</a></li></ul>
+                </div>
+                <div class="footer-col">
+                    <h4>Информация</h4>
+                    <ul>
+                        <li><a href="/">Главная</a></li>
+                        <li><a href="/about.html">О проекте</a></li>
+                        <li><a href="/categories.html">Все разделы</a></li>
+                        <li><a href="/contact.html">Контакты</a></li>
+                        <li><a href="/privacy.html">Конфиденциальность</a></li>
+                        <li><a href="/sitemap.xml">Карта сайта</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>© Мониторум. Все права защищены.</p>
+                <!--LiveInternet counter--><div style="margin-top:10px;"><a href="https://www.liveinternet.ru/click"
+                target="_blank"><img id="licnt06C4" width="88" height="15" style="border:0" 
+                title="LiveInternet: показано число посетителей за сегодня"
+                src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAEALAAAAAABAAEAAAIBTAA7"
+                alt=""/></a><script>(function(d,s){d.getElementById("licnt06C4").src=
+                "https://counter.yadro.ru/hit?t26.5;r"+escape(d.referrer)+
+                ((typeof(s)=="undefined")?"":";s"+s.width+"*"+s.height+"*"+
+                (s.colorDepth?s.colorDepth:s.pixelDepth))+";u"+escape(d.URL)+
+                ";h"+escape(d.title.substring(0,150))+";"+Math.random()})(document,screen)</script></div><!--/LiveInternet-->
+            </div>
+        </div>
+    </footer>
+    <div id="cookie-consent" class="cookie-popup">
+        <div class="cookie-inner">
+            <span>🍪 Мы используем файлы cookie для улучшения работы сайта.</span>
+            <button id="cookie-accept" class="cookie-btn">Принять</button>
+        </div>
+    </div>
+    <script src="/static/js/main.js"></script>
+    <script>
+    (function() {
+        const popup = document.getElementById('cookie-consent');
+        const btn = document.getElementById('cookie-accept');
+        if (popup && btn && !localStorage.getItem('cookie-accepted')) {
+            popup.classList.add('visible');
+            btn.onclick = () => {
+                localStorage.setItem('cookie-accepted', 'true');
+                popup.classList.remove('visible');
+            };
+        }
+    })();
+    </script>
+    <script>
+    function pbPollVote(el) {
+        var poll = el.closest('.poll-widget');
+        if (poll.classList.contains('voted')) return;
+        poll.classList.add('voted');
+        el.classList.add('selected');
+        var opts = poll.querySelectorAll('.poll-widget-option');
+        var n = opts.length;
+        var raw = [];
+        var sum = 0;
+        for (var i = 0; i < n; i++) {
+            var v = Math.random() * 50 + 5;
+            if (opts[i] === el) v += 30;
+            raw.push(v);
+            sum += v;
+        }
+        var pcts = raw.map(function(v) { return Math.round(v / sum * 100); });
+        var diff = 100 - pcts.reduce(function(a,b){ return a+b; }, 0);
+        pcts[Array.from(opts).indexOf(el)] += diff;
+        setTimeout(function() {
+            opts.forEach(function(opt, i) {
+                opt.querySelector('.poll-widget-bar').style.width = pcts[i] + '%';
+                opt.querySelector('.poll-widget-pct').textContent = pcts[i] + '%';
+            });
+        }, 50);
+    }
+    </script>
+    <!--#include virtual="/ssi/body_bottom.html" -->
+    <script src="/static/js/inject.js" defer></script>
+</body>
+</html>

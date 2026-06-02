@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27><text y=%27.9em%27 font-size=%2790%27>🖥️</text></svg>">
+    <title>FPS монитор: как работать, настроить и диагностировать падение кадров — Мониторум</title>
+    <meta name="description" content="Полное руководство: как установить FPS монитор, настроить оверлей, интерпретировать данные и устранить просадки производительности в играх.">
+    <link rel="canonical" href="https://monitorium.vercel.app/articles/f/fp/fps-monitor-kak-rabotat.html">
+
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="FPS монитор: как работать, настроить и диагностировать падение кадров">
+    <meta property="og:description" content="Полное руководство: как установить FPS монитор, настроить оверлей, интерпретировать данные и устранить просадки производительности в играх.">
+    <meta property="og:locale" content="ru_RU">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css?v=1780420684">
+    <style>
+    .site-footer-premium {
+        margin-top: 60px; padding: 40px 0 0; background: #1e293b; color: #94a3b8;
+    }
+    .footer-grid {
+        display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 40px;
+        padding-bottom: 32px; border-bottom: 1px solid #334155;
+    }
+    .footer-brand { font-size: 1.2rem; font-weight: 700; color: #f1f5f9; margin-bottom: 12px; }
+    .footer-about { font-size: 0.9rem; line-height: 1.6; margin-bottom: 8px; }
+    .footer-updated { font-size: 0.8rem; color: #64748b; }
+    .footer-col h4 { color: #f1f5f9; font-size: 0.95rem; margin-bottom: 16px; }
+    .footer-col ul { list-style: none; }
+    .footer-col li { margin-bottom: 8px; }
+    .footer-col a { color: #94a3b8; font-size: 0.9rem; transition: color 0.2s; }
+    .footer-col a:hover { color: #60a5fa; }
+    .footer-bottom { padding: 20px 0; text-align: center; font-size: 0.85rem; }
+    @media (max-width: 640px) {
+        .footer-grid { grid-template-columns: 1fr; gap: 24px; }
+    }
+    .cookie-popup {
+        position: fixed; bottom: 0; left: 0; right: 0; background: #1e293b; color: #fff;
+        padding: 16px; transition: transform 0.5s ease; z-index: 9999; border-top: 2px solid #2563eb;
+        transform: translateY(100%);
+    }
+    .cookie-popup.visible { transform: translateY(0); }
+    .cookie-inner { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; gap: 16px; font-size: 0.9rem; }
+    .cookie-btn { background: #2563eb; color: #fff; border: none; padding: 8px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+    .cookie-btn:hover { background: #1d4ed8; }
+    @media (max-width: 640px) {
+        .cookie-inner { flex-direction: column; text-align: center; }
+    }
+</style>
+    
+    <!--#include virtual="/ssi/head.html" -->
+</head>
+<body>
+        <!--#include virtual="/ssi/body_top.html" -->
+    <style>
+    .nav-dropdown { position: relative; display: inline-block; }
+    .dropdown-toggle {
+        background: none; border: none; cursor: pointer;
+        font: inherit; color: inherit; padding: 8px 12px;
+        border-radius: 8px; transition: background 0.2s;
+    }
+    .dropdown-toggle:hover { background: rgba(0,0,0,0.05); }
+    .dropdown-menu {
+        display: none; position: absolute; right: 0; top: 100%;
+        min-width: 240px; max-height: 70vh; overflow-y: auto;
+        background: var(--card-bg, #fff); border: 1px solid var(--border, #e5e7eb);
+        border-radius: 12px; box-shadow: 0 12px 40px rgba(0,0,0,0.12);
+        padding: 8px 0; z-index: 1000;
+    }
+    .nav-dropdown::after {
+        content: ''; position: absolute; left: 0; right: 0;
+        top: 100%; height: 12px;
+    }
+    .nav-dropdown:hover .dropdown-menu,
+    .nav-dropdown:focus-within .dropdown-menu { display: block; }
+    .dropdown-item {
+        display: block; padding: 10px 20px; color: var(--text, #1f2937);
+        text-decoration: none; font-size: 0.95rem; transition: background 0.15s;
+        white-space: nowrap;
+    }
+    .dropdown-item:hover { background: rgba(37,99,235,0.06); color: var(--primary, #2563eb); }
+    @media (max-width: 768px) {
+        .main-nav > .nav-link { display: none; }
+        .dropdown-toggle { display: none; }
+        .dropdown-menu {
+            display: block !important; position: static;
+            box-shadow: none; border: none; border-radius: 0;
+            min-width: auto; max-height: none; padding: 0;
+            background: transparent;
+        }
+        .dropdown-item {
+            padding: 8px 0; font-size: 1rem;
+        }
+    }
+    </style>
+    <header class="site-header">
+        <div class="container header-inner">
+            <a href="/" class="logo">
+                <span class="logo-icon">🖥️</span>
+                <span>Мониторум</span>
+            </a>
+            <button class="mobile-menu-btn" aria-label="Меню" id="menuBtn">☰</button>
+            <nav class="main-nav" id="mainNav">
+                <a href="/category/nastrojka-ekrana/" class="nav-link">⚙️ Настройка экрана</a>
+<a href="/category/podklyuchenie-ustrojstv/" class="nav-link">🔌 Подключение устройств</a>
+<a href="/category/mnozhestvennye-ekrany/" class="nav-link">🖥️🖥️ Множественные экраны</a>
+<a href="/category/zvuk-i-audio/" class="nav-link">🔊 Звук и аудио</a>
+<div class="nav-dropdown">
+            <button class="nav-link dropdown-toggle">📂 Все разделы ▾</button>
+            <div class="dropdown-menu"><a href="/category/nastrojka-ekrana/" class="dropdown-item">⚙️ Настройка экрана</a>
+<a href="/category/podklyuchenie-ustrojstv/" class="dropdown-item">🔌 Подключение устройств</a>
+<a href="/category/mnozhestvennye-ekrany/" class="dropdown-item">🖥️🖥️ Множественные экраны</a>
+<a href="/category/zvuk-i-audio/" class="dropdown-item">🔊 Звук и аудио</a>
+<a href="/category/remont-i-polomki/" class="dropdown-item">🔧 Ремонт и поломки</a>
+<a href="/category/ukhod-i-chistka/" class="dropdown-item">🧼 Уход и чистка</a>
+<a href="/category/vybor-i-kharakteristiki/" class="dropdown-item">📊 Выбор и характеристики</a>
+<a href="/category/drajvery-i-po/" class="dropdown-item">💿 Драйверы и ПО</a>
+<a href="/category/krepleniya-i-ustanovka/" class="dropdown-item">🔩 Крепления и установка</a>
+<a href="/category/utilizatsiya-i-prodazha/" class="dropdown-item">♻️ Утилизация и продажа</a>
+<a href="/category/spetsialnye-rezhimy/" class="dropdown-item">🎮 Специальные режимы</a>
+<a href="/category/drugoe/" class="dropdown-item">📁 Другое</a></div>
+        </div>
+            </nav>
+        </div>
+    </header>
+
+    <nav class="breadcrumbs" aria-label="Навигация">
+        <div class="container"><a href="/">Главная</a><span class="breadcrumb-sep">›</span><a href="/category/drugoe/">Другое</a><span class="breadcrumb-sep">›</span><span class="breadcrumb-current">FPS монитор: как работать, настроить и диагностировать падение кадров</span></div>
+    </nav>
+
+    <main class="site-main">
+        <div class="container">
+            <div class="article-layout">
+                <article class="article-main">
+                    
+                    <h1>FPS монитор: как работать с оверлеем и анализировать производительность</h1>
+                    <nav class="mobile-toc"><details><summary>📋 Содержание</summary><ul><li><a href="#выбор-оптимального-инструмента-для-отображения-fps">Выбор оптимального инструмента для отображения FPS</a></li><li><a href="#пошаговая-настройка-msi-afterburner-и-rivatuner">Пошаговая настройка MSI Afterburner и RivaTuner</a></li><li><a href="#интерпретация-данных-и-диагностика-проблем-производительности">Интерпретация данных и диагностика проблем производительности</a></li><li><a href="#влияние-настроек-драйверов-и-системы-на-точность-данных">Влияние настроек драйверов и системы на точность данных</a></li><li><a href="#оптимизация-работы-оверлея-для-соревновательных-игр">Оптимизация работы оверлея для соревновательных игр</a></li><li><a href="#частые-ошибки-при-работе-с-fps-мониторами">Частые ошибки при работе с FPS мониторами</a></li></ul></details></nav>
+                    <!--#include virtual="/ssi/article_before.html" -->
+                    <div class="article-body"><p>Падение показателя частоты кадров до 30 и ниже в динамичных сценах является прямым индикатором того, что ваш <strong>FPS монитор</strong> зафиксировал критическую нагрузку на видеоподсистему. Чтобы понять, как работать с этим инструментом и получить достоверные данные о производительности, необходимо сначала выбрать метод наложения счетчика на изображение, будь то встроенные функции драйвера или сторонние утилиты. Без корректной настройки отображения вы рискуете игнорировать реальные проблемы с <em>GPU</em> или <em>CPU</em>, что приведет к низкой плавности геймплея.</p>
+
+<p>Использование профессионального софта для мониторинга позволяет не просто видеть цифру, но и анализировать временные задержки между кадрами (frametime). Именно этот параметр часто важнее среднего FPS, так как он отвечает за ощущение "дерганости" изображения при стабильном счетчике. Правильная работа с данными требует понимания разницы между <strong>V-Sync</strong>, <em>G-Sync</em> и <em>FreeSync</em>, что напрямую влияет на то, как будет вести себя счетчик в меню и в игре.</p>
+
+<h2 id="выбор-оптимального-инструмента-для-отображения-fps">Выбор оптимального инструмента для отображения FPS</h2>
+
+<p>Существует несколько проверенных способов вывести счетчик кадров на экран, и выбор зависит от вашей видеокарты и требований к детализации статистики. Самый быстрый и легкий метод — использование встроенного оверлея в драйверах видеочипов, который практически не потребляет системные ресурсы. Для владельцев карт <em>NVIDIA</em> это сочетание клавиш <code>Alt + R</code> или <code>Alt + Z</code> в приложении <em>GeForce Experience</em>, где нужно включить компонент "Производительность".</p>
+
+<p>Собственный мониторинг от <em>AMD</em> реализован в утилите <em>Adrenalin Edition</em> через вкладку "Производительность" и раздел "Мониторинг". Этот инструмент позволяет гибко настраивать, какие именно метрики выводить: температуру, нагрузку на ядра, частоту памяти и использование видеопамяти. Важно отметить, что сторонние программы могут вносить дополнительную задержку, поэтому для соревновательных дисциплин нативные решения часто предпочтительнее.</p>
+
+<p>Если вам нужна максимально детальная аналитика, включая загрузку каждого ядра процессора, время рендеринга кадра и данные с датчиков, то стандартом индустрии является <em>MSI Afterburner</em> в связке с <em>RivaTuner Statistics Server</em>. Эта связка позволяет создать полностью кастомный оверлей, который можно перемещать по экрану и менять его цвет для лучшего контраста с игровым фоном.</p>
+
+<blockquote>⚠️ Внимание: При использовании сторонних утилит, таких как <em>MSI Afterburner</em>, убедитесь, что вы скачали их с официального сайта, так как модифицированные версии могут содержать вредоносное ПО, влияющее на стабильность системы.</blockquote>
+
+<div class="poll-widget" id="poll-8adb4ea4"><div class="poll-widget-question">📊 Какой метод мониторинга вы используете чаще всего?</div><div class="poll-widget-option" data-poll="8adb4ea4" data-idx="0" onclick="pbPollVote(this)"><span class="poll-widget-label">Встроенный оверлей NVIDIA (GeForce Experience)</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="8adb4ea4" data-idx="1" onclick="pbPollVote(this)"><span class="poll-widget-label">Встроенный оверлей AMD (Adrenalin)</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="8adb4ea4" data-idx="2" onclick="pbPollVote(this)"><span class="poll-widget-label">MSI Afterburner + RivaTuner</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="8adb4ea4" data-idx="3" onclick="pbPollVote(this)"><span class="poll-widget-label">Другое (Discord, Steam, встроенное в игру)</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div></div>
+
+<h2 id="пошаговая-настройка-msi-afterburner-и-rivatuner">Пошаговая настройка MSI Afterburner и RivaTuner</h2>
+
+<p>Работа с <em>MSI Afterburner</em> требует первоначальной конфигурации, так как по умолчанию она не показывает статистику в играх. После установки программы необходимо запустить утилиту <em>RivaTuner Statistics Server</em>, которая должна появится в системном трее рядом с часами. В главном окне Afterburner перейдите во вкладку "Мониторинг" (Monitoring), где представлен список всех доступных датчиков.</p>
+
+<p>Вам нужно найти в списке строку <strong>FPS</strong> (или "Частота кадров") и кликнуть на нее, после чего поставить галочку "Показывать в ОЭД" (Show in On-Screen Display). Ключевым моментом является то, что для каждого параметра, который вы хотите видеть, эту опцию нужно активировать отдельно. Аналогичную процедуру проведите для "Загрузка GPU", "Температура GPU" и "Загрузка ЦП", чтобы получить полную картину.</p>
+
+<p>Для корректного отображения данных в <em>RivaTuner</em> (работает в фоне) зайдите в настройки, перейдите в раздел "On-Screen Display", найдите параметр "Global" и убедитесь, что горячая клавиша для переключения оверлея активна. Обычно это <code>F12</code>. Также в этом меню можно задать цветовую схему и размер шрифта, чтобы цифры не перекрывали важный игровой интерфейс.</p>
+
+<div class="checklist-block"><h4>☑️ Проверка настроек перед запуском игры</h4><label class="check-item"><input type="checkbox"><span>Убедиться, что RivaTuner запущен в фоне</span></label><label class="check-item"><input type="checkbox"><span>Включить галочку "Показывать в ОЭД" для FPS</span></label><label class="check-item"><input type="checkbox"><span>Проверить горячую клавишу переключения оверлея</span></label><label class="check-item"><input type="checkbox"><span>Убедиться, что оверлей не перекрывает мини-карту</span></label><div class="check-progress">Выполнено: <span class="check-count">0</span> / 4</div></div>
+
+<p>Интерфейс программы позволяет настраивать отключение оверлея в главном меню игры, что избавляет от необходимости искать его глазами при старте. Это делается через опцию "Отключить OSD в главном меню" в настройках RivaTuner, если она поддерживается конкретной игрой. Часто пользователи забывают этот шаг и тратят время на поиск счетчика в стартовом меню программы.</p>
+
+<div class="attention-box attention-tip"><span class="attention-icon">💡</span><p>Совет: Если оверлей не отображается в конкретной игре, попробуйте запустить игру в режиме Borderless Window (Без рамки), так как некоторые игры блокируют оверлеи в полноэкранном режиме для защиты от читеров.</p></div>
+
+<h2 id="интерпретация-данных-и-диагностика-проблем-производительности">Интерпретация данных и диагностика проблем производительности</h2>
+
+<p>Получив цифры на экране, важно понимать, что они означают и как реагировать на отклонения. Средний FPS — это арифметическое среднее, которое может скрывать серьезные микрофризы. Например, средняя частота 60 FPS может сопровождаться просадками до 25-30 кадров на долю секунды, что ощущается как рывки. Для точной диагностики необходим анализ <strong>frametime</strong> (времени рендеринга кадра), который показывает стабильность работы системы.</p>
+
+<p>Если вы видите, что нагрузка на процессор (CPU) достигает 100%, а на видеокарту (GPU) — всего 40-50%, это явный признак <em>бутылочного горлышка процессора</em>. В такой ситуации повышение частоты кадров невозможно без замены или разгона CPU, так как видеокарта просто ждет обработанных данных. Напротив, при 99-100% загрузке GPU и низкой загрузке процессора система упирается в мощность видеочипа, и для роста FPS потребуется более мощная видеокарта.</p>
+
+<p>Температурные показатели также играют критическую роль в стабильности работы. Если температура видеокарты превышает 83-85°C, а процессор 90°C, срабатывает механизм <strong>троттлинга</strong> (thermal throttling), принудительно снижающий частоты для защиты от перегрева. Это приводит к резким просадкам FPS в моменты максимальной нагрузки, что легко отследить по графику температур в оверлее.</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Показатель</th>
+      <th>Норма (Игры)</th>
+      <th>Критическое значение</th>
+      <th>Действие</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>FPS</strong></td>
+      <td>60+ (игровой стандарт)</td>
+      <td>< 30</td>
+      <td>Снизить настройки графики</td>
+    </tr>
+    <tr>
+      <td><strong>GPU Temp</strong></td>
+      <td>60-75°C</td>
+      <td>> 85°C</td>
+      <td>Очистка системы охлаждения</td>
+    </tr>
+    <tr>
+      <td><strong>CPU Temp</strong></td>
+      <td>50-70°C</td>
+      <td>> 90°C</td>
+      <td>Замена термопасты, проверка кулеров</td>
+    </tr>
+    <tr>
+      <td><strong>VRAM</strong></td>
+      <td>< 80% от объема</td>
+      <td>> 95% от объема</td>
+      <td>Снизить качество текстур</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="attention-box attention-tip"><span class="attention-icon">💡</span><p>Главный вывод: Показатель FPS без учета времени рендеринга кадра (frametime) может вводить в заблуждение, показывая стабильность там, где есть микрофризы.</p></div>
+
+<h2 id="влияние-настроек-драйверов-и-системы-на-точность-данных">Влияние настроек драйверов и системы на точность данных</h2>
+
+<p>Точность работы <em>FPS монитора</em> напрямую зависит от режима отображения, который вы выбрали в игре и драйвере. Режим "Полноэкранный" (Exclusive Fullscreen) часто позволяет драйверу напрямую управлять буфером вывода, обеспечивая наиболее точные и быстрые данные о кадрах. Однако современные игры и ОС все чаще используют "Безрамочное окно" (Borderless Window), что иногда приводит к тому, что оверлеи перестают корректно накладываться или показывают заниженные значения.</p>
+
+<p>В настройках драйвера <em>NVIDIA Control Panel</em> или <em>AMD Software</em> стоит проверить параметр "Мониторинг" и убедиться, что он не конфликтует с настройками <strong>V-Sync</strong>. Включение вертикальной синхронизации может искусственно ограничивать FPS значением частоты обновления монитора (например, 60 или 144 Гц), что не всегда отражает реальную мощность системы. Для честного тестирования производительности V-Sync лучше отключать.</p>
+
+<p>Иногда проблемы с отображением связаны с тем, что оверлей перехватывается не тем приложением. В <em>MSI Afterburner</em> можно вручную указать, к какому процессу применять настройки, выбрав нужную игру из списка в <em>RivaTuner</em>. Это особенно актуально, если вы запускаете игру через лаунчер, который создает отдельное окно, и счетчик появляется в лаунчере, а не в самой игре.</p>
+
+<details class="faq-item"><summary>Как проверить совместимость оверлея с античитом</summary><div class="faq-answer"><p>В большинстве случаев оверлеи MSIAfterburner и GeForce Experience безопасны, так как работают на уровне драйвера. Однако в некоторых соревновательных играх (Valorant, League of Legends) могут быть ограничения на использование сторонних программ поверх игры. Всегда проверяйте список разрешенных программ в документации античита перед запуском.</p></div></details>
+
+<h2 id="оптимизация-работы-оверлея-для-соревновательных-игр">Оптимизация работы оверлея для соревновательных игр</h2>
+
+<p>В соревновательных дисциплинах, таких как <em>CS:GO</em>, <em>Dota 2</em> или <em>Apex Legends</em>, любой лишний пиксель на экране может отвлекать от игры. В таких случаях важно настроить оверлей так, чтобы он занимал минимальную площадь и имел минимальный контраст, не перекрывая при этом прицел или важные элементы интерфейса. Используйте функцию "Прозрачность" в настройках <em>RivaTuner</em>, чтобы сделать цифры полупрозрачными, если фон игры темный, или наоборот, выберите более яркий цвет для светлых сцен.</p>
+
+<p>Важно отключить отображение лишних метрик, если они не нужны для текущего анализа. Например, в шутерах от первого лица часто достаточно знать только текущий FPS и загрузку GPU, чтобы понять, не теряете ли вы преимущество из-за просадок. Избыток данных (память, напряжение, скорость вентиляторов) создает визуальный шум и может снизить скорость реакции.</p>
+
+<p>Некоторые игры имеют встроенные системы мониторинга, которые могут конфликтовать со сторонними оверлеями. В таких случаях лучше использовать встроенный инструмент игры, так как он наиболее точно интегрирован в движок игры и не создает дополнительной нагрузки. Если встроенного мониторинга недостаточно, попробуйте запустить игру в режиме окна без рамки, чтобы обойти конфликты захвата экрана.</p>
+
+<div class="attention-box attention-tip"><span class="attention-icon">💡</span><p>Ключевая мысль: В соревновательных играх минимализм в настройках оверлея — залог максимальной концентрации и отсутствия визуальных артефактов, мешающих прицеливанию.</p></div>
+
+<h2 id="частые-ошибки-при-работе-с-fps-мониторами">Частые ошибки при работе с FPS мониторами</h2>
+
+<p>Одной из самых распространенных ошибок является попытка запустить несколько программ мониторинга одновременно. Если у вас активны и <em>GeForce Experience</em>, и <em>MSI Afterburner</em>, и встроенный счетчик Steam, они могут конфликтовать за право наложение оверлея, что приводит к исчезновению всех подсчетчиков или появлению артефактов на экране. Рекомендуется использовать только одну утилиту для мониторинга.</p>
+
+<p>Другая ошибка — игнорирование обновления драйверов видеочипа. Старые версии драйверов могут иметь баги, влияющие на работу API, используемого для подсчета кадров, или не поддерживать новые функции мониторинга. Регулярное обновление драйверов через официальный сайт производителя или встроенные утилиты устраняет многие проблемы с некорректным отображением статистики.</p>
+
+<p>Также стоит учитывать, что в некоторых играх (особенно старых или с использованием специфических движков) оверлеи могут вызывать падение производительности. В таких случаях отключение оверлея может дать прирост в несколько кадров, что критично для стабильной игры. Всегда тестируйте влияние оверлея на FPS перед началом важной игровой сессии.</p>
+
+<blockquote>⚠️ Внимание: Никогда не пытайтесь принудительно изменить частоту кадров через сторонние программы, если вы не уверены в стабильности вашего блока питания и системы охлаждения. Это может привести к перегреву и выходу оборудования из строя.</blockquote>
+
+<p>Для пользователей, которые хотят максимально точно контролировать процесс, рекомендуется использовать утилиты, позволяющие экспортировать данные в лог-файлы. Это позволит проанализировать производительность после игры, выявив моменты пиковой нагрузки и correlating их с настройками графики. Такой подход помогает настроить конфигурацию системы под конкретные задачи и избежать неожиданностей в будущем.</p>
+
+<details>
+  <summary>Почему FPS скачет даже при 100% загрузке видеокарты?</summary>
+  <p>Это может быть связано с тем, что процессор не успевает подготавливать кадры для видеокарты (CPU bottleneck), либо происходит частая подгрузка текстур с диска, что создает задержки. Также причиной может быть нестабильная работа оперативной памяти или фоновые процессы.</p>
+</details>
+
+<details>
+  <summary>Можно ли использовать FPS монитор для разгона видеокарты?</summary>
+  <p>Да, это один из основных инструментов для проверки стабильности разгона. Вы наблюдаете за ростом FPS при повышении частот и за температурой. Если при повышении частот FPS падает или появляются артефакты, значит, разгон нестабилен.</p>
+</details>
+
+<details>
+  <summary>Как скрыть FPS монитор в меню игры?</summary>
+  <p>В настройках RivaTuner Statistics Server есть опция "Отключить OSD в главном меню". Также во многих играх есть встроенная горячая клавиша для скрытия оверлея, которую можно найти в настройках управления.</p>
+</details></div>
+                    <!--#include virtual="/ssi/article_after.html" -->
+
+                </article>
+                <aside class="article-sidebar"><!--#include virtual="/ssi/sidebar_top.html" --><nav class="sidebar-search"><div class="sidebar-search-box"><input type="text" id="globalSearchInput" placeholder="🔍 Поиск статей..." autocomplete="off"><div class="search-dropdown" id="globalSearchDropdown"></div></div></nav><!--#include virtual="/ssi/sidebar_before_toc.html" --><nav class="sidebar-toc" id="sidebarToc"><h3>Содержание</h3><ul><li><a href="#выбор-оптимального-инструмента-для-отображения-fps">Выбор оптимального инструмента для отображения FPS</a></li><li><a href="#пошаговая-настройка-msi-afterburner-и-rivatuner">Пошаговая настройка MSI Afterburner и RivaTuner</a></li><li><a href="#интерпретация-данных-и-диагностика-проблем-производительности">Интерпретация данных и диагностика проблем производительности</a></li><li><a href="#влияние-настроек-драйверов-и-системы-на-точность-данных">Влияние настроек драйверов и системы на точность данных</a></li><li><a href="#оптимизация-работы-оверлея-для-соревновательных-игр">Оптимизация работы оверлея для соревновательных игр</a></li><li><a href="#частые-ошибки-при-работе-с-fps-мониторами">Частые ошибки при работе с FPS мониторами</a></li></ul></nav><!--#include virtual="/ssi/sidebar_before_related.html" --><nav class="sidebar-related"><h3>Похожие статьи</h3><ul><li><a href="/articles/c/ch/chto-delat-esli-vo-vremya-igry-myshka-vyletaet-na-vtoroj-monitor.html" class="related-card">Мышка улетает на второй монитор во время игры: как исправить</a></li><li><a href="/articles/p/po/pochemu-dergaetsya-izobrazhenie-na-ekrane-monitora.html" class="related-card">Почему дергается экран монитора: 7 причин и способы fixing</a></li><li><a href="/articles/c/ch/chto-takoe-tachskrin-monitor.html" class="related-card">Что такое тачскрин монитор: технологии, применение и выбор</a></li><li><a href="/articles/k/ka/kak-rasshirit-udalennyj-rabochij-stol-na-2-monitora.html" class="related-card">Как настроить удаленный стол на 2 монитора в RDP и TeamViewer</a></li><li><a href="/articles/r/ra/rasshirilos-izobrazhenie-na-monitore-kak-ispravit-vindovs-10.html" class="related-card">Как исправить перерисованное изображение на мониторе в Windows 10</a></li></ul></nav><!--#include virtual="/ssi/sidebar_after_related.html" --></aside>
+            </div>
+        </div>
+    </main>
+
+    <!--#include virtual="/ssi/before_related_bottom.html" -->
+    <section class="related-bottom">
+        <div class="container">
+            <h2 class="related-bottom-heading">📖 Читайте также</h2>
+            <div class="related-bottom-grid"><a href="/articles/c/ch/chto-delat-esli-vo-vremya-igry-myshka-vyletaet-na-vtoroj-monitor.html" class="related-bottom-card"><span class="related-bottom-title">Мышка улетает на второй монитор во время игры: как исправить</span><span class="related-bottom-desc">Курсор самопроизвольно перескакивает на второй экран? Узнайте 7 проверенных способов вернуть управле</span></a><a href="/articles/p/po/pochemu-dergaetsya-izobrazhenie-na-ekrane-monitora.html" class="related-bottom-card"><span class="related-bottom-title">Почему дергается экран монитора: 7 причин и способы fixing</span><span class="related-bottom-desc">Изображение мерцает или искажается? Узнайте основные причины: от кабеля до драйверов. Подробная диаг</span></a><a href="/articles/c/ch/chto-takoe-tachskrin-monitor.html" class="related-bottom-card"><span class="related-bottom-title">Что такое тачскрин монитор: технологии, применение и выбор</span><span class="related-bottom-desc">Полный гид по сенсорным мониторам: виды технологий, отличия от обычных экранов, сценарии использован</span></a><a href="/articles/k/ka/kak-rasshirit-udalennyj-rabochij-stol-na-2-monitora.html" class="related-bottom-card"><span class="related-bottom-title">Как настроить удаленный стол на 2 монитора в RDP и TeamViewer</span><span class="related-bottom-desc">Полная инструкция: как расширить удаленный рабочий стол на 2 монитора. Настройка RDP, Group Policy, </span></a><a href="/articles/r/ra/rasshirilos-izobrazhenie-na-monitore-kak-ispravit-vindovs-10.html" class="related-bottom-card"><span class="related-bottom-title">Как исправить перерисованное изображение на мониторе в Windows 10</span><span class="related-bottom-desc">Пошаговая инструкция: настройка разрешения, масштабирования и драйверов для устранения растянутого э</span></a><a href="/articles/k/ka/kak-ubrat-ten-ot-bukv-na-monitore-10-vinda.html" class="related-bottom-card"><span class="related-bottom-title">Как убрать тень от букв на мониторе в Windows 10: полное руководство</span><span class="related-bottom-desc">Устраняем размытие и тени текста в Windows 10. Пошаговая инструкция по настройке ClearType, масштаби</span></a></div>
+        </div>
+    </section>
+    <!--#include virtual="/ssi/after_related_bottom.html" -->
+
+    <footer class="site-footer-premium">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-col">
+                    <div class="footer-brand">🖥️ Мониторум</div>
+                    <p class="footer-about">Полный справочник по настройке, ремонту и выбору компьютерных мониторов для любых задач.</p>
+                </div>
+                <div class="footer-col">
+                    <h4>Разделы</h4>
+                    <ul><li><a href="/category/nastrojka-ekrana/">⚙️ Настройка экрана</a></li>
+<li><a href="/category/podklyuchenie-ustrojstv/">🔌 Подключение устройств</a></li>
+<li><a href="/category/mnozhestvennye-ekrany/">🖥️🖥️ Множественные экраны</a></li>
+<li><a href="/category/zvuk-i-audio/">🔊 Звук и аудио</a></li>
+<li><a href="/category/remont-i-polomki/">🔧 Ремонт и поломки</a></li>
+<li><a href="/category/ukhod-i-chistka/">🧼 Уход и чистка</a></li></ul>
+                </div>
+                <div class="footer-col">
+                    <h4>Информация</h4>
+                    <ul>
+                        <li><a href="/">Главная</a></li>
+                        <li><a href="/about.html">О проекте</a></li>
+                        <li><a href="/categories.html">Все разделы</a></li>
+                        <li><a href="/contact.html">Контакты</a></li>
+                        <li><a href="/privacy.html">Конфиденциальность</a></li>
+                        <li><a href="/sitemap.xml">Карта сайта</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>© Мониторум. Все права защищены.</p>
+                <!--LiveInternet counter--><div style="margin-top:10px;"><a href="https://www.liveinternet.ru/click"
+                target="_blank"><img id="licnt06C4" width="88" height="15" style="border:0" 
+                title="LiveInternet: показано число посетителей за сегодня"
+                src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAEALAAAAAABAAEAAAIBTAA7"
+                alt=""/></a><script>(function(d,s){d.getElementById("licnt06C4").src=
+                "https://counter.yadro.ru/hit?t26.5;r"+escape(d.referrer)+
+                ((typeof(s)=="undefined")?"":";s"+s.width+"*"+s.height+"*"+
+                (s.colorDepth?s.colorDepth:s.pixelDepth))+";u"+escape(d.URL)+
+                ";h"+escape(d.title.substring(0,150))+";"+Math.random()})(document,screen)</script></div><!--/LiveInternet-->
+            </div>
+        </div>
+    </footer>
+    <div id="cookie-consent" class="cookie-popup">
+        <div class="cookie-inner">
+            <span>🍪 Мы используем файлы cookie для улучшения работы сайта.</span>
+            <button id="cookie-accept" class="cookie-btn">Принять</button>
+        </div>
+    </div>
+    <script src="/static/js/main.js"></script>
+    <script>
+    (function() {
+        const popup = document.getElementById('cookie-consent');
+        const btn = document.getElementById('cookie-accept');
+        if (popup && btn && !localStorage.getItem('cookie-accepted')) {
+            popup.classList.add('visible');
+            btn.onclick = () => {
+                localStorage.setItem('cookie-accepted', 'true');
+                popup.classList.remove('visible');
+            };
+        }
+    })();
+    </script>
+    <script>
+    function pbPollVote(el) {
+        var poll = el.closest('.poll-widget');
+        if (poll.classList.contains('voted')) return;
+        poll.classList.add('voted');
+        el.classList.add('selected');
+        var opts = poll.querySelectorAll('.poll-widget-option');
+        var n = opts.length;
+        var raw = [];
+        var sum = 0;
+        for (var i = 0; i < n; i++) {
+            var v = Math.random() * 50 + 5;
+            if (opts[i] === el) v += 30;
+            raw.push(v);
+            sum += v;
+        }
+        var pcts = raw.map(function(v) { return Math.round(v / sum * 100); });
+        var diff = 100 - pcts.reduce(function(a,b){ return a+b; }, 0);
+        pcts[Array.from(opts).indexOf(el)] += diff;
+        setTimeout(function() {
+            opts.forEach(function(opt, i) {
+                opt.querySelector('.poll-widget-bar').style.width = pcts[i] + '%';
+                opt.querySelector('.poll-widget-pct').textContent = pcts[i] + '%';
+            });
+        }, 50);
+    }
+    </script>
+    <!--#include virtual="/ssi/body_bottom.html" -->
+    <script src="/static/js/inject.js" defer></script>
+</body>
+</html>

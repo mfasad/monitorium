@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27><text y=%27.9em%27 font-size=%2790%27>🖥️</text></svg>">
+    <title>Как узнать цветовое пространство монитора: sRGB, Adobe RGB, DCI-P3 — Мониторум</title>
+    <meta name="description" content="Подробная инструкция: как проверить цветовое пространство монитора программно и аппаратно. Разбор профилей sRGB, Adobe RGB и DCI-P3 для профессиональной работы.">
+    <link rel="canonical" href="https://monitorium.vercel.app/articles/k/ka/kak-opredelit-tsvetovoe-prostranstvo-monitora.html">
+
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="Как узнать цветовое пространство монитора: sRGB, Adobe RGB, DCI-P3">
+    <meta property="og:description" content="Подробная инструкция: как проверить цветовое пространство монитора программно и аппаратно. Разбор профилей sRGB, Adobe RGB и DCI-P3 для профессиональной работы.">
+    <meta property="og:locale" content="ru_RU">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css?v=1780420684">
+    <style>
+    .site-footer-premium {
+        margin-top: 60px; padding: 40px 0 0; background: #1e293b; color: #94a3b8;
+    }
+    .footer-grid {
+        display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 40px;
+        padding-bottom: 32px; border-bottom: 1px solid #334155;
+    }
+    .footer-brand { font-size: 1.2rem; font-weight: 700; color: #f1f5f9; margin-bottom: 12px; }
+    .footer-about { font-size: 0.9rem; line-height: 1.6; margin-bottom: 8px; }
+    .footer-updated { font-size: 0.8rem; color: #64748b; }
+    .footer-col h4 { color: #f1f5f9; font-size: 0.95rem; margin-bottom: 16px; }
+    .footer-col ul { list-style: none; }
+    .footer-col li { margin-bottom: 8px; }
+    .footer-col a { color: #94a3b8; font-size: 0.9rem; transition: color 0.2s; }
+    .footer-col a:hover { color: #60a5fa; }
+    .footer-bottom { padding: 20px 0; text-align: center; font-size: 0.85rem; }
+    @media (max-width: 640px) {
+        .footer-grid { grid-template-columns: 1fr; gap: 24px; }
+    }
+    .cookie-popup {
+        position: fixed; bottom: 0; left: 0; right: 0; background: #1e293b; color: #fff;
+        padding: 16px; transition: transform 0.5s ease; z-index: 9999; border-top: 2px solid #2563eb;
+        transform: translateY(100%);
+    }
+    .cookie-popup.visible { transform: translateY(0); }
+    .cookie-inner { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; gap: 16px; font-size: 0.9rem; }
+    .cookie-btn { background: #2563eb; color: #fff; border: none; padding: 8px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+    .cookie-btn:hover { background: #1d4ed8; }
+    @media (max-width: 640px) {
+        .cookie-inner { flex-direction: column; text-align: center; }
+    }
+</style>
+    
+    <!--#include virtual="/ssi/head.html" -->
+</head>
+<body>
+        <!--#include virtual="/ssi/body_top.html" -->
+    <style>
+    .nav-dropdown { position: relative; display: inline-block; }
+    .dropdown-toggle {
+        background: none; border: none; cursor: pointer;
+        font: inherit; color: inherit; padding: 8px 12px;
+        border-radius: 8px; transition: background 0.2s;
+    }
+    .dropdown-toggle:hover { background: rgba(0,0,0,0.05); }
+    .dropdown-menu {
+        display: none; position: absolute; right: 0; top: 100%;
+        min-width: 240px; max-height: 70vh; overflow-y: auto;
+        background: var(--card-bg, #fff); border: 1px solid var(--border, #e5e7eb);
+        border-radius: 12px; box-shadow: 0 12px 40px rgba(0,0,0,0.12);
+        padding: 8px 0; z-index: 1000;
+    }
+    .nav-dropdown::after {
+        content: ''; position: absolute; left: 0; right: 0;
+        top: 100%; height: 12px;
+    }
+    .nav-dropdown:hover .dropdown-menu,
+    .nav-dropdown:focus-within .dropdown-menu { display: block; }
+    .dropdown-item {
+        display: block; padding: 10px 20px; color: var(--text, #1f2937);
+        text-decoration: none; font-size: 0.95rem; transition: background 0.15s;
+        white-space: nowrap;
+    }
+    .dropdown-item:hover { background: rgba(37,99,235,0.06); color: var(--primary, #2563eb); }
+    @media (max-width: 768px) {
+        .main-nav > .nav-link { display: none; }
+        .dropdown-toggle { display: none; }
+        .dropdown-menu {
+            display: block !important; position: static;
+            box-shadow: none; border: none; border-radius: 0;
+            min-width: auto; max-height: none; padding: 0;
+            background: transparent;
+        }
+        .dropdown-item {
+            padding: 8px 0; font-size: 1rem;
+        }
+    }
+    </style>
+    <header class="site-header">
+        <div class="container header-inner">
+            <a href="/" class="logo">
+                <span class="logo-icon">🖥️</span>
+                <span>Мониторум</span>
+            </a>
+            <button class="mobile-menu-btn" aria-label="Меню" id="menuBtn">☰</button>
+            <nav class="main-nav" id="mainNav">
+                <a href="/category/nastrojka-ekrana/" class="nav-link">⚙️ Настройка экрана</a>
+<a href="/category/podklyuchenie-ustrojstv/" class="nav-link">🔌 Подключение устройств</a>
+<a href="/category/mnozhestvennye-ekrany/" class="nav-link">🖥️🖥️ Множественные экраны</a>
+<a href="/category/zvuk-i-audio/" class="nav-link">🔊 Звук и аудио</a>
+<div class="nav-dropdown">
+            <button class="nav-link dropdown-toggle">📂 Все разделы ▾</button>
+            <div class="dropdown-menu"><a href="/category/nastrojka-ekrana/" class="dropdown-item">⚙️ Настройка экрана</a>
+<a href="/category/podklyuchenie-ustrojstv/" class="dropdown-item">🔌 Подключение устройств</a>
+<a href="/category/mnozhestvennye-ekrany/" class="dropdown-item">🖥️🖥️ Множественные экраны</a>
+<a href="/category/zvuk-i-audio/" class="dropdown-item">🔊 Звук и аудио</a>
+<a href="/category/remont-i-polomki/" class="dropdown-item">🔧 Ремонт и поломки</a>
+<a href="/category/ukhod-i-chistka/" class="dropdown-item">🧼 Уход и чистка</a>
+<a href="/category/vybor-i-kharakteristiki/" class="dropdown-item">📊 Выбор и характеристики</a>
+<a href="/category/drajvery-i-po/" class="dropdown-item">💿 Драйверы и ПО</a>
+<a href="/category/krepleniya-i-ustanovka/" class="dropdown-item">🔩 Крепления и установка</a>
+<a href="/category/utilizatsiya-i-prodazha/" class="dropdown-item">♻️ Утилизация и продажа</a>
+<a href="/category/spetsialnye-rezhimy/" class="dropdown-item">🎮 Специальные режимы</a>
+<a href="/category/drugoe/" class="dropdown-item">📁 Другое</a></div>
+        </div>
+            </nav>
+        </div>
+    </header>
+
+    <nav class="breadcrumbs" aria-label="Навигация">
+        <div class="container"><a href="/">Главная</a><span class="breadcrumb-sep">›</span><a href="/category/vybor-i-kharakteristiki/">Выбор и характеристики</a><span class="breadcrumb-sep">›</span><span class="breadcrumb-current">Как узнать цветовое пространство монитора: sRGB, Adobe RGB, DCI-P3</span></div>
+    </nav>
+
+    <main class="site-main">
+        <div class="container">
+            <div class="article-layout">
+                <article class="article-main">
+                    
+                    <h1>Как определить цветовое пространство вашего монитора</h1>
+                    <nav class="mobile-toc"><details><summary>📋 Содержание</summary><ul><li><a href="#визуальная-идентификация-через-меню-дисплея">Визуальная идентификация через меню дисплея</a></li><li><a href="#программные-методы-проверки-в-windows-и-macos">Программные методы проверки в Windows и macOS</a></li><li><a href="#аппаратная-проверка-с-помощью-колориметра">Аппаратная проверка с помощью колориметра</a></li><li><a href="#сравнение-основных-стандартов-цветопередачи">Сравнение основных стандартов цветопередачи</a></li><li><a href="#интерпретация-результатов-и-настройка">Интерпретация результатов и настройка</a></li><li><a href="#влияние-интерфейса-подключения-на-цветовое-пространство">Влияние интерфейса подключения на цветовое пространство</a></li><li><a href="#типичные-проблемы-и-ошибки-при-определении">Типичные проблемы и ошибки при определении</a></li><li><a href="#faq-частые-вопросы-о-цветовых-пространствах">FAQ: Частые вопросы о цветовых пространствах</a></li></ul></details></nav>
+                    <!--#include virtual="/ssi/article_before.html" -->
+                    <div class="article-body">
+
+<p>Многие пользователи, купившие новый дисплей, сталкиваются с проблемой: цвета на экране выглядят блекло или, наоборот, слишком неестественно. Часто причина кроется в неверно определенном <strong>цветовом пространстве</strong>, которое использует устройство при отображении картинки. Без точного понимания того, какой стандарт поддерживается матрицей, невозможно настроить корректную цветокоррекцию для фото или видео.</p>
+
+<p>Цветовое пространство — это не просто технический термин, а конкретная область видимых цветов, которую может отобразить ваш <em>монитор</em>. Если вы работаете с графикой, вам необходимо знать, соответствует ли дисплей стандартам <strong>sRGB</strong>, <strong>Adobe RGB</strong> или <em>DCI-P3</em>. Игнорирование этого параметра приведет к тому, что печатные материалы будут отличаться от того, что вы видите на экране.</p>
+
+<p>В этой статье мы разберем, как самостоятельно проверить характеристики экрана, какие инструменты для этого существуют и почему программные методы не всегда дают 100% точность. Вы узнаете, как отличить реальное покрытие цветового охвата от маркетинговых уловок производителей.</p>
+
+<h2 id="визуальная-идентификация-через-меню-дисплея">Визуальная идентификация через меню дисплея</h2>
+
+<p>Самый быстрый способ получить первичную информацию — заглянуть в настройки самого устройства. Почти все современные мониторы имеют встроенные меню (OSD), где можно найти информацию о поддерживаемых режимах. Обычно этот пункт находится в разделе <code>Picture → Color Mode</code> или <code>Display → Color Space</code>.</p>
+
+<p>В меню вы можете увидеть готовые пресеты: «sRGB», «Cinema», «Adobe RGB» или «Wide Color». Если ваш <em>дисплей</em> поддерживает аппаратное переключение между этими режимами, значит, он имеет соответствующий <strong>широкий цветовой охват</strong>. Однако стоит помнить, что наличие названия режима в меню не гарантирует его точность без калибровки.</p>
+
+<p>Некоторые модели, особенно игровые или бюджетные офисные, могут скрывать эту информацию или называть её иначе, например, «DCI-P3 90%». Это означает, что устройство способно отобразить 90% цветов из стандарта <em>DCI-P3</em>. Важно понимать разницу между наличием режима и его фактическим соответствием эталону.</p>
+
+<blockquote>⚠️ Внимание: Производители часто указывают в характеристиках максимальное теоретическое значение охвата, которое достигается только при яркости, превышающей комфортную для глаз, или без учета цветового сдвига.</blockquote>
+
+<div class="poll-widget" id="poll-5ca2aa83"><div class="poll-widget-question">📊 Какой цветовой режим вы используете чаще всего?</div><div class="poll-widget-option" data-poll="5ca2aa83" data-idx="0" onclick="pbPollVote(this)"><span class="poll-widget-label">sRGB (стандарт)</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="5ca2aa83" data-idx="1" onclick="pbPollVote(this)"><span class="poll-widget-label">Adobe RGB (печать)</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="5ca2aa83" data-idx="2" onclick="pbPollVote(this)"><span class="poll-widget-label">DCI-P3 (кино/игры)</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="5ca2aa83" data-idx="3" onclick="pbPollVote(this)"><span class="poll-widget-label">Не знаю/Не проверял</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div></div>
+
+<h2 id="программные-методы-проверки-в-windows-и-macos">Программные методы проверки в Windows и macOS</h2>
+
+<p>Операционные системы предоставляют встроенные утилиты для работы с профилем цвета. В Windows необходимо перейти в <code>Панель управления → Цвет Windows</code>. Здесь отображается текущий активный <strong>ICC-профиль</strong>, который отвечает за перевод цветов из одного пространства в другое. Если профиль отсутствует или назван «sRGB IEC61966-2.1», система использует стандартный шаблон.</p>
+
+<p>Для macOS путь лежит через <code>Системные настройки → Дисплеи → Цвет</code>. Здесь можно выбрать профиль из списка доступных. Если система видит ваш <em>монитор</em> корректно, она предложит профиль, написанный производителем (например, «Dell S2721QS»). Отсутствие специфического профиля часто указывает на адаптацию устройства под стандарт <strong>sRGB</strong>.</p>
+
+<p>Однако системные настройки показывают лишь то, как ОС интерпретирует сигнал, а не физические возможности матрицы. Чтобы узнать реальное покрытие, используйте специализированное ПО, например, <em>DisplayCAL</em> или <strong>Calman</strong>. Эти программы считывают данные с видеокарты и сравнивают их с эталонными значениями.</p>
+
+<div class="attention-box attention-tip"><span class="attention-icon">💡</span><p>Если вы видите в списке профилей только стандартные названия без указания модели монитора, попробуйте обновить драйверы видеокарты или проверить наличие ICC-файла на сайте производителя в разделе поддержки.</p></div>
+
+<h2 id="аппаратная-проверка-с-помощью-колориметра">Аппаратная проверка с помощью колориметра</h2>
+
+<p>Единственный способ получить достоверные данные на 100% — использовать аппаратный колориметр или спектрофотометр. Такие устройства, как <em>X-Rite i1Display</em> или <strong>Datacolor Spyder</strong>, надеваются на экран и измеряют фактический спектр излучаемого света. Они строят карту цветов и сравнивают её с эталонами sRGB, Adobe RGB и Rec.2020.</p>
+
+<p>Процесс измерения занимает от 5 до 15 минут. Программа выдает отчет, где четко указано: «Охват sRGB: 99%», «Охват Adobe RGB: 75%». Это критически важно для профессионалов, так как показывает, сколько цветов из конкретного стандарта реально способна показать ваша <strong>матрица IPS</strong> или VA-панель.</p>
+
+<p>Без аппаратного прибора вы можете лишь гадать о реальном положении дел. Маркетинговые надписи на коробке часто преувеличивают возможности, а программные методы не учитывают индивидуальные деградации подсветки или перепады яркости по углам экрана.</p>
+
+<details class="faq-item"><summary>Почему дешевые колориметры могут врать?</summary><div class="faq-answer"><p>Дешевые модели часто используют только RGB-фильтры, которые не могут точно измерить узкие спектры квантовых точек (Quantum Dot), используемые в современных премиальных мониторах. Для точных замеров нужны модели с фильтрами X-Rite.</p></div></details>
+
+<h2 id="сравнение-основных-стандартов-цветопередачи">Сравнение основных стандартов цветопередачи</h2>
+
+<p>Чтобы правильно интерпретировать результаты проверок, необходимо понимать разницу между основными стандартами. Стандарт <strong>sRGB</strong> является базовым для веба и большинства офисных задач. Он покрывает около 35% видимого спектра и является «минимумом» для любого современного дисплея.</p>
+
+<p>Стандарт <em>Adobe RGB</em> значительно шире и используется в полиграфии. Он включает в себя больше зеленых и голубых оттенков. Если вы занимаетесь фотопечатью, вам нужен <strong>монитор</strong> с высоким процентом покрытия этого пространства. Игнорирование этого факта приведет к тому, что напечатанное изображение будет выглядеть тусклым.</p>
+
+<p>Третий популярный стандарт — <strong>DCI-P3</strong>. Он используется в кинематографе и современном контенте для смартфонов. Этот стандарт шире sRGB, но уже Adobe RGB в зеленой области. Для игр и просмотра фильмов в высоком качестве важно наличие широкого охвата в стандарте P3.</p>
+
+<p>Ниже приведена таблица, наглядно демонстрирующая разницу в покрытии спектра для разных стандартов:</p>
+
+<table>
+<thead>
+<tr>
+<th>Стандарт</th>
+<th>Основное применение</th>
+<th>Примерное покрытие видимого спектра</th>
+<th>Кому необходим</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>sRGB</td>
+<td>Веб, офис, игры</td>
+<td>35%</td>
+<td>Большинство пользователей</td>
+</tr>
+<tr>
+<td>Adobe RGB</td>
+<td>Профессиональная печать</td>
+<td>50%</td>
+<td>Фотографы, дизайнеры</td>
+</tr>
+<tr>
+<td>DCI-P3</td>
+<td>Кино, HDR, мобильные устройства</td>
+<td>45-50%</td>
+<td>Режиссеры, геймеры</td>
+</tr>
+<tr>
+<td>Rec.2020</td>
+<td>Ultra HD (4K/8K) телевидение</td>
+<td>75%</td>
+<td>Телевизионная индустрия</td>
+</tr>
+</tbody>
+</table>
+
+<div class="checklist-block"><h4>☑️ Чек-лист проверки</h4><label class="check-item"><input type="checkbox"><span>Проверить меню OSD на наличие режимов цвета</span></label><label class="check-item"><input type="checkbox"><span>Загрузить спецификацию с сайта производителя</span></label><label class="check-item"><input type="checkbox"><span>Установить софт для анализа цветов</span></label><label class="check-item"><input type="checkbox"><span>Сверить результаты с таблицей стандартов</span></label><div class="check-progress">Выполнено: <span class="check-count">0</span> / 4</div></div>
+
+<h2 id="интерпретация-результатов-и-настройка">Интерпретация результатов и настройка</h2>
+
+<p>После получения данных важно правильно настроить систему. Если ваш <em>монитор</em> покрывает 100% sRGB, но имеет широкий охват (например, 95% Adobe RGB), вам нужно ограничить цветовое пространство в меню дисплея. Иначе цвета будут выглядеть перенасыщенными («кислотными»), так как система будет пытаться отобразить больше цветов, чем может правильно интерпретировать.</p>
+
+<p>В настройках Windows или в утилитах видеокарты (NVIDIA Control Panel, AMD Adrenalin) можно выбрать профиль <strong>sRGB</strong> как основной. Это создаст искусственное ограничение, и картинка станет естественной для глаз. Для профессиональной работы, наоборот, нужно отключать автоматическое ограничение и использовать родной профиль.</p>
+
+<p>Частая ошибка пользователей — попытка натянуть цветовой профиль на устройство, которое его физически не поддерживает. Если ваш дисплей имеет 80% охвата sRGB, установка профиля 100% sRGB приведет к искажению тонов, а не к улучшению картинки.</p>
+
+<blockquote>⚠️ Внимание: Не пытайтесь исправить «синий» или «желтый» оттенок монитора программными средствами, если вы не прошли реальную калибровку. Это может только ухудшить цветовую температуру.</blockquote>
+
+<h2 id="влияние-интерфейса-подключения-на-цветовое-пространство">Влияние интерфейса подключения на цветовое пространство</h2>
+
+<p>Даже если ваш монитор поддерживает широкий диапазон цветов, неправильное подключение может ограничить его возможности. Использование устаревших стандартов HDMI или VGA часто приводит к передаче ограниченного диапазона (Limited RGB), где значения идут от 16 до 235 вместо полного диапазона 0-255.</p>
+
+<p>Для передачи полного спектра цветов необходимо использовать кабель <strong>HDMI 2.1</strong> или <em>DisplayPort 1.4</em>. Это особенно актуально, если вы работаете с HDR-контентом или видео в формате DCI-P3. Старые кабели могут физически не пропускать необходимый объем данных для корректной цветопередачи.</p>
+
+<p>В меню настроек видеокарты следует проверить параметр <code>Output Dynamic Range</code>. Если там стоит «Limited», измените значение на «Full». Это позволит системе корректно отображать глубокие черные цвета и яркие оттенки, которые otherwise будут «обрезаны».</p>
+
+<div class="attention-box attention-tip"><span class="attention-icon">💡</span><p>Интерфейс подключения должен соответствовать пропускной способности видеокарты и монитора, иначе даже широкие цветовые пространства будут передаваться в сжатом, некачественном виде.</p></div>
+
+<h2 id="типичные-проблемы-и-ошибки-при-определении">Типичные проблемы и ошибки при определении</h2>
+
+<p>Одной из частых проблем является путаница между термиминами «цветовой охват» и «глубина цвета». Монитор может иметь охват 100% sRGB, но при этом обладать глубиной цвета всего 6 бит с пристраиванием (dithering). Это означает, что плавность градиентов будет низкой, несмотря на правильный цветовой охват.</p>
+
+<p>Еще одна ошибка — доверие к характеристикам, указанным в отзывах на маркетплейсах, а не на официальном сайте. Продавцы часто пишут «широкий цветовой охват», не уточняя, какой именно стандарт имеется в виду. Реальное значение может быть на 20-30% ниже заявленного.</p>
+
+<p>Иногда проблема кроется в драйверах. Старые версии драйверов могут некорректно передавать данные о поддерживаемых <strong>режимах цвета</strong> от монитора к системе, заставляя ОС работать в стандартном режиме. Обновление ПО часто решает эту проблему без дополнительных настроек.</p>
+
+<blockquote>⚠️ Внимание: Если характеристики монитора указаны в процентах без привязки к стандарту (например, просто «130% цветов»), это маркетинговая уловка. Всегда ищите привязку к sRGB или Adobe RGB.</blockquote>
+
+<h2 id="faq-частые-вопросы-о-цветовых-пространствах">FAQ: Частые вопросы о цветовых пространствах</h2>
+
+<details>
+<summary>Как узнать, поддерживает ли мой монитор DCI-P3?</summary>
+<p>Самый надежный способ — скачать официальную спецификацию с сайта производителя и найти строку "Color Gamut". Если указано покрытие DCI-P3 (например, 90% или 95%), значит стандарт поддерживается. Также можно использовать колориметр для точного замера.</p>
+</details>
+
+<details>
+<summary>Можно ли превратить обычный монитор в широкоформатный программно?</summary>
+<p>Нет. Программные средства могут только ограничивать или корректировать цвета, но не расширять физические возможности матрицы. Если пиксель не может излучать определенный спектр, никакие настройки этого не изменят.</p>
+</details>
+
+<details>
+<summary>Что такое sRGB-клипирование и как его избежать?</summary>
+<p>Это процесс, когда цвета вне диапазона sRGB обрезаются, становясь неестественными. Чтобы избежать этого, в меню монитора нужно выбрать режим "sRGB", если он есть, или ограничить гамму через настройки видеокарты.</p>
+</details>
+
+<details>
+<summary>Нужна ли калибровка, если я не профессиональный дизайнер?</summary>
+<p>Для обычного потребления контента (Netflix, YouTube, игры) калибровка не обязательна, но желательна для комфортного восприятия. Она убирает излишнюю синеву или желтизну, делая картинку более естественной.</p>
+</details></div>
+                    <!--#include virtual="/ssi/article_after.html" -->
+
+                </article>
+                <aside class="article-sidebar"><!--#include virtual="/ssi/sidebar_top.html" --><nav class="sidebar-search"><div class="sidebar-search-box"><input type="text" id="globalSearchInput" placeholder="🔍 Поиск статей..." autocomplete="off"><div class="search-dropdown" id="globalSearchDropdown"></div></div></nav><!--#include virtual="/ssi/sidebar_before_toc.html" --><nav class="sidebar-toc" id="sidebarToc"><h3>Содержание</h3><ul><li><a href="#визуальная-идентификация-через-меню-дисплея">Визуальная идентификация через меню дисплея</a></li><li><a href="#программные-методы-проверки-в-windows-и-macos">Программные методы проверки в Windows и macOS</a></li><li><a href="#аппаратная-проверка-с-помощью-колориметра">Аппаратная проверка с помощью колориметра</a></li><li><a href="#сравнение-основных-стандартов-цветопередачи">Сравнение основных стандартов цветопередачи</a></li><li><a href="#интерпретация-результатов-и-настройка">Интерпретация результатов и настройка</a></li><li><a href="#влияние-интерфейса-подключения-на-цветовое-пространство">Влияние интерфейса подключения на цветовое пространство</a></li><li><a href="#типичные-проблемы-и-ошибки-при-определении">Типичные проблемы и ошибки при определении</a></li><li><a href="#faq-частые-вопросы-о-цветовых-пространствах">FAQ: Частые вопросы о цветовых пространствах</a></li></ul></nav><!--#include virtual="/ssi/sidebar_before_related.html" --><nav class="sidebar-related"><h3>Похожие статьи</h3><ul><li><a href="/articles/m/ms/ms-monitor-chto-eto.html" class="related-card">MS монитор что это: Meaningful Start в мире гейминга и работы</a></li><li><a href="/articles/z/za/za-chto-otvechaet-yarkost-v-monitore.html" class="related-card">За что отвечает яркость монитора: влияние на глаза и цвет</a></li><li><a href="/articles/k/ka/kakoj-razmer-monitora-luchshe-vybrat-dlya-igr.html" class="related-card">Какой размер монитора выбрать для игр: гид по диагоналям 2026</a></li><li><a href="/articles/v/v-/v-chem-raznitsa-monitorov-ips-i-va.html" class="related-card">IPS или VA монитор: что выбрать? Сравнение матриц и характеристик</a></li><li><a href="/articles/k/kt/kto-proizvodit-matritsy-dlya-monitorov-philips.html" class="related-card">Кто производит матрицы для мониторов Philips: обзор поставщиков и технологий</a></li></ul></nav><!--#include virtual="/ssi/sidebar_after_related.html" --></aside>
+            </div>
+        </div>
+    </main>
+
+    <!--#include virtual="/ssi/before_related_bottom.html" -->
+    <section class="related-bottom">
+        <div class="container">
+            <h2 class="related-bottom-heading">📖 Читайте также</h2>
+            <div class="related-bottom-grid"><a href="/articles/m/ms/ms-monitor-chto-eto.html" class="related-bottom-card"><span class="related-bottom-title">MS монитор что это: Meaningful Start в мире гейминга и работы</span><span class="related-bottom-desc">Разбираем значение маркировки MS на мониторах. Что такое Meaningful Start, как это влияет на выбор м</span></a><a href="/articles/z/za/za-chto-otvechaet-yarkost-v-monitore.html" class="related-bottom-card"><span class="related-bottom-title">За что отвечает яркость монитора: влияние на глаза и цвет</span><span class="related-bottom-desc">Разбираем, за что отвечает яркость экрана, как правильно выставить ниты, влияние на зрение и цветопе</span></a><a href="/articles/k/ka/kakoj-razmer-monitora-luchshe-vybrat-dlya-igr.html" class="related-bottom-card"><span class="related-bottom-title">Какой размер монитора выбрать для игр: гид по диагоналям 2026</span><span class="related-bottom-desc">Узнайте, какой размер монитора лучше для игр. Сравнение 24, 27 и 32 дюймов, влияние разрешения на FP</span></a><a href="/articles/v/v-/v-chem-raznitsa-monitorov-ips-i-va.html" class="related-bottom-card"><span class="related-bottom-title">IPS или VA монитор: что выбрать? Сравнение матриц и характеристик</span><span class="related-bottom-desc">Подробное сравнение IPS и VA матриц. Узнайте разницу в контрасте, углах обзора и скорости отклика. П</span></a><a href="/articles/k/kt/kto-proizvodit-matritsy-dlya-monitorov-philips.html" class="related-bottom-card"><span class="related-bottom-title">Кто производит матрицы для мониторов Philips: обзор поставщиков и технологий</span><span class="related-bottom-desc">Узнайте, какие заводы выпускают панели для мониторов Philips. Полный разбор производителей: AUO, BOE</span></a><a href="/articles/c/ch/chto-znachit-diagonal-monitora.html" class="related-bottom-card"><span class="related-bottom-title">Что значит диагональ монитора: размеры, формат и выбор размера</span><span class="related-bottom-desc">Разбираем, что такое диагональ экрана в дюймах, как она соотносится с разрешением и почему 27 дюймов</span></a></div>
+        </div>
+    </section>
+    <!--#include virtual="/ssi/after_related_bottom.html" -->
+
+    <footer class="site-footer-premium">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-col">
+                    <div class="footer-brand">🖥️ Мониторум</div>
+                    <p class="footer-about">Полный справочник по настройке, ремонту и выбору компьютерных мониторов для любых задач.</p>
+                </div>
+                <div class="footer-col">
+                    <h4>Разделы</h4>
+                    <ul><li><a href="/category/nastrojka-ekrana/">⚙️ Настройка экрана</a></li>
+<li><a href="/category/podklyuchenie-ustrojstv/">🔌 Подключение устройств</a></li>
+<li><a href="/category/mnozhestvennye-ekrany/">🖥️🖥️ Множественные экраны</a></li>
+<li><a href="/category/zvuk-i-audio/">🔊 Звук и аудио</a></li>
+<li><a href="/category/remont-i-polomki/">🔧 Ремонт и поломки</a></li>
+<li><a href="/category/ukhod-i-chistka/">🧼 Уход и чистка</a></li></ul>
+                </div>
+                <div class="footer-col">
+                    <h4>Информация</h4>
+                    <ul>
+                        <li><a href="/">Главная</a></li>
+                        <li><a href="/about.html">О проекте</a></li>
+                        <li><a href="/categories.html">Все разделы</a></li>
+                        <li><a href="/contact.html">Контакты</a></li>
+                        <li><a href="/privacy.html">Конфиденциальность</a></li>
+                        <li><a href="/sitemap.xml">Карта сайта</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>© Мониторум. Все права защищены.</p>
+                <!--LiveInternet counter--><div style="margin-top:10px;"><a href="https://www.liveinternet.ru/click"
+                target="_blank"><img id="licnt06C4" width="88" height="15" style="border:0" 
+                title="LiveInternet: показано число посетителей за сегодня"
+                src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAEALAAAAAABAAEAAAIBTAA7"
+                alt=""/></a><script>(function(d,s){d.getElementById("licnt06C4").src=
+                "https://counter.yadro.ru/hit?t26.5;r"+escape(d.referrer)+
+                ((typeof(s)=="undefined")?"":";s"+s.width+"*"+s.height+"*"+
+                (s.colorDepth?s.colorDepth:s.pixelDepth))+";u"+escape(d.URL)+
+                ";h"+escape(d.title.substring(0,150))+";"+Math.random()})(document,screen)</script></div><!--/LiveInternet-->
+            </div>
+        </div>
+    </footer>
+    <div id="cookie-consent" class="cookie-popup">
+        <div class="cookie-inner">
+            <span>🍪 Мы используем файлы cookie для улучшения работы сайта.</span>
+            <button id="cookie-accept" class="cookie-btn">Принять</button>
+        </div>
+    </div>
+    <script src="/static/js/main.js"></script>
+    <script>
+    (function() {
+        const popup = document.getElementById('cookie-consent');
+        const btn = document.getElementById('cookie-accept');
+        if (popup && btn && !localStorage.getItem('cookie-accepted')) {
+            popup.classList.add('visible');
+            btn.onclick = () => {
+                localStorage.setItem('cookie-accepted', 'true');
+                popup.classList.remove('visible');
+            };
+        }
+    })();
+    </script>
+    <script>
+    function pbPollVote(el) {
+        var poll = el.closest('.poll-widget');
+        if (poll.classList.contains('voted')) return;
+        poll.classList.add('voted');
+        el.classList.add('selected');
+        var opts = poll.querySelectorAll('.poll-widget-option');
+        var n = opts.length;
+        var raw = [];
+        var sum = 0;
+        for (var i = 0; i < n; i++) {
+            var v = Math.random() * 50 + 5;
+            if (opts[i] === el) v += 30;
+            raw.push(v);
+            sum += v;
+        }
+        var pcts = raw.map(function(v) { return Math.round(v / sum * 100); });
+        var diff = 100 - pcts.reduce(function(a,b){ return a+b; }, 0);
+        pcts[Array.from(opts).indexOf(el)] += diff;
+        setTimeout(function() {
+            opts.forEach(function(opt, i) {
+                opt.querySelector('.poll-widget-bar').style.width = pcts[i] + '%';
+                opt.querySelector('.poll-widget-pct').textContent = pcts[i] + '%';
+            });
+        }, 50);
+    }
+    </script>
+    <!--#include virtual="/ssi/body_bottom.html" -->
+    <script src="/static/js/inject.js" defer></script>
+</body>
+</html>

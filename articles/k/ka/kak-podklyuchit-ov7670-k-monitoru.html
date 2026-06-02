@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27><text y=%27.9em%27 font-size=%2790%27>🖥️</text></svg>">
+    <title>Подключение камеры OV7670 к монитору: схема, код и драйверы — Мониторум</title>
+    <meta name="description" content="Пошаговое руководство по выводу изображения с сенсора OV7670 на экран. Обзор плат расширения, настройка Arduino, FPGA и решение типовых проблем.">
+    <link rel="canonical" href="https://monitorium.vercel.app/articles/k/ka/kak-podklyuchit-ov7670-k-monitoru.html">
+
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="Подключение камеры OV7670 к монитору: схема, код и драйверы">
+    <meta property="og:description" content="Пошаговое руководство по выводу изображения с сенсора OV7670 на экран. Обзор плат расширения, настройка Arduino, FPGA и решение типовых проблем.">
+    <meta property="og:locale" content="ru_RU">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css?v=1780420684">
+    <style>
+    .site-footer-premium {
+        margin-top: 60px; padding: 40px 0 0; background: #1e293b; color: #94a3b8;
+    }
+    .footer-grid {
+        display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 40px;
+        padding-bottom: 32px; border-bottom: 1px solid #334155;
+    }
+    .footer-brand { font-size: 1.2rem; font-weight: 700; color: #f1f5f9; margin-bottom: 12px; }
+    .footer-about { font-size: 0.9rem; line-height: 1.6; margin-bottom: 8px; }
+    .footer-updated { font-size: 0.8rem; color: #64748b; }
+    .footer-col h4 { color: #f1f5f9; font-size: 0.95rem; margin-bottom: 16px; }
+    .footer-col ul { list-style: none; }
+    .footer-col li { margin-bottom: 8px; }
+    .footer-col a { color: #94a3b8; font-size: 0.9rem; transition: color 0.2s; }
+    .footer-col a:hover { color: #60a5fa; }
+    .footer-bottom { padding: 20px 0; text-align: center; font-size: 0.85rem; }
+    @media (max-width: 640px) {
+        .footer-grid { grid-template-columns: 1fr; gap: 24px; }
+    }
+    .cookie-popup {
+        position: fixed; bottom: 0; left: 0; right: 0; background: #1e293b; color: #fff;
+        padding: 16px; transition: transform 0.5s ease; z-index: 9999; border-top: 2px solid #2563eb;
+        transform: translateY(100%);
+    }
+    .cookie-popup.visible { transform: translateY(0); }
+    .cookie-inner { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; gap: 16px; font-size: 0.9rem; }
+    .cookie-btn { background: #2563eb; color: #fff; border: none; padding: 8px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+    .cookie-btn:hover { background: #1d4ed8; }
+    @media (max-width: 640px) {
+        .cookie-inner { flex-direction: column; text-align: center; }
+    }
+</style>
+    
+    <!--#include virtual="/ssi/head.html" -->
+</head>
+<body>
+        <!--#include virtual="/ssi/body_top.html" -->
+    <style>
+    .nav-dropdown { position: relative; display: inline-block; }
+    .dropdown-toggle {
+        background: none; border: none; cursor: pointer;
+        font: inherit; color: inherit; padding: 8px 12px;
+        border-radius: 8px; transition: background 0.2s;
+    }
+    .dropdown-toggle:hover { background: rgba(0,0,0,0.05); }
+    .dropdown-menu {
+        display: none; position: absolute; right: 0; top: 100%;
+        min-width: 240px; max-height: 70vh; overflow-y: auto;
+        background: var(--card-bg, #fff); border: 1px solid var(--border, #e5e7eb);
+        border-radius: 12px; box-shadow: 0 12px 40px rgba(0,0,0,0.12);
+        padding: 8px 0; z-index: 1000;
+    }
+    .nav-dropdown::after {
+        content: ''; position: absolute; left: 0; right: 0;
+        top: 100%; height: 12px;
+    }
+    .nav-dropdown:hover .dropdown-menu,
+    .nav-dropdown:focus-within .dropdown-menu { display: block; }
+    .dropdown-item {
+        display: block; padding: 10px 20px; color: var(--text, #1f2937);
+        text-decoration: none; font-size: 0.95rem; transition: background 0.15s;
+        white-space: nowrap;
+    }
+    .dropdown-item:hover { background: rgba(37,99,235,0.06); color: var(--primary, #2563eb); }
+    @media (max-width: 768px) {
+        .main-nav > .nav-link { display: none; }
+        .dropdown-toggle { display: none; }
+        .dropdown-menu {
+            display: block !important; position: static;
+            box-shadow: none; border: none; border-radius: 0;
+            min-width: auto; max-height: none; padding: 0;
+            background: transparent;
+        }
+        .dropdown-item {
+            padding: 8px 0; font-size: 1rem;
+        }
+    }
+    </style>
+    <header class="site-header">
+        <div class="container header-inner">
+            <a href="/" class="logo">
+                <span class="logo-icon">🖥️</span>
+                <span>Мониторум</span>
+            </a>
+            <button class="mobile-menu-btn" aria-label="Меню" id="menuBtn">☰</button>
+            <nav class="main-nav" id="mainNav">
+                <a href="/category/nastrojka-ekrana/" class="nav-link">⚙️ Настройка экрана</a>
+<a href="/category/podklyuchenie-ustrojstv/" class="nav-link">🔌 Подключение устройств</a>
+<a href="/category/mnozhestvennye-ekrany/" class="nav-link">🖥️🖥️ Множественные экраны</a>
+<a href="/category/zvuk-i-audio/" class="nav-link">🔊 Звук и аудио</a>
+<div class="nav-dropdown">
+            <button class="nav-link dropdown-toggle">📂 Все разделы ▾</button>
+            <div class="dropdown-menu"><a href="/category/nastrojka-ekrana/" class="dropdown-item">⚙️ Настройка экрана</a>
+<a href="/category/podklyuchenie-ustrojstv/" class="dropdown-item">🔌 Подключение устройств</a>
+<a href="/category/mnozhestvennye-ekrany/" class="dropdown-item">🖥️🖥️ Множественные экраны</a>
+<a href="/category/zvuk-i-audio/" class="dropdown-item">🔊 Звук и аудио</a>
+<a href="/category/remont-i-polomki/" class="dropdown-item">🔧 Ремонт и поломки</a>
+<a href="/category/ukhod-i-chistka/" class="dropdown-item">🧼 Уход и чистка</a>
+<a href="/category/vybor-i-kharakteristiki/" class="dropdown-item">📊 Выбор и характеристики</a>
+<a href="/category/drajvery-i-po/" class="dropdown-item">💿 Драйверы и ПО</a>
+<a href="/category/krepleniya-i-ustanovka/" class="dropdown-item">🔩 Крепления и установка</a>
+<a href="/category/utilizatsiya-i-prodazha/" class="dropdown-item">♻️ Утилизация и продажа</a>
+<a href="/category/spetsialnye-rezhimy/" class="dropdown-item">🎮 Специальные режимы</a>
+<a href="/category/drugoe/" class="dropdown-item">📁 Другое</a></div>
+        </div>
+            </nav>
+        </div>
+    </header>
+
+    <nav class="breadcrumbs" aria-label="Навигация">
+        <div class="container"><a href="/">Главная</a><span class="breadcrumb-sep">›</span><a href="/category/podklyuchenie-ustrojstv/">Подключение устройств</a><span class="breadcrumb-sep">›</span><span class="breadcrumb-current">Подключение камеры OV7670 к монитору: схема, код и драйверы</span></div>
+    </nav>
+
+    <main class="site-main">
+        <div class="container">
+            <div class="article-layout">
+                <article class="article-main">
+                    
+                    <h1>Как подключить модуль камеры OV7670 к монитору для вывода изображения</h1>
+                    <nav class="mobile-toc"><details><summary>📋 Содержание</summary><ul><li><a href="#выбор-аппаратной-платформы-для-вывода-видео">Выбор аппаратной платформы для вывода видео</a></li><li><a href="#схема-подключения-модуля-ov7670">Схема подключения модуля OV7670</a></li><li><a href="#программная-инициализация-и-настройки">Программная инициализация и настройки</a></li><li><a href="#генерация-видеосигнала-для-монитора">Генерация видеосигнала для монитора</a></li><li><a href="#типовые-проблемы-и-способы-их-решения">Типовые проблемы и способы их решения</a></li><li><a href="#альтернативные-пути-интеграции">Альтернативные пути интеграции</a></li><li><a href="#faq-часто-задаваемые-вопросы">FAQ: Часто задаваемые вопросы</a></li></ul></details></nav>
+                    <!--#include virtual="/ssi/article_before.html" -->
+                    <div class="article-body">
+
+<p>Прямое подключение сенсора <em>OV7670</em> к современному компьютерному монитору без промежуточного контроллера невозможно. Сенсор выдает цифровой поток данных, а монитор ожидает аналоговый сигнал VGA или цифровой HDMI/DisplayPort протокол. Для визуализации изображения необходимо использовать микроконтроллер или FPGA-платформу, способную обрабатывать видеопоток и формировать сигнал синхронизации.</p>
+
+<p>Процесс вывода картинки на экран превращается в задачу программирования видеоконтроллера. Вы должны реализовать буферизацию кадров, настроить тайминги сканирования и обеспечить совместимость уровней логики. Простого проводного соединения здесь недостаточно — требуется полноценная система обработки сигналов.</p>
+
+<p>В этой инструкции мы разберем два основных сценария: использование <strong>Arduino</strong> с модулем расширения и применение <strong>FPGA</strong> для высокой производительности. Каждый метод имеет свои плюсы и ограничения по частоте кадров и разрешению.</p>
+
+<h2 id="выбор-аппаратной-платформы-для-вывода-видео">Выбор аппаратной платформы для вывода видео</h2>
+
+<p>Первым шагом является выбор устройства, которое станет "мозгом" вашей системы. Микроконтроллеры серии <em>AVR</em> (классические Arduino Uno) слишком медленны для генерации видеосигнала в реальном времени. Вам потребуется более мощная платформа, способная оперировать большой скоростью обмена данными.</p>
+
+<p>Наиболее популярным решением является плата <em>Arduino Due</em> или совместимые на базе <strong>STM32</strong>, так как они имеют более высокую тактовую частоту. Однако для стабильного вывода даже в разрешении 128×128 часто требуется использование внешней памяти (SRAM), так как встроенной оперативной памяти контроллера недостаточно для хранения кадра.</p>
+
+<p>Альтернативой выступает использование <strong>FPGA</strong> (программируемой логической интегральной схемы). Платы типа <em>Terasic DE10-Nano</em> или <em>Digilent Basys 3</em> позволяют создавать аппаратные видеоконтроллеры, которые выдают плавное видео без задержек, характерных для программных решений на микроконтроллерах.</p>
+
+<h2 id="схема-подключения-модуля-ov7670">Схема подключения модуля OV7670</h2>
+
+<p>Модуль <em>OV7670</em> использует интерфейс SCCB (аналог I2C) для конфигурации и интерфейс параллельного шина данных для передачи картинки. Важно соблюдать соответствие логических уровней: большинство сенсоров работают при 3.3В, тогда как многие контроллеры могут иметь 5В логику. Использование <strong>преобразователей уровня</strong> обязательно при смешивании напряжений.</p>
+
+<p>Основные линии соединения включают тактовый сигнал <code>PCLK</code>, сигнал строба данных <code>HREF</code> и <code>VSYNC</code>. Данные передаются по 8 линиям <code>D0-D7</code>. Подключение питания требует фильтрации, так как сенсор чувствителен к шумам в цепи питания, что может проявляться как полосы на изображении.</p>
+
+<p>Самая критичная часть схемы — это подключение <strong>буферной памяти</strong>. Без неё контроллер должен обрабатывать каждый пиксель мгновенно, что невозможно на стандартных частотах. Вам понадобится чип <em>62256</em> или аналогичная SRAM для кэширования кадра перед выводом на экран.</p>
+
+<blockquote>⚠️ Внимание: Неправильное подключение линии <code>SCL</code> или <code>SDA</code> без подтягивающих резисторов может привести к тому, что контроллер не сможет инициализировать сенсор, и изображение не появится.</blockquote>
+
+<div class="poll-widget" id="poll-9c1b18b9"><div class="poll-widget-question">📊 Какую платформу вы планируете использовать?</div><div class="poll-widget-option" data-poll="9c1b18b9" data-idx="0" onclick="pbPollVote(this)"><span class="poll-widget-label">Arduino Due</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="9c1b18b9" data-idx="1" onclick="pbPollVote(this)"><span class="poll-widget-label">ESP32</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="9c1b18b9" data-idx="2" onclick="pbPollVote(this)"><span class="poll-widget-label">FPGA</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="9c1b18b9" data-idx="3" onclick="pbPollVote(this)"><span class="poll-widget-label">Raspberry Pi</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div></div>
+
+<h2 id="программная-инициализация-и-настройки">Программная инициализация и настройки</h2>
+
+<p>После физического соединения необходимо загрузить прошивку, содержащую драйвер для сенсора. Код должен сначала отправить набор регистров конфигурации <em>OV7670</em>, чтобы настроить яркость, контраст и разрешение. Стандартный набор регистров "QVGA" обычно выдает 320×240 пикселей, но для вывода на монитор лучше начать с меньшего разрешения, например <code>160×120</code>.</p>
+
+<p>Алгоритм работы программы цикличен: считывание кадра из сенсора в SRAM, ожидание синхронизации монитора (VSYNC), вывод данных из SRAM на выходной порт. В случае с Arduino Due часто используется библиотека <strong>ArduinoDueCamera</strong>, которая упрощает работу с таймингами.</p>
+
+<p>Ключевым моментом является совпадение частоты обновления. Если ваш контроллер генерирует сигнал <code>30 Гц</code>, а монитор ожидает <code>60 Гц</code>, изображение будет мерцать или рассинхронизироваться. Вам придется вручную корректировать частоту тактирования датчика в коде.</p>
+
+<details class="faq-item"><summary>Пример кода конфигурации регистров</summary><div class="faq-answer"><p>Вот фрагмент массива регистров для настройки сенсора в режиме VGA. Скопируйте его в функцию инициализации вашего проекта и убедитесь, что адреса соответствуют даташиту.</p></div></details>
+
+<h2 id="генерация-видеосигнала-для-монитора">Генерация видеосигнала для монитора</h2>
+
+<p>Для подключения к монитору чаще всего используется разъем VGA, так как его аналоговый сигнал проще сгенерировать программно или через простые <strong>ЦАП</strong> (цифро-аналоговые преобразователи). Сигнал RGB (красный, зеленый, синий) формируется путем смешивания нескольких цифровых выходов через резистивную матрицу.</p>
+
+<p>Синхронизация — это сердце видеосигнала. Вы должны генерировать импульсы <code>Hsync</code> и <code>Vsync</code> с точностью до микросекунд. Если эти импульсы будут слишком длинными или короткими, монитор перейдет в режим "No Signal". Стандартные тайминги для VGA 320×240 требуют частоты сканирования около <code>25-31 кГц</code> по горизонтали.</p>
+
+<p>Если вы используете <strong>FPGA</strong>, вы можете сгенерировать сигнал HDMI, но это требует знания языков описания аппаратуры (Verilog или VHDL). Для микроконтроллеров HDMI реализовать практически невозможно из-за требований к скорости передачи данных и протоколу DDC.</p>
+
+<table>
+<thead>
+<tr>
+<th>Параметр</th>
+<th>VGA (RGB565)</th>
+<th>VGA (2-bit grayscale)</th>
+<th>HDMI (FPGA)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Разрешение</td>
+<td>До 320x240</td>
+<td>До 640x480</td>
+<td>До 1024x768</td>
+</tr>
+<tr>
+<td>Цветовая глубина</td>
+<td>18 бит (RGB666)</td>
+<td>2 бита</td>
+<td>24 бита</td>
+</tr>
+<tr>
+<td>Сложность</td>
+<td>Средняя</td>
+<td>Низкая</td>
+<td>Высокая</td>
+</tr>
+<tr>
+<td>Необходимое оборудование</td>
+<td>Arduino Due + ЦАП</td>
+<td>Arduino + резисторы</td>
+<td>FPGA плата</td>
+</tr>
+</tbody>
+</table>
+
+<div class="checklist-block"><h4>☑️ Инструкция по проверке синхронизации</h4><label class="check-item"><input type="checkbox"><span>Подключить осциллограф к HSYNC</span></label><label class="check-item"><input type="checkbox"><span>Измерить частоту сканирования</span></label><label class="check-item"><input type="checkbox"><span>Сверить с таймингами монитора</span></label><label class="check-item"><input type="checkbox"><span>Проверить полярность импульсов</span></label><div class="check-progress">Выполнено: <span class="check-count">0</span> / 4</div></div>
+
+<blockquote>⚠️ Внимание: При использовании резистивной матрицы для получения аналогового сигнала RGB убедитесь, что сопротивление резисторов подобрано точно. Ошибка в 10% может привести к искажению цветов или выгоранию входа монитора.</blockquote>
+
+<h2 id="типовые-проблемы-и-способы-их-решения">Типовые проблемы и способы их решения</h2>
+
+<p>Самая частая проблема — "плавающий" или полностью черный экран. Чаще всего это связано с неверной конфигурацией регистров <em>OV7670</em> или отсутствием тактового сигнала <code>XCLK</code>. Проверьте, подается ли на сенсор напряжение 3.3В и работает ли генератор на 24 МГц.</p>
+
+<p>Если изображение появляется, но оно перевернуто или зеркально отражено, это решается программно через регистры <code>COM8</code> или <code>COM10</code>. Вы можете легко инвертировать изображение без переделки схемы, просто изменив биты конфигурации.</p>
+
+<p>Появление полос или артефактов обычно указывает на проблемы с питанием или заземлением. Шум от цифровых линий может наводиться на аналоговые входы сенсора. Используйте <strong>ферритовые кольца</strong> и развязывающие конденсаторы прямо на ножках питания микросхемы.</p>
+
+<div class="attention-box attention-tip"><span class="attention-icon">💡</span><p>Используйте режим QVGA (320x240) только если у вас мощная FPGA. Для Arduino Due лучше начать с разрешения 160x120, чтобы проверить работоспособность всей системы без перегрузки процессора.</p></div>
+
+<h2 id="альтернативные-пути-интеграции">Альтернативные пути интеграции</h2>
+
+<p>Если задача вывода изображения на внешний монитор кажется слишком сложной, рассмотрите вариант использования <strong>ESP32-CAM</strong>. Этот модуль уже имеет встроенный процессор, способный захватывать изображение и передавать его по Wi-Fi на компьютер, где уже можно отобразить его в окне браузера.</p>
+
+<p>Другой вариант — использование платы <em>Arduino Leonardo</em> в качестве HID-устройства для отладки, но для самого видео это не поможет. Для полноценной работы все же потребуется external SRAM и специализированный код. Простого подключения "сенсор-монитор" без промежуточного процессора не существует.</p>
+
+<p>В профессиональной среде часто используют готовые блоки захвата (Frame Grabbers), которые подключаются к USB. Сенсор <em>OV7670</em> можно подключить к такой плате, а она уже выведет сигнал в компьютер. Это избавляет от необходимости писать код генерации видеосигнала с нуля.</p>
+
+<div class="attention-box attention-tip"><span class="attention-icon">💡</span><p>Для стабильной работы с OV7670 и вывода на монитор критически важна внешняя SRAM память и точная калибровка тактовой частоты XCLK. Без этого буферизация кадра невозможна.</p></div>
+
+<blockquote>⚠️ Внимание: Технические характеристики и доступность готовых библиотек для микроконтроллеров могут меняться. Перед началом проекта проверьте актуальность исходного кода на официальном репозитории разработчиков или в документации к вашей плате.</blockquote>
+
+<h2 id="faq-часто-задаваемые-вопросы">FAQ: Часто задаваемые вопросы</h2>
+
+<details>
+<summary>Можно ли подключить OV7670 напрямую к HDMI входу монитора?</summary>
+<p>Нет, это невозможно. Сенсор выдает параллельный цифровой сигнал, а HDMI требует высокоскоростного серийного потока с кодированием TMDS и протоколом DDC. Необходим промежуточный контроллер (FPGA или микроконтроллер с мощным ЦАП).</p>
+</details>
+
+<details>
+<summary>Какой максимум разрешения можно получить на Arduino Due?</summary>
+<p>С использованием внешней SRAM и оптимизированного кода реально получить разрешение 320×240 (QVGA). Более высокое разрешение приведет к падению частоты кадров до нуля или невозможности уложиться в тайминги синхронизации.</p>
+</details>
+
+<details>
+<summary>Нужно ли использовать преобразователь уровней 5В-3.3В?</summary>
+<p>Да, если ваш микроконтроллер имеет 5-вольтовую логику (например, Arduino Uno), а сенсор работает на 3.3В. Прямое подключение 5В к пинам сенсора может привести к его мгновенному выходу из строя.</p>
+</details>
+
+<details>
+<summary>Где взять готовый код для вывода видео?</summary>
+<p>Рекомендуется искать библиотеки по запросам "Arduino Due Camera Interface" или "FPGA OV7670". Откройте исходный код и убедитесь, что он поддерживает работу с вашей конкретной моделью SRAM и монитором.</p>
+</details></div>
+                    <!--#include virtual="/ssi/article_after.html" -->
+
+                </article>
+                <aside class="article-sidebar"><!--#include virtual="/ssi/sidebar_top.html" --><nav class="sidebar-search"><div class="sidebar-search-box"><input type="text" id="globalSearchInput" placeholder="🔍 Поиск статей..." autocomplete="off"><div class="search-dropdown" id="globalSearchDropdown"></div></div></nav><!--#include virtual="/ssi/sidebar_before_toc.html" --><nav class="sidebar-toc" id="sidebarToc"><h3>Содержание</h3><ul><li><a href="#выбор-аппаратной-платформы-для-вывода-видео">Выбор аппаратной платформы для вывода видео</a></li><li><a href="#схема-подключения-модуля-ov7670">Схема подключения модуля OV7670</a></li><li><a href="#программная-инициализация-и-настройки">Программная инициализация и настройки</a></li><li><a href="#генерация-видеосигнала-для-монитора">Генерация видеосигнала для монитора</a></li><li><a href="#типовые-проблемы-и-способы-их-решения">Типовые проблемы и способы их решения</a></li><li><a href="#альтернативные-пути-интеграции">Альтернативные пути интеграции</a></li><li><a href="#faq-часто-задаваемые-вопросы">FAQ: Часто задаваемые вопросы</a></li></ul></nav><!--#include virtual="/ssi/sidebar_before_related.html" --><nav class="sidebar-related"><h3>Похожие статьи</h3><ul><li><a href="/articles/k/ka/kak-nastroit-tri-monitora.html" class="related-card">Как настроить три монитора: пошаговая инструкция для Windows и macOS</a></li><li><a href="/articles/m/mi/mirascreen-kak-podklyuchit-k-monitoru.html" class="related-card">MiraScreen: как подключить к монитору за 5 минут (пошагово)</a></li><li><a href="/articles/p/po/pochemu-kompyuter-otklyuchaet-monitor.html" class="related-card">Почему компьютер отключает монитор: 7 главных причин и решение</a></li><li><a href="/articles/k/ka/kak-polzovatsya-yusb-na-monitore.html" class="related-card">Как пользоваться USB-портом на мониторе: полная инструкция по подключению</a></li><li><a href="/articles/k/ka/kak-uvelichit-gromkost-na-monitore-aoc.html" class="related-card">Как увеличить громкость на мониторе AOC: 5 рабочих способов</a></li></ul></nav><!--#include virtual="/ssi/sidebar_after_related.html" --></aside>
+            </div>
+        </div>
+    </main>
+
+    <!--#include virtual="/ssi/before_related_bottom.html" -->
+    <section class="related-bottom">
+        <div class="container">
+            <h2 class="related-bottom-heading">📖 Читайте также</h2>
+            <div class="related-bottom-grid"><a href="/articles/k/ka/kak-nastroit-tri-monitora.html" class="related-bottom-card"><span class="related-bottom-title">Как настроить три монитора: пошаговая инструкция для Windows и macOS</span><span class="related-bottom-desc">Полное руководство по подключению и настройке трех мониторов. Разбор кабелей, драйверов, расширенног</span></a><a href="/articles/m/mi/mirascreen-kak-podklyuchit-k-monitoru.html" class="related-bottom-card"><span class="related-bottom-title">MiraScreen: как подключить к монитору за 5 минут (пошагово)</span><span class="related-bottom-desc">Подробная инструкция по подключению MiraScreen к монитору через HDMI, Wi-Fi или USB-C. Разбираем нас</span></a><a href="/articles/p/po/pochemu-kompyuter-otklyuchaet-monitor.html" class="related-bottom-card"><span class="related-bottom-title">Почему компьютер отключает монитор: 7 главных причин и решение</span><span class="related-bottom-desc">Монитор гаснет во время работы? Узнайте, почему ПК отключает дисплей, как найти неисправность кабеля</span></a><a href="/articles/k/ka/kak-polzovatsya-yusb-na-monitore.html" class="related-bottom-card"><span class="related-bottom-title">Как пользоваться USB-портом на мониторе: полная инструкция по подключению</span><span class="related-bottom-desc">Узнайте, как подключить флешку, клавиатуру или веб-камеру к USB-порту монитора. Подробный гайд по на</span></a><a href="/articles/k/ka/kak-uvelichit-gromkost-na-monitore-aoc.html" class="related-bottom-card"><span class="related-bottom-title">Как увеличить громкость на мониторе AOC: 5 рабочих способов</span><span class="related-bottom-desc">Полное руководство: настройка OSD, проверка драйверов звука и переход на внешние колонки. Устранение</span></a><a href="/articles/k/ka/kak-razobrat-nozhku-monitora-aoc.html" class="related-bottom-card"><span class="related-bottom-title">Как разобрать ножку монитора AOC: Пошаговая инструкция и советы</span><span class="related-bottom-desc">Подробный гайд по снятию подставки с мониторов AOC. Узнайте, как отсоединить ножку без повреждений, </span></a></div>
+        </div>
+    </section>
+    <!--#include virtual="/ssi/after_related_bottom.html" -->
+
+    <footer class="site-footer-premium">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-col">
+                    <div class="footer-brand">🖥️ Мониторум</div>
+                    <p class="footer-about">Полный справочник по настройке, ремонту и выбору компьютерных мониторов для любых задач.</p>
+                </div>
+                <div class="footer-col">
+                    <h4>Разделы</h4>
+                    <ul><li><a href="/category/nastrojka-ekrana/">⚙️ Настройка экрана</a></li>
+<li><a href="/category/podklyuchenie-ustrojstv/">🔌 Подключение устройств</a></li>
+<li><a href="/category/mnozhestvennye-ekrany/">🖥️🖥️ Множественные экраны</a></li>
+<li><a href="/category/zvuk-i-audio/">🔊 Звук и аудио</a></li>
+<li><a href="/category/remont-i-polomki/">🔧 Ремонт и поломки</a></li>
+<li><a href="/category/ukhod-i-chistka/">🧼 Уход и чистка</a></li></ul>
+                </div>
+                <div class="footer-col">
+                    <h4>Информация</h4>
+                    <ul>
+                        <li><a href="/">Главная</a></li>
+                        <li><a href="/about.html">О проекте</a></li>
+                        <li><a href="/categories.html">Все разделы</a></li>
+                        <li><a href="/contact.html">Контакты</a></li>
+                        <li><a href="/privacy.html">Конфиденциальность</a></li>
+                        <li><a href="/sitemap.xml">Карта сайта</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>© Мониторум. Все права защищены.</p>
+                <!--LiveInternet counter--><div style="margin-top:10px;"><a href="https://www.liveinternet.ru/click"
+                target="_blank"><img id="licnt06C4" width="88" height="15" style="border:0" 
+                title="LiveInternet: показано число посетителей за сегодня"
+                src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAEALAAAAAABAAEAAAIBTAA7"
+                alt=""/></a><script>(function(d,s){d.getElementById("licnt06C4").src=
+                "https://counter.yadro.ru/hit?t26.5;r"+escape(d.referrer)+
+                ((typeof(s)=="undefined")?"":";s"+s.width+"*"+s.height+"*"+
+                (s.colorDepth?s.colorDepth:s.pixelDepth))+";u"+escape(d.URL)+
+                ";h"+escape(d.title.substring(0,150))+";"+Math.random()})(document,screen)</script></div><!--/LiveInternet-->
+            </div>
+        </div>
+    </footer>
+    <div id="cookie-consent" class="cookie-popup">
+        <div class="cookie-inner">
+            <span>🍪 Мы используем файлы cookie для улучшения работы сайта.</span>
+            <button id="cookie-accept" class="cookie-btn">Принять</button>
+        </div>
+    </div>
+    <script src="/static/js/main.js"></script>
+    <script>
+    (function() {
+        const popup = document.getElementById('cookie-consent');
+        const btn = document.getElementById('cookie-accept');
+        if (popup && btn && !localStorage.getItem('cookie-accepted')) {
+            popup.classList.add('visible');
+            btn.onclick = () => {
+                localStorage.setItem('cookie-accepted', 'true');
+                popup.classList.remove('visible');
+            };
+        }
+    })();
+    </script>
+    <script>
+    function pbPollVote(el) {
+        var poll = el.closest('.poll-widget');
+        if (poll.classList.contains('voted')) return;
+        poll.classList.add('voted');
+        el.classList.add('selected');
+        var opts = poll.querySelectorAll('.poll-widget-option');
+        var n = opts.length;
+        var raw = [];
+        var sum = 0;
+        for (var i = 0; i < n; i++) {
+            var v = Math.random() * 50 + 5;
+            if (opts[i] === el) v += 30;
+            raw.push(v);
+            sum += v;
+        }
+        var pcts = raw.map(function(v) { return Math.round(v / sum * 100); });
+        var diff = 100 - pcts.reduce(function(a,b){ return a+b; }, 0);
+        pcts[Array.from(opts).indexOf(el)] += diff;
+        setTimeout(function() {
+            opts.forEach(function(opt, i) {
+                opt.querySelector('.poll-widget-bar').style.width = pcts[i] + '%';
+                opt.querySelector('.poll-widget-pct').textContent = pcts[i] + '%';
+            });
+        }, 50);
+    }
+    </script>
+    <!--#include virtual="/ssi/body_bottom.html" -->
+    <script src="/static/js/inject.js" defer></script>
+</body>
+</html>

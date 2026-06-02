@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27><text y=%27.9em%27 font-size=%2790%27>🖥️</text></svg>">
+    <title>Как программно отключить монитор в Windows 10: 3 способа — Мониторум</title>
+    <meta name="description" content="Узнайте, как выключить экран средствами Windows, через PowerShell или утилиты. Полная инструкция по управлению питанием дисплея без клавиатуры.">
+    <link rel="canonical" href="https://monitorium.vercel.app/articles/k/ka/kak-programmno-otklyuchit-monitor-v-windows-10.html">
+
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="Как программно отключить монитор в Windows 10: 3 способа">
+    <meta property="og:description" content="Узнайте, как выключить экран средствами Windows, через PowerShell или утилиты. Полная инструкция по управлению питанием дисплея без клавиатуры.">
+    <meta property="og:locale" content="ru_RU">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css?v=1780420684">
+    <style>
+    .site-footer-premium {
+        margin-top: 60px; padding: 40px 0 0; background: #1e293b; color: #94a3b8;
+    }
+    .footer-grid {
+        display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 40px;
+        padding-bottom: 32px; border-bottom: 1px solid #334155;
+    }
+    .footer-brand { font-size: 1.2rem; font-weight: 700; color: #f1f5f9; margin-bottom: 12px; }
+    .footer-about { font-size: 0.9rem; line-height: 1.6; margin-bottom: 8px; }
+    .footer-updated { font-size: 0.8rem; color: #64748b; }
+    .footer-col h4 { color: #f1f5f9; font-size: 0.95rem; margin-bottom: 16px; }
+    .footer-col ul { list-style: none; }
+    .footer-col li { margin-bottom: 8px; }
+    .footer-col a { color: #94a3b8; font-size: 0.9rem; transition: color 0.2s; }
+    .footer-col a:hover { color: #60a5fa; }
+    .footer-bottom { padding: 20px 0; text-align: center; font-size: 0.85rem; }
+    @media (max-width: 640px) {
+        .footer-grid { grid-template-columns: 1fr; gap: 24px; }
+    }
+    .cookie-popup {
+        position: fixed; bottom: 0; left: 0; right: 0; background: #1e293b; color: #fff;
+        padding: 16px; transition: transform 0.5s ease; z-index: 9999; border-top: 2px solid #2563eb;
+        transform: translateY(100%);
+    }
+    .cookie-popup.visible { transform: translateY(0); }
+    .cookie-inner { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; gap: 16px; font-size: 0.9rem; }
+    .cookie-btn { background: #2563eb; color: #fff; border: none; padding: 8px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+    .cookie-btn:hover { background: #1d4ed8; }
+    @media (max-width: 640px) {
+        .cookie-inner { flex-direction: column; text-align: center; }
+    }
+</style>
+    
+    <!--#include virtual="/ssi/head.html" -->
+</head>
+<body>
+        <!--#include virtual="/ssi/body_top.html" -->
+    <style>
+    .nav-dropdown { position: relative; display: inline-block; }
+    .dropdown-toggle {
+        background: none; border: none; cursor: pointer;
+        font: inherit; color: inherit; padding: 8px 12px;
+        border-radius: 8px; transition: background 0.2s;
+    }
+    .dropdown-toggle:hover { background: rgba(0,0,0,0.05); }
+    .dropdown-menu {
+        display: none; position: absolute; right: 0; top: 100%;
+        min-width: 240px; max-height: 70vh; overflow-y: auto;
+        background: var(--card-bg, #fff); border: 1px solid var(--border, #e5e7eb);
+        border-radius: 12px; box-shadow: 0 12px 40px rgba(0,0,0,0.12);
+        padding: 8px 0; z-index: 1000;
+    }
+    .nav-dropdown::after {
+        content: ''; position: absolute; left: 0; right: 0;
+        top: 100%; height: 12px;
+    }
+    .nav-dropdown:hover .dropdown-menu,
+    .nav-dropdown:focus-within .dropdown-menu { display: block; }
+    .dropdown-item {
+        display: block; padding: 10px 20px; color: var(--text, #1f2937);
+        text-decoration: none; font-size: 0.95rem; transition: background 0.15s;
+        white-space: nowrap;
+    }
+    .dropdown-item:hover { background: rgba(37,99,235,0.06); color: var(--primary, #2563eb); }
+    @media (max-width: 768px) {
+        .main-nav > .nav-link { display: none; }
+        .dropdown-toggle { display: none; }
+        .dropdown-menu {
+            display: block !important; position: static;
+            box-shadow: none; border: none; border-radius: 0;
+            min-width: auto; max-height: none; padding: 0;
+            background: transparent;
+        }
+        .dropdown-item {
+            padding: 8px 0; font-size: 1rem;
+        }
+    }
+    </style>
+    <header class="site-header">
+        <div class="container header-inner">
+            <a href="/" class="logo">
+                <span class="logo-icon">🖥️</span>
+                <span>Мониторум</span>
+            </a>
+            <button class="mobile-menu-btn" aria-label="Меню" id="menuBtn">☰</button>
+            <nav class="main-nav" id="mainNav">
+                <a href="/category/nastrojka-ekrana/" class="nav-link">⚙️ Настройка экрана</a>
+<a href="/category/podklyuchenie-ustrojstv/" class="nav-link">🔌 Подключение устройств</a>
+<a href="/category/mnozhestvennye-ekrany/" class="nav-link">🖥️🖥️ Множественные экраны</a>
+<a href="/category/zvuk-i-audio/" class="nav-link">🔊 Звук и аудио</a>
+<div class="nav-dropdown">
+            <button class="nav-link dropdown-toggle">📂 Все разделы ▾</button>
+            <div class="dropdown-menu"><a href="/category/nastrojka-ekrana/" class="dropdown-item">⚙️ Настройка экрана</a>
+<a href="/category/podklyuchenie-ustrojstv/" class="dropdown-item">🔌 Подключение устройств</a>
+<a href="/category/mnozhestvennye-ekrany/" class="dropdown-item">🖥️🖥️ Множественные экраны</a>
+<a href="/category/zvuk-i-audio/" class="dropdown-item">🔊 Звук и аудио</a>
+<a href="/category/remont-i-polomki/" class="dropdown-item">🔧 Ремонт и поломки</a>
+<a href="/category/ukhod-i-chistka/" class="dropdown-item">🧼 Уход и чистка</a>
+<a href="/category/vybor-i-kharakteristiki/" class="dropdown-item">📊 Выбор и характеристики</a>
+<a href="/category/drajvery-i-po/" class="dropdown-item">💿 Драйверы и ПО</a>
+<a href="/category/krepleniya-i-ustanovka/" class="dropdown-item">🔩 Крепления и установка</a>
+<a href="/category/utilizatsiya-i-prodazha/" class="dropdown-item">♻️ Утилизация и продажа</a>
+<a href="/category/spetsialnye-rezhimy/" class="dropdown-item">🎮 Специальные режимы</a>
+<a href="/category/drugoe/" class="dropdown-item">📁 Другое</a></div>
+        </div>
+            </nav>
+        </div>
+    </header>
+
+    <nav class="breadcrumbs" aria-label="Навигация">
+        <div class="container"><a href="/">Главная</a><span class="breadcrumb-sep">›</span><a href="/category/spetsialnye-rezhimy/">Специальные режимы</a><span class="breadcrumb-sep">›</span><span class="breadcrumb-current">Как программно отключить монитор в Windows 10: 3 способа</span></div>
+    </nav>
+
+    <main class="site-main">
+        <div class="container">
+            <div class="article-layout">
+                <article class="article-main">
+                    
+                    <h1>Программное отключение монитора в Windows 10</h1>
+                    <nav class="mobile-toc"><details><summary>📋 Содержание</summary><ul><li><a href="#введение">Введение</a></li><li><a href="#использование-стандартных-средств-энергосбережения">Использование стандартных средств энергосбережения</a></li><li><a href="#командная-строка-и-powershell-для-программистов">Командная строка и PowerShell для программистов</a></li><li><a href="#использование-специализированных-утилит-ddcci">Использование специализированных утилит (DDC/CI)</a></li><li><a href="#автоматизация-через-планировщик-задач">Автоматизация через планировщик задач</a></li><li><a href="#проблемы-совместимости-и-драйверов">Проблемы совместимости и драйверов</a></li><li><a href="#частые-вопросы-пользователей">Частые вопросы пользователей</a></li></ul></details></nav>
+                    <!--#include virtual="/ssi/article_before.html" -->
+                    <div class="article-body"><h2 id="введение">Введение</h2>
+<p>Современные операционные системы предоставляют множество инструментов для управления периферийными устройствами, но функция мгновенного отключения именно <strong>внешнего монитора</strong> часто скрыта от пользователя. Многие пользователи привыкли нажимать кнопку питания на корпусе устройства, забывая, что программный метод позволяет экономить ресурсы и автоматизировать процесс при смене задач.</p>
+<p>Возможность выключить экран без физического контакта полезна не только для экономии электроэнергии в режиме ожидания, но и для сохранения ресурса матрицы при длительных перерывах в работе. Это также актуально для тех, кто использует несколько мониторов и хочет отключить один из них, не затрагивая основной рабочий стол.</p>
+
+<h2 id="использование-стандартных-средств-энергосбережения">Использование стандартных средств энергосбережения</h2>
+<p>Самый простой и безопасный способ управления питанием дисплея встроен непосредственно в настройки системы. Вам нужно перейти в <code>Панель управления → Электропитание</code> и настроить параметры отключения дисплея при простое. Однако этот метод работает только по таймеру бездействия, что не всегда удобно для оперативного управления.</p>
+<p>Для более гибкой настройки можно использовать сочетание клавиш, которое переводит систему в режим сна или блокировки экрана. Нажмите <code>Win + L</code> для мгновенной блокировки сессии. Экран погаснет, но процессор и другие компоненты продолжат работать, что позволяет сохранять открытые приложения. Это решение отлично подходит для кратковременных отлучек.</p>
+<p>Если вам нужно именно программное управление, можно создать ярлык для быстрого перехода в спящий режим. Создайте новый текстовый файл, впишите туда команду <code>rundll32.exe powrprof.dll,SetSuspendState 0,1,0</code> и сохраните его с расширением <code>.bat</code>. Запуск этого файла выключит монитор и переведет компьютер в сон.</p>
+<blockquote>⚠️ Внимание: Включение функции быстрого запуска в Windows 10 может помешать корректному выключению некоторых старых моделей <em>мониторов</em>, вызывая зависание изображения при пробуждении.
+</blockquote>
+
+<div class="poll-widget" id="poll-e69b9639"><div class="poll-widget-question">📊 Какой способ отключения экрана вы используете чаще всего?</div><div class="poll-widget-option" data-poll="e69b9639" data-idx="0" onclick="pbPollVote(this)"><span class="poll-widget-label">Кнопка на корпусе</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="e69b9639" data-idx="1" onclick="pbPollVote(this)"><span class="poll-widget-label">Сочетание клавиш</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="e69b9639" data-idx="2" onclick="pbPollVote(this)"><span class="poll-widget-label">Специальная утилита</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="e69b9639" data-idx="3" onclick="pbPollVote(this)"><span class="poll-widget-label">Настройки электропитания</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div></div>
+
+<h2 id="командная-строка-и-powershell-для-программистов">Командная строка и PowerShell для программистов</h2>
+<p>Для тех, кто предпочитает автоматизацию, существуют методы, использующие системные библиотеки Windows. Вы можете написать скрипт на PowerShell, который вызовет системный вызов <strong>SetMonitorPowerState</strong>. Это позволяет включать и выключать <em>дисплей</em> без изменения состояния системы в целом.</p>
+<p>Рассмотрим простой пример скрипта, который использует <code>user32.dll</code> для отправки сообщения о выключении. Вам потребуется создать файл с расширением <code>.ps1</code> и внедрить туда код, вызывающий функцию <code>SendMessage</code> с параметром <code>SC_MONITORPOWER</code>. Это технически сложное решение, требующее понимания работы API.</p>
+<p>При запуске такого скрипта система отправляет сигнал драйверу видеокарты, который переводит <strong>панель</strong> в режим низкого энергопотребления. Экран гаснет, но видеосигнал может продолжать передаваться, что иногда вызывает мигание при повторном включении. Убедитесь, что драйвер видеокарты обновлен до последней версии.</p>
+<pre><code>Add-Type @"
+<p>using System;</p>
+<p>using System.Runtime.InteropServices;</p>
+<p>public class Monitor {</p>
+<p>[DllImport("user32.dll")]</p>
+<p>public static extern int SendMessage(int hWnd, int hMsg, int wParam, int lParam);</p>
+<p>public static void TurnOff() {</p>
+<p>SendMessage(-1, 0x0112, 0xF170, 2);</p>
+<p>}</p>
+<p>}</p>
+<p>"@</p>
+<p>[Monitor]::TurnOff()</code></pre></p>
+<div class="checklist-block"><h4>☑️ Проверка перед запуском скрипта</h4><label class="check-item"><input type="checkbox"><span>Проверить версию PowerShell</span></label><label class="check-item"><input type="checkbox"><span>Убедиться в отсутствии критических процессов</span></label><label class="check-item"><input type="checkbox"><span>Создать точку восстановления</span></label><label class="check-item"><input type="checkbox"><span>Закрыть все приложения</span></label><div class="check-progress">Выполнено: <span class="check-count">0</span> / 4</div></div>
+
+<h2 id="использование-специализированных-утилит-ddcci">Использование специализированных утилит (DDC/CI)</h2>
+<p>Самый продвинутый способ программно отключить монитор — это использование протокола <strong>DDC/CI</strong>. Этот стандарт позволяет компьютеру отправлять команды непосредственно на микроконтроллер монитора, изменяя его настройки, включая включение и выключение питания. Для этого требуются специальные программы, такие как <em>NirCmd</em>, <em>Monitorian</em> или <em>ClickMonitorDDC</em>.</p>
+<p>Утилита <em>ClickMonitorDDC</em> предоставляет удобный интерфейс для управления яркостью и питанием. После установки программы вы можете назначить горячие клавиши для мгновенного выключения конкретного экрана. Это особенно полезно при работе с <strong>многочисленными мониторами</strong>, где нужно быстро убрать один из них, оставив другие активными.</p>
+<p>Важно отметить, что протокол DDC/CI должен быть включен в меню самого монитора через его физические кнопки. Если эта опция отключена, программные команды не будут достигать цели. Проверьте настройки в разделе <code>General</code> или <code>System</code> вашего дисплея, чтобы убедиться в поддержке стандарта.</p>
+
+<table>
+<thead>
+<tr>
+<th>Программа</th>
+<th>Тип лицензии</th>
+<th>Поддержка DDC/CI</th>
+<th>Сложность настройки</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ClickMonitorDDC</td>
+<td>Бесплатная</td>
+<td>Полная</td>
+<td>Средняя</td>
+</tr>
+<tr>
+<td>NirCmd</td>
+<td>Бесплатная</td>
+<td>Частичная</td>
+<td>Низкая</td>
+</tr>
+<tr>
+<td>Monitorian</td>
+<td>Бесплатная</td>
+<td>Полная</td>
+<td>Низкая</td>
+</tr>
+<tr>
+<td>PowerStrip</td>
+<td>Платная</td>
+<td>Полная</td>
+<td>Высокая</td>
+</tr>
+</tbody>
+</table>
+
+<details class="faq-item"><summary>Что такое протокол DDC/CI?</summary><div class="faq-answer"><p>DDC/CI (Display Data Channel Command Interface) — это стандарт, позволяющий компьютеру управлять настройками монитора через кабель подключения (HDMI, DisplayPort, VGA). Он позволяет программно менять яркость, контрастность и включать/выключать устройство без использования кнопок на корпусе.</p></div></details>
+
+<h2 id="автоматизация-через-планировщик-задач">Автоматизация через планировщик задач</h2>
+<p>Для реализации сценариев "включить/выключить по расписанию" идеально подходит <strong>Планировщик задач</strong> Windows. Вы можете создать задачу, которая запускает скрипт выключения монитора в определенное время, например, сразу после окончания рабочего дня. Это избавляет от необходимости запоминать процедуру вручную.</p>
+<p>В настройках триггера укажите время начала действия, а в действии — путь к вашему скрипту или исполняемому файлу утилиты. Система сама выполнит команду, когда наступит заданный момент. Это решение отлично подходит для серверных помещений или офисов, где требуется строгий контроль энергопотребления.</p>
+<p>Помните, что планировщик задач может не сработать, если система находится в режиме гибернации или сна. Убедитесь, что в параметрах задачи стоит галочка <code>Запускать, даже если пользователь не вошел в систему</code>, если это необходимо для вашей специфики работы.</p>
+<div class="attention-box attention-tip"><span class="attention-icon">💡</span><p>Перед созданием автоматического выключения проверьте, не запущены ли в это время важные фоновые процессы, которые могут прерваться при отключении дисплея, если утилита переводит систему в сон.</p></div>
+
+<h2 id="проблемы-совместимости-и-драйверов">Проблемы совместимости и драйверов</h2>
+<p>Иногда программное отключение монитора может привести к визуальным артефактам или черному экрану, который не включается обратно. Это часто случается при использовании устаревших драйверов видеокарты или при подключении через переходники, не поддерживающие <strong>передачу данных DDC/CI</strong>. В таких случаях сигнал может прерываться некорректно.</p>
+<p>Если команда выключения выполняется, но экран остается включенным с черным фоном, проблема может быть в графическом движке. Попробуйте перезапустить видео-драйвер, нажав сочетание клавиш <code>Win + Ctrl + Shift + B</code>. Этот "секретный" код мгновенно перезагружает графический стек без перезагрузки системы.</p>
+<p>Также стоит учесть, что некоторые игровые мониторы с высокой частотой обновления могут игнорировать стандартные команды ОС. В таких случаях рекомендуется проверять спецификацию устройства на сайте производителя, чтобы убедиться в поддержке программного управления питанием.</p>
+<blockquote>⚠️ Внимание: Использование сторонних утилит для управления питанием может привести к сбоям в работе драйверов видеокарты, если они конфликтуют с системными настройками электропитания. Внимательно читаайте документацию к софту.
+</blockquote>
+
+<div class="attention-box attention-tip"><span class="attention-icon">💡</span><p>Протокол DDC/CI — это самый эффективный способ программно управлять питанием монитора, но он требует поддержки со стороны "железа" и правильного подключения кабеля.</p></div>
+
+<h2 id="частые-вопросы-пользователей">Частые вопросы пользователей</h2>
+<details>
+<summary>Погаснет ли экран, если я просто выключу компьютер?</summary>
+<p>Да, при штатном завершении работы Windows 10 подает команду на отключение всех периферийных устройств, включая мониторы. Однако при использовании режима "Сон" или "Гибернация" поведение может варьироваться в зависимости от настроек BIOS и драйверов.</p>
+</details>
+<details>
+<summary>Можно ли отключить один монитор из двух, оставив второй включенным?</summary>
+<p>Да, это возможно с помощью утилит, поддерживающих DDC/CI (например, ClickMonitorDDC). Вы можете выбрать конкретное устройство в списке и отправить команду выключения только на него, не затрагивая другие дисплеи.</p>
+</details>
+<details>
+<summary>Безопасно ли для монитора часто выключать его программно?</summary>
+<p>Программное отключение переводит устройство в режим ожидания, что является штатным режимом работы для современных <em>LED</em> и <em>LCD</em> панелей. Это не наносит вреда и по сути аналогично нажатию кнопки питания на корпусе, но происходит быстрее.</p>
+</details>
+<details>
+<summary>Что делать, если экран не включается обратно после выключения?</summary>
+<p>Попробуйте нажать клавишу пробела или любую букву на клавиатуре. Если это не помогло, используйте комбинацию <code>Win + Ctrl + Shift + B</code> для перезагрузки драйвера, либо нажмите кнопку питания на самом мониторе для принудительного включения.</p>
+</details></div>
+                    <!--#include virtual="/ssi/article_after.html" -->
+
+                </article>
+                <aside class="article-sidebar"><!--#include virtual="/ssi/sidebar_top.html" --><nav class="sidebar-search"><div class="sidebar-search-box"><input type="text" id="globalSearchInput" placeholder="🔍 Поиск статей..." autocomplete="off"><div class="search-dropdown" id="globalSearchDropdown"></div></div></nav><!--#include virtual="/ssi/sidebar_before_toc.html" --><nav class="sidebar-toc" id="sidebarToc"><h3>Содержание</h3><ul><li><a href="#введение">Введение</a></li><li><a href="#использование-стандартных-средств-энергосбережения">Использование стандартных средств энергосбережения</a></li><li><a href="#командная-строка-и-powershell-для-программистов">Командная строка и PowerShell для программистов</a></li><li><a href="#использование-специализированных-утилит-ddcci">Использование специализированных утилит (DDC/CI)</a></li><li><a href="#автоматизация-через-планировщик-задач">Автоматизация через планировщик задач</a></li><li><a href="#проблемы-совместимости-и-драйверов">Проблемы совместимости и драйверов</a></li><li><a href="#частые-вопросы-пользователей">Частые вопросы пользователей</a></li></ul></nav><!--#include virtual="/ssi/sidebar_before_related.html" --><nav class="sidebar-related"><h3>Похожие статьи</h3><ul><li><a href="/articles/k/ka/kak-iz-obychnogo-monitora-sdelat-3d.html" class="related-card">Как превратить обычный монитор в 3D-дисплей: методы и софт</a></li><li><a href="/articles/k/ka/kak-snyat-s-monitora-rezhim-energosberezheniya.html" class="related-card">Как вывести монитор из режима энергосбережения — 5 способов</a></li><li><a href="/articles/k/ka/kak-posmotret-3-d-na-monitore.html" class="related-card">Как смотреть 3D на мониторе: технологии, очки и настройки ПК</a></li><li><a href="/articles/f/fr/free-sync-v-monitore-lg-chto-eto.html" class="related-card">FreeSync в мониторах LG: что это и как работает в 2026 году</a></li><li><a href="/articles/k/ka/kak-vklyuchit-g-sync-na-monitore-acer-nitro.html" class="related-card">G-Sync на Acer Nitro: как включить за 5 минут (пошагово)</a></li></ul></nav><!--#include virtual="/ssi/sidebar_after_related.html" --></aside>
+            </div>
+        </div>
+    </main>
+
+    <!--#include virtual="/ssi/before_related_bottom.html" -->
+    <section class="related-bottom">
+        <div class="container">
+            <h2 class="related-bottom-heading">📖 Читайте также</h2>
+            <div class="related-bottom-grid"><a href="/articles/k/ka/kak-iz-obychnogo-monitora-sdelat-3d.html" class="related-bottom-card"><span class="related-bottom-title">Как превратить обычный монитор в 3D-дисплей: методы и софт</span><span class="related-bottom-desc">Полное руководство по созданию объемного изображения на плоском экране. Обзор программ, очков и техн</span></a><a href="/articles/k/ka/kak-snyat-s-monitora-rezhim-energosberezheniya.html" class="related-bottom-card"><span class="related-bottom-title">Как вывести монитор из режима энергосбережения — 5 способов</span><span class="related-bottom-desc">Монитор не реагирует на кнопки? Черный экран с индикатором? Узнайте, как снять режим энергосбережени</span></a><a href="/articles/k/ka/kak-posmotret-3-d-na-monitore.html" class="related-bottom-card"><span class="related-bottom-title">Как смотреть 3D на мониторе: технологии, очки и настройки ПК</span><span class="related-bottom-desc">Полное руководство: как включить 3D на мониторе, выбрать технологию (Shutter, Anaglyph, VR), настрои</span></a><a href="/articles/f/fr/free-sync-v-monitore-lg-chto-eto.html" class="related-bottom-card"><span class="related-bottom-title">FreeSync в мониторах LG: что это и как работает в 2026 году</span><span class="related-bottom-desc">Разбираем технологию FreeSync в мониторах LG: принципы работы, совместимость с видеокартами, настрой</span></a><a href="/articles/k/ka/kak-vklyuchit-g-sync-na-monitore-acer-nitro.html" class="related-bottom-card"><span class="related-bottom-title">G-Sync на Acer Nitro: как включить за 5 минут (пошагово)</span><span class="related-bottom-desc">Подробная инструкция по активации G-Sync на мониторах Acer Nitro: проверка совместимости, настройка </span></a><a href="/articles/k/ka/kak-vklyuchit-frisink-na-monitore-aoc.html" class="related-bottom-card"><span class="related-bottom-title">Как включить FreeSync на мониторах AOC: полная инструкция 2026</span><span class="related-bottom-desc">Пошаговая настройка AMD FreeSync на мониторах AOC через меню OSD и панель драйверов. Решение проблем</span></a></div>
+        </div>
+    </section>
+    <!--#include virtual="/ssi/after_related_bottom.html" -->
+
+    <footer class="site-footer-premium">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-col">
+                    <div class="footer-brand">🖥️ Мониторум</div>
+                    <p class="footer-about">Полный справочник по настройке, ремонту и выбору компьютерных мониторов для любых задач.</p>
+                </div>
+                <div class="footer-col">
+                    <h4>Разделы</h4>
+                    <ul><li><a href="/category/nastrojka-ekrana/">⚙️ Настройка экрана</a></li>
+<li><a href="/category/podklyuchenie-ustrojstv/">🔌 Подключение устройств</a></li>
+<li><a href="/category/mnozhestvennye-ekrany/">🖥️🖥️ Множественные экраны</a></li>
+<li><a href="/category/zvuk-i-audio/">🔊 Звук и аудио</a></li>
+<li><a href="/category/remont-i-polomki/">🔧 Ремонт и поломки</a></li>
+<li><a href="/category/ukhod-i-chistka/">🧼 Уход и чистка</a></li></ul>
+                </div>
+                <div class="footer-col">
+                    <h4>Информация</h4>
+                    <ul>
+                        <li><a href="/">Главная</a></li>
+                        <li><a href="/about.html">О проекте</a></li>
+                        <li><a href="/categories.html">Все разделы</a></li>
+                        <li><a href="/contact.html">Контакты</a></li>
+                        <li><a href="/privacy.html">Конфиденциальность</a></li>
+                        <li><a href="/sitemap.xml">Карта сайта</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>© Мониторум. Все права защищены.</p>
+                <!--LiveInternet counter--><div style="margin-top:10px;"><a href="https://www.liveinternet.ru/click"
+                target="_blank"><img id="licnt06C4" width="88" height="15" style="border:0" 
+                title="LiveInternet: показано число посетителей за сегодня"
+                src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAEALAAAAAABAAEAAAIBTAA7"
+                alt=""/></a><script>(function(d,s){d.getElementById("licnt06C4").src=
+                "https://counter.yadro.ru/hit?t26.5;r"+escape(d.referrer)+
+                ((typeof(s)=="undefined")?"":";s"+s.width+"*"+s.height+"*"+
+                (s.colorDepth?s.colorDepth:s.pixelDepth))+";u"+escape(d.URL)+
+                ";h"+escape(d.title.substring(0,150))+";"+Math.random()})(document,screen)</script></div><!--/LiveInternet-->
+            </div>
+        </div>
+    </footer>
+    <div id="cookie-consent" class="cookie-popup">
+        <div class="cookie-inner">
+            <span>🍪 Мы используем файлы cookie для улучшения работы сайта.</span>
+            <button id="cookie-accept" class="cookie-btn">Принять</button>
+        </div>
+    </div>
+    <script src="/static/js/main.js"></script>
+    <script>
+    (function() {
+        const popup = document.getElementById('cookie-consent');
+        const btn = document.getElementById('cookie-accept');
+        if (popup && btn && !localStorage.getItem('cookie-accepted')) {
+            popup.classList.add('visible');
+            btn.onclick = () => {
+                localStorage.setItem('cookie-accepted', 'true');
+                popup.classList.remove('visible');
+            };
+        }
+    })();
+    </script>
+    <script>
+    function pbPollVote(el) {
+        var poll = el.closest('.poll-widget');
+        if (poll.classList.contains('voted')) return;
+        poll.classList.add('voted');
+        el.classList.add('selected');
+        var opts = poll.querySelectorAll('.poll-widget-option');
+        var n = opts.length;
+        var raw = [];
+        var sum = 0;
+        for (var i = 0; i < n; i++) {
+            var v = Math.random() * 50 + 5;
+            if (opts[i] === el) v += 30;
+            raw.push(v);
+            sum += v;
+        }
+        var pcts = raw.map(function(v) { return Math.round(v / sum * 100); });
+        var diff = 100 - pcts.reduce(function(a,b){ return a+b; }, 0);
+        pcts[Array.from(opts).indexOf(el)] += diff;
+        setTimeout(function() {
+            opts.forEach(function(opt, i) {
+                opt.querySelector('.poll-widget-bar').style.width = pcts[i] + '%';
+                opt.querySelector('.poll-widget-pct').textContent = pcts[i] + '%';
+            });
+        }, 50);
+    }
+    </script>
+    <!--#include virtual="/ssi/body_bottom.html" -->
+    <script src="/static/js/inject.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27><text y=%27.9em%27 font-size=%2790%27>🖥️</text></svg>">
+    <title>Как подключить ноутбук как второй монитор к ПК на Linux: Полное руководство — Мониторум</title>
+    <meta name="description" content="Подробная инструкция по превращению ноутбука в дополнительный дисплей для компьютера с Linux. Методы через SSH, IP-мосты и специализированное ПО.">
+    <link rel="canonical" href="https://monitorium.vercel.app/articles/k/ka/kak-podklyuchit-noutbuk-kak-vtoroj-monitor-k-kompyuteru-linux.html">
+
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="Как подключить ноутбук как второй монитор к ПК на Linux: Полное руководство">
+    <meta property="og:description" content="Подробная инструкция по превращению ноутбука в дополнительный дисплей для компьютера с Linux. Методы через SSH, IP-мосты и специализированное ПО.">
+    <meta property="og:locale" content="ru_RU">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css?v=1780420684">
+    <style>
+    .site-footer-premium {
+        margin-top: 60px; padding: 40px 0 0; background: #1e293b; color: #94a3b8;
+    }
+    .footer-grid {
+        display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 40px;
+        padding-bottom: 32px; border-bottom: 1px solid #334155;
+    }
+    .footer-brand { font-size: 1.2rem; font-weight: 700; color: #f1f5f9; margin-bottom: 12px; }
+    .footer-about { font-size: 0.9rem; line-height: 1.6; margin-bottom: 8px; }
+    .footer-updated { font-size: 0.8rem; color: #64748b; }
+    .footer-col h4 { color: #f1f5f9; font-size: 0.95rem; margin-bottom: 16px; }
+    .footer-col ul { list-style: none; }
+    .footer-col li { margin-bottom: 8px; }
+    .footer-col a { color: #94a3b8; font-size: 0.9rem; transition: color 0.2s; }
+    .footer-col a:hover { color: #60a5fa; }
+    .footer-bottom { padding: 20px 0; text-align: center; font-size: 0.85rem; }
+    @media (max-width: 640px) {
+        .footer-grid { grid-template-columns: 1fr; gap: 24px; }
+    }
+    .cookie-popup {
+        position: fixed; bottom: 0; left: 0; right: 0; background: #1e293b; color: #fff;
+        padding: 16px; transition: transform 0.5s ease; z-index: 9999; border-top: 2px solid #2563eb;
+        transform: translateY(100%);
+    }
+    .cookie-popup.visible { transform: translateY(0); }
+    .cookie-inner { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; gap: 16px; font-size: 0.9rem; }
+    .cookie-btn { background: #2563eb; color: #fff; border: none; padding: 8px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+    .cookie-btn:hover { background: #1d4ed8; }
+    @media (max-width: 640px) {
+        .cookie-inner { flex-direction: column; text-align: center; }
+    }
+</style>
+    
+    <!--#include virtual="/ssi/head.html" -->
+</head>
+<body>
+        <!--#include virtual="/ssi/body_top.html" -->
+    <style>
+    .nav-dropdown { position: relative; display: inline-block; }
+    .dropdown-toggle {
+        background: none; border: none; cursor: pointer;
+        font: inherit; color: inherit; padding: 8px 12px;
+        border-radius: 8px; transition: background 0.2s;
+    }
+    .dropdown-toggle:hover { background: rgba(0,0,0,0.05); }
+    .dropdown-menu {
+        display: none; position: absolute; right: 0; top: 100%;
+        min-width: 240px; max-height: 70vh; overflow-y: auto;
+        background: var(--card-bg, #fff); border: 1px solid var(--border, #e5e7eb);
+        border-radius: 12px; box-shadow: 0 12px 40px rgba(0,0,0,0.12);
+        padding: 8px 0; z-index: 1000;
+    }
+    .nav-dropdown::after {
+        content: ''; position: absolute; left: 0; right: 0;
+        top: 100%; height: 12px;
+    }
+    .nav-dropdown:hover .dropdown-menu,
+    .nav-dropdown:focus-within .dropdown-menu { display: block; }
+    .dropdown-item {
+        display: block; padding: 10px 20px; color: var(--text, #1f2937);
+        text-decoration: none; font-size: 0.95rem; transition: background 0.15s;
+        white-space: nowrap;
+    }
+    .dropdown-item:hover { background: rgba(37,99,235,0.06); color: var(--primary, #2563eb); }
+    @media (max-width: 768px) {
+        .main-nav > .nav-link { display: none; }
+        .dropdown-toggle { display: none; }
+        .dropdown-menu {
+            display: block !important; position: static;
+            box-shadow: none; border: none; border-radius: 0;
+            min-width: auto; max-height: none; padding: 0;
+            background: transparent;
+        }
+        .dropdown-item {
+            padding: 8px 0; font-size: 1rem;
+        }
+    }
+    </style>
+    <header class="site-header">
+        <div class="container header-inner">
+            <a href="/" class="logo">
+                <span class="logo-icon">🖥️</span>
+                <span>Мониторум</span>
+            </a>
+            <button class="mobile-menu-btn" aria-label="Меню" id="menuBtn">☰</button>
+            <nav class="main-nav" id="mainNav">
+                <a href="/category/nastrojka-ekrana/" class="nav-link">⚙️ Настройка экрана</a>
+<a href="/category/podklyuchenie-ustrojstv/" class="nav-link">🔌 Подключение устройств</a>
+<a href="/category/mnozhestvennye-ekrany/" class="nav-link">🖥️🖥️ Множественные экраны</a>
+<a href="/category/zvuk-i-audio/" class="nav-link">🔊 Звук и аудио</a>
+<div class="nav-dropdown">
+            <button class="nav-link dropdown-toggle">📂 Все разделы ▾</button>
+            <div class="dropdown-menu"><a href="/category/nastrojka-ekrana/" class="dropdown-item">⚙️ Настройка экрана</a>
+<a href="/category/podklyuchenie-ustrojstv/" class="dropdown-item">🔌 Подключение устройств</a>
+<a href="/category/mnozhestvennye-ekrany/" class="dropdown-item">🖥️🖥️ Множественные экраны</a>
+<a href="/category/zvuk-i-audio/" class="dropdown-item">🔊 Звук и аудио</a>
+<a href="/category/remont-i-polomki/" class="dropdown-item">🔧 Ремонт и поломки</a>
+<a href="/category/ukhod-i-chistka/" class="dropdown-item">🧼 Уход и чистка</a>
+<a href="/category/vybor-i-kharakteristiki/" class="dropdown-item">📊 Выбор и характеристики</a>
+<a href="/category/drajvery-i-po/" class="dropdown-item">💿 Драйверы и ПО</a>
+<a href="/category/krepleniya-i-ustanovka/" class="dropdown-item">🔩 Крепления и установка</a>
+<a href="/category/utilizatsiya-i-prodazha/" class="dropdown-item">♻️ Утилизация и продажа</a>
+<a href="/category/spetsialnye-rezhimy/" class="dropdown-item">🎮 Специальные режимы</a>
+<a href="/category/drugoe/" class="dropdown-item">📁 Другое</a></div>
+        </div>
+            </nav>
+        </div>
+    </header>
+
+    <nav class="breadcrumbs" aria-label="Навигация">
+        <div class="container"><a href="/">Главная</a><span class="breadcrumb-sep">›</span><a href="/category/mnozhestvennye-ekrany/">Множественные экраны</a><span class="breadcrumb-sep">›</span><span class="breadcrumb-current">Как подключить ноутбук как второй монитор к ПК на Linux: Полное руководство</span></div>
+    </nav>
+
+    <main class="site-main">
+        <div class="container">
+            <div class="article-layout">
+                <article class="article-main">
+                    
+                    <h1>Превращаем ноутбук в монитор: Подключение к ПК на Linux</h1>
+                    <nav class="mobile-toc"><details><summary>📋 Содержание</summary><ul><li><a href="#введение">Введение</a></li><li><a href="#почему-нельзя-просто-подключить-кабель-hdmi">Почему нельзя просто подключить кабель HDMI?</a></li><li><a href="#использование-dsdt-и-протокола-spacedesk">Использование DSDT и протокола Spacedesk</a></li><li><a href="#настройка-x11-и-vnc-для-удаленного-управления">Настройка X11 и VNC для удаленного управления</a></li><li><a href="#пошаговая-инструкция-через-ssh-и-x11-forwarding">Пошаговая инструкция через SSH и X11 Forwarding</a></li><li><a href="#сравнение-методов-подключения">Сравнение методов подключения</a></li><li><a href="#настройка-разрешения-и-частоты-обновления">Настройка разрешения и частоты обновления</a></li><li><a href="#устранение-распространенных-проблем">Устранение распространенных проблем</a></li><li><a href="#заключение-и-дополнительные-ресурсы">Заключение и дополнительные ресурсы</a></li></ul></details></nav>
+                    <!--#include virtual="/ssi/article_before.html" -->
+                    <div class="article-body"><h2 id="введение">Введение</h2>
+
+<p>Многие пользователи сталкиваются с ситуацией, когда домашнего компьютера не хватает для комфортной работы, а покупка нового оборудования временно невозможна. В таких случаях отличным решением станет использование дополнительного ноутбука в качестве второго экрана. Современные операционные системы, включая <strong>Linux</strong>, предоставляют для этого мощные инструменты без необходимости покупать сложные переходники.</p>
+
+<em>Ubuntu</em>, <em>Debian</em> или <em>Fedora</em> могут работать как хосты для расширения экрана, если правильно настроить сетевое взаимодействие. Важно понимать, что аппаратное подключение через HDMI-порт ноутбука обычно невозможно, так как видеовыходы на ноутбуках являются только выходными, а не входными.
+
+<p>Поэтому основной упор делается на программные решения, которые передают видеопоток по локальной сети. Это требует стабильного соединения и правильной конфигурации сетевых протоколов.</p>
+
+<h2 id="почему-нельзя-просто-подключить-кабель-hdmi">Почему нельзя просто подключить кабель HDMI?</h2>
+
+<p>Многие новички ошибочно полагают, что достаточно соединить два компьютера кабелем HDMI, и изображение появится автоматически. Это фундаментальное заблуждение касается архитектуры портов в портативных устройствах. Практически все модели ноутбуков, включая <em>Dell XPS</em> или <em>Lenovo ThinkPad</em>, оснащены видеовыходом (Output), а не видеовходом (Input).</p>
+
+<p>Внутренняя электроника ноутбука не умеет принимать видеосигнал напрямую через этот порт, чтобы передать его на матрицу. Сигнал идет только в обратном направлении — от ноутбука к проектору или телевизору. Попытка подключить кабель может привести к отсутствию реакции или, в редких случаях, к перегрузке цепи питания, хотя современные стандарты имеют защиту.</p>
+
+<p>Для реализации задачи вам придется использовать альтернативные методы передачи данных. Единственное исключение составляют редкие игровые ноутбуки с поддержкой технологии Capture Card, но они встречаются крайне редко и требуют специфического ПО.</p>
+
+<blockquote>
+<p>⚠️ Внимание: Не пытайтесь подключать компьютер к ноутбуку через HDMI-кабель в надежде получить картинку. Это технически невозможно на 99% устройств и не приведет к желаемому результату.</p>
+</blockquote>
+
+<h2 id="использование-dsdt-и-протокола-spacedesk">Использование DSDT и протокола Spacedesk</h2>
+
+<p>Одним из наиболее эффективных способов является использование стороннего программного обеспечения, которое эмулирует видеовход через сеть. Суть метода заключается в установке клиентской части на ноутбук и серверной части на основной компьютер <strong>Linux</strong>.</p>
+
+<p>Самым популярным решением для этой задачи является <em>DSDT</em> (Distributed System Display Technology) или его аналоги, такие как <em>Spacedesk</em>. Эти программы сжимают видеопоток и передают его по TCP/IP, что позволяет использовать даже Wi-Fi, хотя для минимизации задержек предпочтителен кабель.</p>
+
+<p>Для работы на стороне Linux часто требуется установка драйверов и настройка прав доступа. Процесс может показаться сложным, но он дает гибкость в выборе разрешения и частоты обновления экрана.</p>
+
+<div class="attention-box attention-tip"><span class="attention-icon">💡</span><p>Для минимальной задержки при использовании программных мониторов обязательно подключите оба устройства к роутеру через кабель Ethernet, а не по Wi-Fi.</p></div>
+
+<h2 id="настройка-x11-и-vnc-для-удаленного-управления">Настройка X11 и VNC для удаленного управления</h2>
+
+<p>Если установка сторонних драйверов кажется вам слишком рискованной, можно воспользоваться стандартными инструментами <strong>X11</strong> и <em>VNC</em>. Этот метод работает на уровне графической оболочки, позволяя перенаправить окно или рабочий стол на другой экран.</p>
+
+<p>Вам потребуется настроить сервер VNC на основном компьютере, который будет транслировать изображение. На ноутбуке запускается VNC-клиент, который отображает полученный поток. Однако стоит учитывать, что VNC не поддерживает аппаратное ускорение графических задач так эффективно, как специализированные решения.</p>
+
+<p>Для запуска сервера в терминале используется команда <code>vncserver :1</code>. После этого нужно войти в настройки сервера и задать пароль доступа. На клиентском устройстве в поле ввода адреса указывается <code>IP-адрес_хоста:1</code>.</p>
+
+<blockquote>
+<p>⚠️ Внимание: Используя VNC, вы можете столкнуться с высокой задержкой отклика при прокрутке страниц или работе с графикой. Это не подходит для игр или видеомонтажа.</p>
+</blockquote>
+
+<h2 id="пошаговая-инструкция-через-ssh-и-x11-forwarding">Пошаговая инструкция через SSH и X11 Forwarding</h2>
+
+<p>Для продвинутых пользователей, знакомых с командной строкой, использование <strong>SSH</strong> с пересылкой X11 является элегантным решением. Этот метод позволяет запускать графические приложения на удаленном Linux-сервере и отображать их локально.</p>
+
+<p>Сначала необходимо убедиться, что на удаленном компьютере установлен пакет <code>xauth</code> и разрешено перенаправление в конфигурации <code>sshd_config</code>. Параметр <code>X11Forwarding yes</code> должен быть активирован.</p>
+
+<p>Затем на локальном компьютере с Linux (или Windows/Mac с установленным X-сервером) выполняется команда подключения. Все графические окна появятся в отдельном окне, которое можно развернуть на весь экран.</p>
+
+<div class="checklist-block"><h4>☑️ Проверка конфигурации SSH</h4><label class="check-item"><input type="checkbox"><span>Установить пакет xauth</span></label><label class="check-item"><input type="checkbox"><span>Открыть port 22</span></label><label class="check-item"><input type="checkbox"><span>Включить X11Forwarding</span></label><label class="check-item"><input type="checkbox"><span>Проверить SSH-ключи</span></label><div class="check-progress">Выполнено: <span class="check-count">0</span> / 4</div></div>
+
+<details class="faq-item"><summary>Что делает X11 Forwarding?
+<p>X11 Forwarding позволяет пересылаать графический интерфейс приложений через зашифрованное SSH-соединение. Это безопасно, но требует высокой пропускной способности сети для комфортной работы с графикой.--></p>
+
+<!--WIDGET</summary><div class="faq-answer"><p>poll:Какой метод вы планируете использовать?:Стороннее ПО (Spacedesk/Virtual Display)|VNC сервер|SSH X11 Forwarding|Мой метод</p></div></details>
+
+<h2 id="сравнение-методов-подключения">Сравнение методов подключения</h2>
+
+<p>Чтобы выбрать оптимальный вариант, необходимо сопоставить требования к производительности и сложности настройки. Различные подходы имеют свои сильные и слабые стороны, которые критичны при работе в реальном времени.</p>
+
+<p>Ниже приведена таблица, сравнивающая основные параметры методов подключения:</p>
+
+<table>
+<thead>
+<tr>
+<th>Метод</th>
+<th>Задержка (Latency)</th>
+<th>Качество изображения</th>
+<th>Сложность настройки</th>
+<th>Необходимое ПО</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Spacedesk / DSDT</td>
+<td>Низкая</td>
+<td>Высокое</td>
+<td>Средняя</td>
+<td>Сторонние драйверы</td>
+</tr>
+<tr>
+<td>VNC</td>
+<td>Средняя</td>
+<td>Среднее</td>
+<td>Низкая</td>
+<td>VNC Server/Client</td>
+</tr>
+<tr>
+<td>SSH X11</td>
+<td>Высокая</td>
+<td>Зависит от сети</td>
+<td>Высокая</td>
+<td>SSH-клиент (клиент)</td>
+</tr>
+<tr>
+<td>Hardware Capture</td>
+<td>Отсутствует</td>
+<td>Максимальное</td>
+<td>Очень высокая</td>
+<td>USB Capture Card</td>
+</tr>
+</tbody>
+</table>
+
+<p>Каждый метод имеет свои ограничения. Например, <em>VNC</em> может не справляться с динамичным видео, тогда как <strong>Spacedesk</strong> оптимизирован именно для таких сценариев. Выбор зависит от ваших конкретных задач.</p>
+
+<blockquote>
+<p>⚠️ Внимание: Если вы планируете использовать ноутбук в качестве монитора для игр, стандартные сетевые методы могут не подойти из-за высокой задержки ввода.</p>
+</blockquote>
+
+<div class="attention-box attention-tip"><span class="attention-icon">💡</span><p>Для работы с офисными приложениями и браузером идеально подходят сетевые решения типа Spacedesk, а для требовательных задач лучше рассмотреть аппаратные захватчики.</p></div>
+
+<h2 id="настройка-разрешения-и-частоты-обновления">Настройка разрешения и частоты обновления</h2>
+
+<p>После успешного подключения второго экрана крайне важно правильно настроить его параметры. Linux, в отличие от Windows, часто требует ручного вмешательства для определения оптимального разрешения и частоты кадров.</p>
+
+<p>Используйте утилиту <code>xrandr</code> в терминале для просмотра доступных режимов. Команда <code>xrandr --query</code> покажет список подключенных экранов и поддерживаемых ими разрешений.</p>
+
+<p>Для установки конкретного разрешения выполните команду, заменив параметры на нужные: <pre><code>xrandr --output HDMI-1 --mode 1920x1080 --rate 60</code></pre>.</p>
+
+<p>Часто система не видит новых разрешений автоматически, и их приходится добавлять вручную. Это делается через создание нового режима и его присоединение к выходу.</p>
+
+<div class="attention-box attention-tip"><span class="attention-icon">💡</span><p>Если экран мигает или изображение искажается, попробуйте понизить частоту обновления с 60 Гц до 50 Гц или 30 Гц для проверки стабильности соединения.</p></div>
+
+<h2 id="устранение-распространенных-проблем">Устранение распространенных проблем</h2>
+
+<p>Даже при идеальной настройке могут возникнуть проблемы с отображением. Самая частая ошибка — экран остается черным или отображает только часть рабочего стола. Это часто связано с неправильной конфигурацией <strong>X11</strong> или блокировкой портов фаерволом.</p>
+
+<p>Проверьте, открыт ли необходимый порт на хост-машине. Для <em>Spacedesk</em> это обычно порт <code>5258</code>, для <em>VNC</em> — <code>5900</code>. Используйте команду <code>ufw status</code> для проверки правил фаервола на Linux.</p>
+
+<p>Если изображение появляется с задержкой, проверьте нагрузку на сеть. Возможно, домашний роутер не справляется с потоком данных, особенно если используется Wi-Fi.</p>
+
+
+<p>Попробуйте перезапустить дисплейный менеджер или перезагрузить оба устройства. Иногда проблема решается отключением и повторным подключением по сети.--></p>
+
+<h2 id="заключение-и-дополнительные-ресурсы">Заключение и дополнительные ресурсы</h2>
+
+<p>Превращение ноутбука в дополнительный монитор под управлением <strong>Linux</strong> — это задача, требующая внимания к деталям. Грамотная настройка позволяет сэкономить деньги и получить удобный инструментарий для работы.</p>
+
+<p> Экспериментируйте с настройками, чтобы найти идеальный баланс между качеством и производительностью.</p>
+
+<h3>Часто задаваемые вопросы</h3>
+
+<details>
+<summary>Можно ли использовать ноутбук с Windows как монитор для Linux?</summary>
+<p>Да, это возможно. Если основной компьютер — Linux, а ноутбук — Windows, используйте VNC-сервер на Linux и VNC-клиент на Windows. Сторонние программы вроде Spacedesk также поддерживают кросс-платформенное взаимодействие.</p>
+</details>
+
+<details>
+<summary>Почему картинка на втором экране тормозит?</summary>
+<p>Это обычно связано с низкой пропускной способностью сети или высокой нагрузкой на процессор при сжатии видео. Попробуйте переключиться на проводное подключение Ethernet или снизить разрешение экрана.</p>
+</details>
+
+<details>
+<summary>Нужен ли специальный кабель для подключения?</summary>
+<p>Нет, для программных методов используется обычная сетевая инфраструктура. Кабель HDMI не нужен и даже бесполезен, так как порт ноутбука является выходным, а не входным.</p>
+</details>
+
+<details>
+<summary>Работает ли этот метод на старых ноутбуках?</summary>
+<p>Да, но производительность будет зависеть от мощности процессора и объема оперативной памяти. Старые устройства могут не успевать декодировать видеопоток, вызывая лаги.</p>
+</details></div>
+                    <!--#include virtual="/ssi/article_after.html" -->
+
+                </article>
+                <aside class="article-sidebar"><!--#include virtual="/ssi/sidebar_top.html" --><nav class="sidebar-search"><div class="sidebar-search-box"><input type="text" id="globalSearchInput" placeholder="🔍 Поиск статей..." autocomplete="off"><div class="search-dropdown" id="globalSearchDropdown"></div></div></nav><!--#include virtual="/ssi/sidebar_before_toc.html" --><nav class="sidebar-toc" id="sidebarToc"><h3>Содержание</h3><ul><li><a href="#введение">Введение</a></li><li><a href="#почему-нельзя-просто-подключить-кабель-hdmi">Почему нельзя просто подключить кабель HDMI?</a></li><li><a href="#использование-dsdt-и-протокола-spacedesk">Использование DSDT и протокола Spacedesk</a></li><li><a href="#настройка-x11-и-vnc-для-удаленного-управления">Настройка X11 и VNC для удаленного управления</a></li><li><a href="#пошаговая-инструкция-через-ssh-и-x11-forwarding">Пошаговая инструкция через SSH и X11 Forwarding</a></li><li><a href="#сравнение-методов-подключения">Сравнение методов подключения</a></li><li><a href="#настройка-разрешения-и-частоты-обновления">Настройка разрешения и частоты обновления</a></li><li><a href="#устранение-распространенных-проблем">Устранение распространенных проблем</a></li><li><a href="#заключение-и-дополнительные-ресурсы">Заключение и дополнительные ресурсы</a></li></ul></nav><!--#include virtual="/ssi/sidebar_before_related.html" --><nav class="sidebar-related"><h3>Похожие статьи</h3><ul><li><a href="/articles/k/ka/kak-soedinit-dva-monitora-na-odin-kompyuter-windows-7.html" class="related-card">Настройка двух мониторов на Windows 7: полное руководство</a></li><li><a href="/articles/k/ka/kak-razbit-na-dva-monitora.html" class="related-card">Как разбить экран на два монитора: полная настройка в Windows и macOS</a></li><li><a href="/articles/k/ka/kak-podklyuchit-dva-monitora-k-noutu.html" class="related-card">Как подключить два монитора к ноутбуку: полное руководство</a></li><li><a href="/articles/k/ka/kak-izmenit-oboi-na-2-monitore.html" class="related-card">Как поменять обои на 2 мониторах: пошаговая инструкция 2026</a></li><li><a href="/articles/k/ka/kak-na-vtorom-monitore-ubrat-panel-zadach-vnizu-ekrana.html" class="related-card">Как убрать панель задач на втором мониторе: 5 способов (2026)</a></li></ul></nav><!--#include virtual="/ssi/sidebar_after_related.html" --></aside>
+            </div>
+        </div>
+    </main>
+
+    <!--#include virtual="/ssi/before_related_bottom.html" -->
+    <section class="related-bottom">
+        <div class="container">
+            <h2 class="related-bottom-heading">📖 Читайте также</h2>
+            <div class="related-bottom-grid"><a href="/articles/k/ka/kak-soedinit-dva-monitora-na-odin-kompyuter-windows-7.html" class="related-bottom-card"><span class="related-bottom-title">Настройка двух мониторов на Windows 7: полное руководство</span><span class="related-bottom-desc">Пошаговая инструкция подключения второго экрана к ПК на Windows 7. Настройка режимов работы, драйвер</span></a><a href="/articles/k/ka/kak-razbit-na-dva-monitora.html" class="related-bottom-card"><span class="related-bottom-title">Как разбить экран на два монитора: полная настройка в Windows и macOS</span><span class="related-bottom-desc">Подробная инструкция по подключению и настройке двух мониторов. Настройка режимов дублирования и рас</span></a><a href="/articles/k/ka/kak-podklyuchit-dva-monitora-k-noutu.html" class="related-bottom-card"><span class="related-bottom-title">Как подключить два монитора к ноутбуку: полное руководство</span><span class="related-bottom-desc">Пошаговая инструкция по подключению второго и третьего экрана к ноутбуку. Обзор разъемов, настройки </span></a><a href="/articles/k/ka/kak-izmenit-oboi-na-2-monitore.html" class="related-bottom-card"><span class="related-bottom-title">Как поменять обои на 2 мониторах: пошаговая инструкция 2026</span><span class="related-bottom-desc">Узнайте, как настроить разные обои на двух мониторах в Windows 10/11, macOS и Linux. Способы для раз</span></a><a href="/articles/k/ka/kak-na-vtorom-monitore-ubrat-panel-zadach-vnizu-ekrana.html" class="related-bottom-card"><span class="related-bottom-title">Как убрать панель задач на втором мониторе: 5 способов (2026)</span><span class="related-bottom-desc">Пошаговая инструкция, как скрыть панель задач на дополнительном экране в Windows 10/11. Способы для </span></a><a href="/articles/k/ka/kak-sdelat-chtoby-myshka-ne-ukhodila-na-vtoroj-monitor-vo-vremya-igry.html" class="related-bottom-card"><span class="related-bottom-title">Как заблокировать курсор мыши на одном мониторе в играх</span><span class="related-bottom-desc">Полное руководство по настройке Windows и драйверов, чтобы курсор мыши не перелетал на второй экран </span></a></div>
+        </div>
+    </section>
+    <!--#include virtual="/ssi/after_related_bottom.html" -->
+
+    <footer class="site-footer-premium">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-col">
+                    <div class="footer-brand">🖥️ Мониторум</div>
+                    <p class="footer-about">Полный справочник по настройке, ремонту и выбору компьютерных мониторов для любых задач.</p>
+                </div>
+                <div class="footer-col">
+                    <h4>Разделы</h4>
+                    <ul><li><a href="/category/nastrojka-ekrana/">⚙️ Настройка экрана</a></li>
+<li><a href="/category/podklyuchenie-ustrojstv/">🔌 Подключение устройств</a></li>
+<li><a href="/category/mnozhestvennye-ekrany/">🖥️🖥️ Множественные экраны</a></li>
+<li><a href="/category/zvuk-i-audio/">🔊 Звук и аудио</a></li>
+<li><a href="/category/remont-i-polomki/">🔧 Ремонт и поломки</a></li>
+<li><a href="/category/ukhod-i-chistka/">🧼 Уход и чистка</a></li></ul>
+                </div>
+                <div class="footer-col">
+                    <h4>Информация</h4>
+                    <ul>
+                        <li><a href="/">Главная</a></li>
+                        <li><a href="/about.html">О проекте</a></li>
+                        <li><a href="/categories.html">Все разделы</a></li>
+                        <li><a href="/contact.html">Контакты</a></li>
+                        <li><a href="/privacy.html">Конфиденциальность</a></li>
+                        <li><a href="/sitemap.xml">Карта сайта</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>© Мониторум. Все права защищены.</p>
+                <!--LiveInternet counter--><div style="margin-top:10px;"><a href="https://www.liveinternet.ru/click"
+                target="_blank"><img id="licnt06C4" width="88" height="15" style="border:0" 
+                title="LiveInternet: показано число посетителей за сегодня"
+                src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAEALAAAAAABAAEAAAIBTAA7"
+                alt=""/></a><script>(function(d,s){d.getElementById("licnt06C4").src=
+                "https://counter.yadro.ru/hit?t26.5;r"+escape(d.referrer)+
+                ((typeof(s)=="undefined")?"":";s"+s.width+"*"+s.height+"*"+
+                (s.colorDepth?s.colorDepth:s.pixelDepth))+";u"+escape(d.URL)+
+                ";h"+escape(d.title.substring(0,150))+";"+Math.random()})(document,screen)</script></div><!--/LiveInternet-->
+            </div>
+        </div>
+    </footer>
+    <div id="cookie-consent" class="cookie-popup">
+        <div class="cookie-inner">
+            <span>🍪 Мы используем файлы cookie для улучшения работы сайта.</span>
+            <button id="cookie-accept" class="cookie-btn">Принять</button>
+        </div>
+    </div>
+    <script src="/static/js/main.js"></script>
+    <script>
+    (function() {
+        const popup = document.getElementById('cookie-consent');
+        const btn = document.getElementById('cookie-accept');
+        if (popup && btn && !localStorage.getItem('cookie-accepted')) {
+            popup.classList.add('visible');
+            btn.onclick = () => {
+                localStorage.setItem('cookie-accepted', 'true');
+                popup.classList.remove('visible');
+            };
+        }
+    })();
+    </script>
+    <script>
+    function pbPollVote(el) {
+        var poll = el.closest('.poll-widget');
+        if (poll.classList.contains('voted')) return;
+        poll.classList.add('voted');
+        el.classList.add('selected');
+        var opts = poll.querySelectorAll('.poll-widget-option');
+        var n = opts.length;
+        var raw = [];
+        var sum = 0;
+        for (var i = 0; i < n; i++) {
+            var v = Math.random() * 50 + 5;
+            if (opts[i] === el) v += 30;
+            raw.push(v);
+            sum += v;
+        }
+        var pcts = raw.map(function(v) { return Math.round(v / sum * 100); });
+        var diff = 100 - pcts.reduce(function(a,b){ return a+b; }, 0);
+        pcts[Array.from(opts).indexOf(el)] += diff;
+        setTimeout(function() {
+            opts.forEach(function(opt, i) {
+                opt.querySelector('.poll-widget-bar').style.width = pcts[i] + '%';
+                opt.querySelector('.poll-widget-pct').textContent = pcts[i] + '%';
+            });
+        }, 50);
+    }
+    </script>
+    <!--#include virtual="/ssi/body_bottom.html" -->
+    <script src="/static/js/inject.js" defer></script>
+</body>
+</html>

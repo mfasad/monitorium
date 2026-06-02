@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27><text y=%27.9em%27 font-size=%2790%27>🖥️</text></svg>">
+    <title>Автомониторинг Avito: как отслеживать объявления без ручного поиска — Мониторум</title>
+    <meta name="description" content="Пошаговая инструкция по настройке автоматического мониторинга Avito: парсеры, API, боты, уведомления. Сравнение методов и советы по обходу блокировок.">
+    <link rel="canonical" href="https://monitorium.vercel.app/articles/k/ka/kak-monitorit-avito-avtomaticheski.html">
+
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="Автомониторинг Avito: как отслеживать объявления без ручного поиска">
+    <meta property="og:description" content="Пошаговая инструкция по настройке автоматического мониторинга Avito: парсеры, API, боты, уведомления. Сравнение методов и советы по обходу блокировок.">
+    <meta property="og:locale" content="ru_RU">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css?v=1780420684">
+    <style>
+    .site-footer-premium {
+        margin-top: 60px; padding: 40px 0 0; background: #1e293b; color: #94a3b8;
+    }
+    .footer-grid {
+        display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 40px;
+        padding-bottom: 32px; border-bottom: 1px solid #334155;
+    }
+    .footer-brand { font-size: 1.2rem; font-weight: 700; color: #f1f5f9; margin-bottom: 12px; }
+    .footer-about { font-size: 0.9rem; line-height: 1.6; margin-bottom: 8px; }
+    .footer-updated { font-size: 0.8rem; color: #64748b; }
+    .footer-col h4 { color: #f1f5f9; font-size: 0.95rem; margin-bottom: 16px; }
+    .footer-col ul { list-style: none; }
+    .footer-col li { margin-bottom: 8px; }
+    .footer-col a { color: #94a3b8; font-size: 0.9rem; transition: color 0.2s; }
+    .footer-col a:hover { color: #60a5fa; }
+    .footer-bottom { padding: 20px 0; text-align: center; font-size: 0.85rem; }
+    @media (max-width: 640px) {
+        .footer-grid { grid-template-columns: 1fr; gap: 24px; }
+    }
+    .cookie-popup {
+        position: fixed; bottom: 0; left: 0; right: 0; background: #1e293b; color: #fff;
+        padding: 16px; transition: transform 0.5s ease; z-index: 9999; border-top: 2px solid #2563eb;
+        transform: translateY(100%);
+    }
+    .cookie-popup.visible { transform: translateY(0); }
+    .cookie-inner { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; gap: 16px; font-size: 0.9rem; }
+    .cookie-btn { background: #2563eb; color: #fff; border: none; padding: 8px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+    .cookie-btn:hover { background: #1d4ed8; }
+    @media (max-width: 640px) {
+        .cookie-inner { flex-direction: column; text-align: center; }
+    }
+</style>
+    
+    <!--#include virtual="/ssi/head.html" -->
+</head>
+<body>
+        <!--#include virtual="/ssi/body_top.html" -->
+    <style>
+    .nav-dropdown { position: relative; display: inline-block; }
+    .dropdown-toggle {
+        background: none; border: none; cursor: pointer;
+        font: inherit; color: inherit; padding: 8px 12px;
+        border-radius: 8px; transition: background 0.2s;
+    }
+    .dropdown-toggle:hover { background: rgba(0,0,0,0.05); }
+    .dropdown-menu {
+        display: none; position: absolute; right: 0; top: 100%;
+        min-width: 240px; max-height: 70vh; overflow-y: auto;
+        background: var(--card-bg, #fff); border: 1px solid var(--border, #e5e7eb);
+        border-radius: 12px; box-shadow: 0 12px 40px rgba(0,0,0,0.12);
+        padding: 8px 0; z-index: 1000;
+    }
+    .nav-dropdown::after {
+        content: ''; position: absolute; left: 0; right: 0;
+        top: 100%; height: 12px;
+    }
+    .nav-dropdown:hover .dropdown-menu,
+    .nav-dropdown:focus-within .dropdown-menu { display: block; }
+    .dropdown-item {
+        display: block; padding: 10px 20px; color: var(--text, #1f2937);
+        text-decoration: none; font-size: 0.95rem; transition: background 0.15s;
+        white-space: nowrap;
+    }
+    .dropdown-item:hover { background: rgba(37,99,235,0.06); color: var(--primary, #2563eb); }
+    @media (max-width: 768px) {
+        .main-nav > .nav-link { display: none; }
+        .dropdown-toggle { display: none; }
+        .dropdown-menu {
+            display: block !important; position: static;
+            box-shadow: none; border: none; border-radius: 0;
+            min-width: auto; max-height: none; padding: 0;
+            background: transparent;
+        }
+        .dropdown-item {
+            padding: 8px 0; font-size: 1rem;
+        }
+    }
+    </style>
+    <header class="site-header">
+        <div class="container header-inner">
+            <a href="/" class="logo">
+                <span class="logo-icon">🖥️</span>
+                <span>Мониторум</span>
+            </a>
+            <button class="mobile-menu-btn" aria-label="Меню" id="menuBtn">☰</button>
+            <nav class="main-nav" id="mainNav">
+                <a href="/category/nastrojka-ekrana/" class="nav-link">⚙️ Настройка экрана</a>
+<a href="/category/podklyuchenie-ustrojstv/" class="nav-link">🔌 Подключение устройств</a>
+<a href="/category/mnozhestvennye-ekrany/" class="nav-link">🖥️🖥️ Множественные экраны</a>
+<a href="/category/zvuk-i-audio/" class="nav-link">🔊 Звук и аудио</a>
+<div class="nav-dropdown">
+            <button class="nav-link dropdown-toggle">📂 Все разделы ▾</button>
+            <div class="dropdown-menu"><a href="/category/nastrojka-ekrana/" class="dropdown-item">⚙️ Настройка экрана</a>
+<a href="/category/podklyuchenie-ustrojstv/" class="dropdown-item">🔌 Подключение устройств</a>
+<a href="/category/mnozhestvennye-ekrany/" class="dropdown-item">🖥️🖥️ Множественные экраны</a>
+<a href="/category/zvuk-i-audio/" class="dropdown-item">🔊 Звук и аудио</a>
+<a href="/category/remont-i-polomki/" class="dropdown-item">🔧 Ремонт и поломки</a>
+<a href="/category/ukhod-i-chistka/" class="dropdown-item">🧼 Уход и чистка</a>
+<a href="/category/vybor-i-kharakteristiki/" class="dropdown-item">📊 Выбор и характеристики</a>
+<a href="/category/drajvery-i-po/" class="dropdown-item">💿 Драйверы и ПО</a>
+<a href="/category/krepleniya-i-ustanovka/" class="dropdown-item">🔩 Крепления и установка</a>
+<a href="/category/utilizatsiya-i-prodazha/" class="dropdown-item">♻️ Утилизация и продажа</a>
+<a href="/category/spetsialnye-rezhimy/" class="dropdown-item">🎮 Специальные режимы</a>
+<a href="/category/drugoe/" class="dropdown-item">📁 Другое</a></div>
+        </div>
+            </nav>
+        </div>
+    </header>
+
+    <nav class="breadcrumbs" aria-label="Навигация">
+        <div class="container"><a href="/">Главная</a><span class="breadcrumb-sep">›</span><a href="/category/drugoe/">Другое</a><span class="breadcrumb-sep">›</span><span class="breadcrumb-current">Автомониторинг Avito: как отслеживать объявления без ручного поиска</span></div>
+    </nav>
+
+    <main class="site-main">
+        <div class="container">
+            <div class="article-layout">
+                <article class="article-main">
+                    
+                    <h1>Как автоматически мониторить объявления на Avito: 7 проверенных способов</h1>
+                    <nav class="mobile-toc"><details><summary>📋 Содержание</summary><ul><li><a href="#почему-ручной-мониторинг-avito-неэффективен">Почему ручной мониторинг Avito неэффективен</a></li><li><a href="#способ-1-браузерные-расширения-для-мониторинга">Способ 1: Браузерные расширения для мониторинга</a></li><li><a href="#способ-2-парсеры-на-python-с-использованием-api-avito">Способ 2: Парсеры на Python с использованием API Avito</a></li><li><a href="#способ-3-telegram-боты-для-уведомлений">Способ 3: Telegram-боты для уведомлений</a></li><li><a href="#способ-4-автоматизация-через-google-apps-script">Способ 4: Автоматизация через Google Apps Script</a></li><li><a href="#способ-5-сервисы-для-бизнес-мониторинга-avito-business-data360">Способ 5: Сервисы для бизнес-мониторинга (Avito Business, Data360)</a></li><li><a href="#способ-6-облачные-парсеры-parsehub-octoparse">Способ 6: Облачные парсеры (ParseHub, Octoparse)</a></li><li><a href="#способ-7-создание-собственной-системы-с-базой-данных">Способ 7: Создание собственной системы с базой данных</a></li><li><a href="#как-обойти-блокировки-и-не-попасть-под-бан">Как обойти блокировки и не попасть под бан</a></li><li><a href="#faq-частые-вопросы-об-автомониторинге-avito">FAQ: Частые вопросы об автомониторинге Avito</a></li></ul></details></nav>
+                    <!--#include virtual="/ssi/article_before.html" -->
+                    <div class="article-body"><p>Мониторинг объявлений на <em>Avito</em> вручную — это как искать иголку в стоге сена, когда стог постоянно обновляется. Каждую минуту на площадке появляются сотни новых предложений, а актуальные сделки разбирают за часы. Автоматизация этого процесса экономит время, повышает шансы на выгодную покупку и помогает бизнесу оперативно реагировать на изменения рынка. Но как настроить систему, которая будет работать без вашего участия?</p>
+
+<p>В этой статье разберём <strong>7 способов автомониторинга</strong> — от простых браузерных расширений до сложных парсеров с уведомлениями в <em>Telegram</em>. Вы узнаете, как обходить ограничения <em>Avito</em>, фильтровать спам, настраивать оповещения по ключевым словам и даже анализировать динамику цен. Особое внимание уделим легальным методам, которые не приведут к блокировке аккаунта. Если вы торгуете на площадке, ищете редкие товары или просто хотите быть в курсе самых выгодных предложений — этот гайд для вас.</p>
+
+<h2 id="почему-ручной-мониторинг-avito-неэффективен">Почему ручной мониторинг Avito неэффективен</h2>
+
+<p>Даже если вы проводите на <em>Avito</em> по несколько часов в день, шансы пропустить выгодное объявление остаются высокими. Платформа использует динамическую выдачу: алгоритмы подстраивают результаты под ваше поведение, а новые объявления могут не попадать в топ из-за низкого рейтинга продавца или других факторов. Вот ключевые проблемы ручного поиска:</p>
+
+<ul>
+  <li>🔄 <strong>Постоянные обновления:</strong> на популярных категориях (например, <em>iPhone</em> или <em>квартиры в Москве</em>) объявления обновляются каждые 2–5 минут. Физически невозможно отслеживать всё.</li>
+  <li>⏳ <strong>Задержки реакции:</strong> даже если вы проверяете площадку каждые 30 минут, кто-то может успеть связаться с продавцом раньше.</li>
+  <li>🎯 <strong>Скрытая фильтрация:</strong> <em>Avito</em> может не показывать объявления с определёнными ключевыми словами или от новых аккаунтов, если они кажутся подозрительными.</li>
+  <li>📊 <strong>Отсутствие анализа:</strong> вручную сложно отслеживать динамику цен, среднее время продажи или частоту появления товаров.</li>
+</ul>
+
+<p>Автоматизация решает эти проблемы: боты проверяют площадку каждые 5–10 секунд, сохраняют историю изменений и отправляют уведомления только по релевантным объявлениям. Например, если вы ищете <em>MacBook Pro M1</em> по цене до 60 000 ₽, система проигнорирует все остальные предложения и оповестит вас только о подходящих.</p>
+
+<div class="poll-widget" id="poll-c3b0e99d"><div class="poll-widget-question">📊 Как часто вы проверяете Avito вручную?</div><div class="poll-widget-option" data-poll="c3b0e99d" data-idx="0" onclick="pbPollVote(this)"><span class="poll-widget-label">Каждый день</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="c3b0e99d" data-idx="1" onclick="pbPollVote(this)"><span class="poll-widget-label">Несколько раз в неделю</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="c3b0e99d" data-idx="2" onclick="pbPollVote(this)"><span class="poll-widget-label">Только по необходимости</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="c3b0e99d" data-idx="3" onclick="pbPollVote(this)"><span class="poll-widget-label">Никогда</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div></div>
+
+<h2 id="способ-1-браузерные-расширения-для-мониторинга">Способ 1: Браузерные расширения для мониторинга</h2>
+
+<p>Самый простой способ автоматизации — установка специализированных расширений для <em>Chrome</em> или <em>Firefox</em>. Они работают поверх сайта <em>Avito</em>, отслеживают изменения и уведомляют о новых объявлениях. Преимущества метода: не требует технических навыков, бесплатен (в базовой версии) и легален.</p>
+
+<p>Топ-3 расширения для автомониторинга:</p>
+
+<ul>
+  <li>🔍 <strong>Avito Parser:</strong> позволяет сохранять поисковые запросы и получать уведомления о новых объявлениях. Поддерживает фильтры по цене, региону и ключевым словам. Минус — ограничение на количество сохранённых запросов в бесплатной версии.</li>
+  <li>🔔 <strong>Distill Web Monitor:</strong> универсальный инструмент для отслеживания изменений на любых сайтах. Можно настроить мониторинг конкретных элементов страницы (например, блока с ценами). Плагину безразлично, <em>Avito</em> это или другой маркетплейс.</li>
+  <li>📊 <strong>Keepa для Avito:</strong> аналог известного трекера цен для <em>Amazon</em>, но адаптированный под российские площадки. Показывает историю цен, что помогает определить, когда объявление стало действительно выгодным.</li>
+</ul>
+
+<p>Как настроить <strong>Distill Web Monitor</strong>:</p>
+<ol>
+  <li>Установите расширение из <a>официального магазина</a>.</li>
+  <li>Откройте <em>Avito</em> и выполните поиск по нужным критериям.</li>
+  <li>Нажмите на иконку расширения → <code>Monitor this page</code>.</li>
+  <li>Выберите область страницы для отслеживания (например, список объявлений).</li>
+  <li>Настройте частоту проверок (рекомендуется не чаще 1 раза в 5 минут, чтобы избежать блокировки).</li>
+  <li>Активируйте уведомления на email или в браузере.</li>
+</ol>
+
+<blockquote>⚠️ <strong>Внимание:</strong> Частые запросы с одного IP-адреса могут привести к временной блокировке. Если используете расширения, увеличивайте интервал между проверками или используйте прокси.</blockquote>
+
+
+<p>Установить расширение|Выполнить поиск на Avito|Выбрать область для мониторинга|Настроить частоту проверок (5+ минут)|Активировать уведомления--></p>
+
+<h2 id="способ-2-парсеры-на-python-с-использованием-api-avito">Способ 2: Парсеры на Python с использованием API Avito</h2>
+
+<p>Для тех, кто готов погрузиться в технические детали, написание собственного парсера на <em>Python</em> даёт максимальную гибкость. Вы сможете:</p>
+<ul>
+  <li>Отслеживать объявления по сложным фильтрам (например, <code>цена < 50000 AND рейтинг продавца > 4.5</code>).</li>
+  <li>Сохранять историю изменений в базу данных для дальнейшего анализа.</li>
+  <li>Интегрироваться с <em>Telegram</em>-ботами или email-рассылками.</li>
+</ul>
+
+<p>Основной инструмент — официальное <strong>API Avito</strong>, но у него есть ограничения: не все данные доступны, а частные запросы могут блокироваться. Альтернатива — парсинг HTML-страниц с помощью библиотек <code>requests</code> и <code>BeautifulSoup</code>. Пример простого скрипта для сбора объявлений:</p>
+
+<pre><code>import requests
+<p>from bs4 import BeautifulSoup</p>
+
+<p>url = "https://www.avito.ru/moskva/telefony/apple-iphone_13_pro_max-ASgBAgICAUSYA9SQAQ?radius=200"</p>
+<p>headers = {</p>
+<p>"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"</p>
+<p>}</p>
+
+<p>response = requests.get(url, headers=headers)</p>
+<p>soup = BeautifulSoup(response.text, 'html.parser')</p>
+<p>items = soup.find_all('div', {'data-marker': 'item'})</p>
+
+<p>for item in items:</p>
+<p>title = item.find('h3').text.strip()</p>
+<p>price = item.find('span', {'class': 'price-price'}).text.strip()</p>
+<p>link = "https://www.avito.ru" + item.find('a')['href']</p>
+<p>print(f"{title} | {price} | {link}")</code></pre></p>
+
+<p>Этот скрипт собирает названия, цены и ссылки на объявления с первой страницы поиска. Для полноценного мониторинга потребуется:</p>
+<ul>
+  <li>Добавить обработку пагинации (переход по страницам).</li>
+  <li>Настроить фильтрацию по ключевым словам.</li>
+  <li>Реализовать сравнение с предыдущими данными, чтобы отслеживать только новые объявления.</li>
+  <li>Добавить задержки между запросами (<code>time.sleep(5)</code>), чтобы избежать блокировки.</li>
+</ul>
+
+<blockquote>⚠️ <strong>Внимание:</strong> Парсинг <em>Avito</em> без согласования нарушает их <a>Пользовательское соглашение</a>. Для легального использования оформите доступ к официальному API через <a>Avito Business</a> (платно, подходит для бизнеса).</blockquote>
+
+
+<pre><code>from fake_useragent import UserAgent
+<p>ua = UserAgent()</p>
+<p>headers = {"User-Agent": ua.random}</code></pre>--></p>
+
+<h2 id="способ-3-telegram-боты-для-уведомлений">Способ 3: Telegram-боты для уведомлений</h2>
+
+<p>Если вы не хотите разбираться в коде, но нуждаетесь в оперативных уведомлениях, <em>Telegram</em>-боты станут идеальным решением. Они работают по принципу "подписки": вы настраиваете критерии поиска, а бот присылает сообщения при появлении новых объявлений. Популярные боты:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Бот</th>
+      <th>Функции</th>
+      <th>Ограничения</th>
+      <th>Стоимость</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>@AvitoParserBot</strong></td>
+      <td>Мониторинг по ключевым словам, фильтры по цене/региону, история цен</td>
+      <td>Ограничение на 5 активных запросов в бесплатной версии</td>
+      <td>От 200 ₽/месяц</td>
+    </tr>
+    <tr>
+      <td><strong>@AvitoAlertBot</strong></td>
+      <td>Мгновенные уведомления, поддержка нескольких аккаунтов</td>
+      <td>Нет анализа истории цен</td>
+      <td>Бесплатно (до 3 запросов)</td>
+    </tr>
+    <tr>
+      <td><strong>@PriceTrackerBot</strong></td>
+      <td>Отслеживание падения цен, графики динамики</td>
+      <td>Работает только с товарами (не с услугами/недвижимостью)</td>
+      <td>От 150 ₽/месяц</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>Как настроить <strong>@AvitoParserBot</strong>:</p>
+<ol>
+  <li>Запустите бота в <em>Telegram</em> и авторизуйтесь через <em>Avito</em> (потребуется ввести логин/пароль).</li>
+  <li>Введите поисковый запрос в формате: <code>найти [что] в [городе] по цене до [сумма]</code>. Пример: <code>найти iPhone 13 Pro в Москве по цене до 50000</code>.</li>
+  <li>Выберите частоту проверок (от 1 минуты до 1 часа).</li>
+  <li>Активируйте уведомления в настройках бота.</li>
+</ol>
+
+<p>Преимущество ботов — кроссплатформенность: уведомления приходят на телефон, планшет или компьютер. Кроме того, некоторые боты умеют:</p>
+<ul>
+  <li>📈 Сравнивать цены с другими площадками (<em>Юла</em>, <em>Дром</em>).</li>
+  <li>🔍 Искать дубликаты объявлений (полезно для выявления мошенников).</li>
+  <li>📌 Сохранять избранные объявления в "избранное" прямо из чата.</li>
+</ul>
+
+<details class="faq-item"><summary>Как обойти ограничение на количество запросов в бесплатных ботах?</summary><div class="faq-answer"><p>
+<p>Некоторые боты (например, <strong>@AvitoParserBot</strong>) позволяют создавать несколько аккаунтов через разные номера телефона. Альтернатива — использовать прокси-серверы для смены IP при авторизации. Однако это может привести к блокировке аккаунта <em>Avito</em> за подозрительную активность. Более безопасный способ — оплатить премиум-версию или договориться с разработчиками бота о расширении лимитов.</p></div></details></p>
+
+<h2 id="способ-4-автоматизация-через-google-apps-script">Способ 4: Автоматизация через Google Apps Script</h2>
+
+<p>Если вы пользуетесь сервисами <em>Google</em> (<em>Sheets</em>, <em>Docs</em>, <em>Gmail</em>), можно настроить автомониторинг <em>Avito</em> через <strong>Google Apps Script</strong> — бесплатный инструмент для автоматизации. Этот метод подходит для тех, кто хочет сохранять данные в таблицах и получать уведомления на email.</p>
+
+<p>Алгоритм работы:</p>
+<ol>
+  <li>Создайте новую таблицу в <em>Google Sheets</em>.</li>
+  <li>Откройте <code>Расширения → Apps Script</code>.</li>
+  <li>Вставьте скрипт для парсинга <em>Avito</em> (пример ниже).</li>
+  <li>Настройте триггеры (например, запуск каждые 30 минут).</li>
+  <li>Данные будут автоматически записываться в таблицу, а новые объявления — отправляться на вашу почту.</li>
+</ol>
+
+<p>Пример скрипта для сбора данных:</p>
+<pre><code>function parseAvito() {
+<p>const url = "https://www.avito.ru/moskva/telefony/apple-iphone_13_pro_max-ASgBAgICAUSYA9SQAQ";</p>
+<p>const response = UrlFetchApp.fetch(url);</p>
+<p>const content = response.getContentText();</p>
+<p>const $ = Cheerio.load(content);</p>
+
+<p>const items = [];</p>
+<p>$('div[data-marker="item"]').each(function() {</p>
+<p>const title = $(this).find('h3').text().trim();</p>
+<p>const price = $(this).find('span.price-price').text().trim();</p>
+<p>const link = "https://www.avito.ru" + $(this).find('a').attr('href');</p>
+<p>items.push([title, price, link]);</p>
+<p>});</p>
+
+<p>// Запись в Google Sheets</p>
+<p>const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();</p>
+<p>sheet.getRange(sheet.getLastRow() + 1, 1, items.length, 3).setValues(items);</p>
+
+<p>// Отправка email при новых объявлениях</p>
+<p>if (items.length > 0) {</p>
+<p>MailApp.sendEmail("your@email.com", "Новые объявления на Avito", JSON.stringify(items));</p>
+<p>}</p>
+<p>}</code></pre></p>
+
+<p>Преимущества метода:</p>
+<ul>
+  <li>📊 Данные структурированы и доступны для анализа в <em>Google Sheets</em>.</li>
+  <li>🔄 Можно настроить сложные триггеры (например, проверять объявления только в будние дни).</li>
+  <li>📧 Уведомления приходят на email, который вы проверяете регулярно.</li>
+</ul>
+
+<blockquote>⚠️ <strong>Внимание:</strong> <em>Google Apps Script</em> имеет ограничения на количество запросов в день (около 20 000). Если вы парсите много страниц, используйте кэширование или разбейте задачи на несколько аккаунтов.</blockquote>
+
+<h2 id="способ-5-сервисы-для-бизнес-мониторинга-avito-business-data360">Способ 5: Сервисы для бизнес-мониторинга (Avito Business, Data360)</h2>
+
+<p>Если вы представляете компанию или занимаетесь арбитражем товаров, ручные методы и самописные скрипты не подойдут. Для профессионального мониторинга существуют специализированные сервисы, которые предлагают:</p>
+<ul>
+  <li>📊 <strong>Аналитику рынка:</strong> динамика цен, среднее время продажи, популярные запросы.</li>
+  <li>🔍 <strong>Мониторинг конкурентов:</strong> отслеживание объявлений конкретных продавцов.</li>
+  <li>📈 <strong>Прогнозирование:</strong> рекомендации по ценообразованию на основе исторических данных.</li>
+  <li>🤖 <strong>Автоматизацию:</strong> массовое размещение/обновление объявлений, ответы на сообщения.</li>
+</ul>
+
+<p>Топ-3 сервиса для бизнес-мониторинга:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Сервис</th>
+      <th>Ключевые функции</th>
+      <th>Цена</th>
+      <th>Для кого</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Avito Business</strong></td>
+      <td>Официальный инструмент для продавцов: аналитика, автоматическое обновление объявлений, CRM</td>
+      <td>От 1 500 ₽/месяц</td>
+      <td>Малый и средний бизнес</td>
+    </tr>
+    <tr>
+      <td><strong>Data360</strong></td>
+      <td>Парсинг данных с <em>Avito</em>, <em>Юлы</em>, <em>Яндекс.Маркета</em>; построение дашбордов</td>
+      <td>От 5 000 ₽/месяц</td>
+      <td>Крупные компании, аналитики</td>
+    </tr>
+    <tr>
+      <td><strong>PriceVA</strong></td>
+      <td>Отслеживание цен конкурентов, уведомления о изменениях, интеграция с 1С</td>
+      <td>От 3 000 ₽/месяц</td>
+      <td>Ритейлеры, дистрибьюторы</td>
+    </tr>
+  </tbody>
+</table>
+
+<p><mark>Сервисы вроде <em>Data360</em> предоставляют данные не только с <em>Avito</em>, но и с других площадок, что позволяет анализировать рынок комплексно. Например, вы можете сравнить, как меняются цены на <em>iPhone 15</em> на <em>Avito</em>, <em>Юле</em> и в офлайн-магазинах.</mark></p>
+
+<p>Как выбрать сервис:</p>
+<ol>
+  <li>Определите цели: нужна ли вам только аналитика или также автоматизация продаж.</li>
+  <li>Проверьте, поддерживает ли сервис вашу категорию товаров (недвижимость, электроника, услуги).</li>
+  <li>Оцените стоимость: некоторые сервисы берут процент с продаж вместо фиксированной платы.</li>
+  <li>Используйте бесплатные триалы (обычно 7–14 дней), чтобы протестировать функционал.</li>
+</ol>
+
+<div class="attention-box attention-tip"><span class="attention-icon">💡</span><p>Официальное API <em>Avito Business</em> — самый безопасный способ автомониторинга для бизнеса. Оно не блокируется, но требует оплаты и регистрации компании.</p></div>
+
+<h2 id="способ-6-облачные-парсеры-parsehub-octoparse">Способ 6: Облачные парсеры (ParseHub, Octoparse)</h2>
+
+<p>Если вы не хотите писать код, но нуждаетесь в гибкости самописных скриптов, облачные парсеры — оптимальное решение. Они работают по принципу "научи один раз, используй постоянно": вы настраиваете правила сбора данных в визуальном редакторе, а сервис выполняет парсинг на своих серверах.</p>
+
+<p>Плюсы облачных парсеров:</p>
+<ul>
+  <li>🌐 <strong>Нет блокировок:</strong> запросы идут с разных IP-адресов, что снижает риск бана.</li>
+  <li>⚙️ <strong>Гибкие настройки:</strong> можно собирать данные с динамических элементов (например, цены после наведения курсора).</li>
+  <li>📥 <strong>Экспорт в любые форматы:</strong> <em>Excel</em>, <em>Google Sheets</em>, <em>JSON</em>, <em>API</em>.</li>
+  <li>⏱️ <strong>Планировщик:</strong> запуск парсинга по расписанию (например, каждый час в рабочие дни).</li>
+</ul>
+
+<p>Инструкция по настройке <strong>ParseHub</strong>:</p>
+<ol>
+  <li>Установите десктопное приложение <em>ParseHub</em> или используйте веб-версию.</li>
+  <li>Откройте страницу <em>Avito</em> с результатами поиска.</li>
+  <li>Нажмите <code>New Project</code> и выделите элементы, которые нужно спарсить (названия, цены, ссылки).</li>
+  <li>Настройте пагинацию, чтобы парсер переходил по всем страницам поиска.</li>
+  <li>Добавьте условие для повторного запуска (например, каждые 6 часов).</li>
+  <li>Экспортируйте данные в <em>Google Sheets</em> или получайте их по API.</li>
+</ol>
+
+<p>Пример данных, которые можно собрать:</p>
+<pre><code><p>[</p>
+<p>{</p>
+<p>"title": "iPhone 13 Pro Max 256GB, синий",</p>
+<p>"price": "48 500 ₽",</p>
+<p>"location": "Москва, САО",</p>
+<p>"seller_rating": "4.8",</p>
+<p>"url": "https://www.avito.ru/...",</p>
+<p>"date": "12.05.2026"</p>
+<p>},</p>
+<p>{...}</p>
+<p>]</p></code></pre>
+
+<blockquote>⚠️ <strong>Внимание:</strong> Бесплатные тарифы облачных парсеров ограничивают количество страниц для парсинга (обычно 200–500 в месяц). Для полноценного мониторинга потребуется платная подписка (от 500 ₽/месяц).</blockquote>
+
+<h2 id="способ-7-создание-собственной-системы-с-базой-данных">Способ 7: Создание собственной системы с базой данных</h2>
+
+<p>Для максимальной автоматизации можно развернуть полноценную систему на базе:</p>
+<ul>
+  <li><strong>Бэкенд:</strong> <em>Python</em> (+ <code>Flask</code>/<code>Django</code>) или <em>Node.js</em>.</li>
+  <li><strong>База данных:</strong> <em>PostgreSQL</em> или <em>MongoDB</em> для хранения объявлений.</li>
+  <li><strong>Фронтенд (опционально):</strong> дашборд на <em>React</em> для визуализации данных.</li>
+  <li><strong>Уведомления:</strong> интеграция с <em>Telegram</em>, <em>Email</em> или <em>Slack</em>.</li>
+</ul>
+
+<p>Архитектура такой системы:</p>
+<ol>
+  <li><strong>Парсер:</strong> скрипт на <em>Python</em>, который раз в 5–10 минут собирает данные с <em>Avito</em>.</li>
+  <li><strong>Сравнение:</strong> алгоритм проверяет новые объявления с теми, что уже есть в базе. Если находит различия — сохраняет их.</li>
+  <li><strong>Аналитика:</strong> рассчитывает среднюю цену, время жизни объявления, рейтинг продавцов.</li>
+  <li><strong>Оповещения:</strong> отправляет уведомления только по объявлениям, соответствующим вашим критериям.</li>
+</ol>
+
+<p>Пример структуры базы данных для хранения объявлений:</p>
+<pre><code>CREATE TABLE avito_listings (
+<p>id SERIAL PRIMARY KEY,</p>
+<p>title VARCHAR(255),</p>
+<p>price DECIMAL(10, 2),</p>
+<p>url VARCHAR(512) UNIQUE,</p>
+<p>seller_id VARCHAR(50),</p>
+<p>seller_rating DECIMAL(3, 2),</p>
+<p>location VARCHAR(100),</p>
+<p>date_posted TIMESTAMP,</p>
+<p>last_updated TIMESTAMP,</p>
+<p>is_active BOOLEAN DEFAULT TRUE</p>
+<p>);</p>
+
+<p>CREATE TABLE user_filters (</p>
+<p>id SERIAL PRIMARY KEY,</p>
+<p>user_id INTEGER,</p>
+<p>keyword VARCHAR(100),</p>
+<p>max_price DECIMAL(10, 2),</p>
+<p>min_rating DECIMAL(3, 2),</p>
+<p>location VARCHAR(100)</p>
+<p>);</code></pre></p>
+
+<p>Преимущества собственной системы:</p>
+<ul>
+  <li>🔧 Полный контроль над логикой работы (можно добавить любой функционал).</li>
+  <li>📈 Возможность анализа больших данных (например, предсказание цен с помощью ML).</li>
+  <li>🔒 Безопасность: данные хранятся на вашем сервере, а не у третьих лиц.</li>
+</ul>
+
+<p>Минусы:</p>
+<ul>
+  <li>⚙️ Требуются навыки программирования и администрирования серверов.</li>
+  <li>💰 Затраты на хостинг и поддержку (от 500 ₽/месяц за VPS).</li>
+  <li>⏳ Настройка занимает время (от нескольких дней до недель).</li>
+</ul>
+
+
+<pre><code>FROM python:3.9-slim
+<p>WORKDIR /app</p>
+<p>COPY requirements.txt .</p>
+<p>RUN pip install -r requirements.txt</p>
+<p>COPY . .</p>
+<p>CMD ["python", "parser.py"]</code></pre>--></p>
+
+<h2 id="как-обойти-блокировки-и-не-попасть-под-бан">Как обойти блокировки и не попасть под бан</h2>
+
+<p><em>Avito</em> активно борется с автоматизированным сбором данных. Чрезмерная активность может привести к:</p>
+<ul>
+  <li>Временной блокировке IP-адреса.</li>
+  <li>Бану аккаунта (если используете авторизацию).</li>
+  <li>Капче на каждом запросе.</li>
+</ul>
+
+<p>Способы снизить риски:</p>
+
+<ul>
+  <li>🔄 <strong>Ротация User-Agent:</strong> используйте разные заголовки для запросов (библиотека <code>fake-useragent</code>).</li>
+  <li>🌍 <strong>Прокси-серверы:</strong> отправляйте запросы через пул IP-адресов (сервисы <em>Luminati</em>, <em>Smartproxy</em>).</li>
+  <li>⏱️ <strong>Задержки:</strong> делайте паузы между запросами (от 5 секунд).</li>
+  <li>🍪 <strong>Эмуляция поведения:</strong> имитируйте действия реального пользователя (прокрутка страницы, клики).</li>
+  <li>🔑 <strong>Официальное API:</strong> если возможностей хватает, используйте легальные методы.</li>
+</ul>
+
+<p>Пример кода с ротацией прокси и задержками:</p>
+<pre><code>import requests
+<p>from fake_useragent import UserAgent</p>
+<p>import time</p>
+<p>import random</p>
+
+<p>proxies = [</p>
+<p>"http://user:pass@192.168.1.1:8080",</p>
+<p>"http://user:pass@192.168.1.2:8080"</p>
+<p>]</p>
+
+<p>ua = UserAgent()</p>
+<p>url = "https://www.avito.ru/..."</p>
+
+<p>for _ in range(5):  # 5 попыток</p>
+<p>proxy = random.choice(proxies)</p>
+<p>headers = {"User-Agent": ua.random}</p>
+<p>try:</p>
+<p>response = requests.get(url, headers=headers, proxies={"http": proxy, "https": proxy}, timeout=10)</p>
+<p>if response.status_code == 200:</p>
+<p>print("Успешный запрос!")</p>
+<p>break</p>
+<p>except:</p>
+<p>print("Ошибка, повторная попытка...")</p>
+<p>time.sleep(random.randint(5, 10))  # Случайная задержка</code></pre></p>
+
+<p>Если ваш аккаунт всё же заблокировали:</p>
+<ol>
+  <li>Подождите 24–48 часов (временные блокировки обычно снимаются автоматически).</li>
+  <li>Используйте другой браузер или устройство для входа.</li>
+  <li>Напишите в поддержку <em>Avito</em>, объяснив, что блокировка произошла по ошибке.</li>
+  <li>Смените IP-адрес (например, через мобильный интернет).</li>
+</ol>
+
+<blockquote>⚠️ <strong>Внимание:</strong> Использование резидентных прокси (IP реальных устройств) снижает риск блокировки, но увеличивает стоимость. Для тестов подойдут бесплатные прокси, но они часто нестабильны.</blockquote>
+
+<h2 id="faq-частые-вопросы-об-автомониторинге-avito">FAQ: Частые вопросы об автомониторинге Avito</h2>
+
+<details>
+  <summary>❓ Можно ли автоматически отвечать на сообщения от продавцов?</summary>
+  <p>Да, но с осторожностью. Сервисы вроде <em>Avito Business</em> позволяют настраивать шаблонные ответы, но массовая рассылка может привести к бану. Лучше использовать полуавтоматический подход: бот уведомляет вас о новом сообщении, а вы отвечаете вручную.</p>
+</details>
+
+<details>
+  <summary>❓ Как отслеживать объявления по нескольким городам одновременно?</summary>
+  <p>В большинстве парсеров и ботов есть функция мультирегионального поиска. Например, в <em>Google Apps Script</em> можно создать массив URL с разными городами и последовательно их обрабатывать. В <strong>@AvitoParserBot</strong> поддерживаются запросы вида: <code>найти велосипед в Москве, Санкт-Петербурге, Казани</code>.</p>
+</details>
+
+<details>
+  <summary>❓ Легально ли использовать парсеры для Avito?</summary>
+  <p>Серый зона. Сам по себе сбор публичных данных не нарушает закон, но может идти вразрез с <a>Пользовательским соглашением Avito</a>. Если вы используете данные для личных целей (например, поиск выгодных покупок), риски минимальны. Для коммерческих задач лучше оформить доступ к официальному API.</p>
+</details>
+
+<details>
+  <summary>❓ Как отфильтровать мошенников и фейковые объявления?</summary>
+  <p>Автоматически это сложно, но можно снизить риски:</p>
+  <ul>
+    <li>Исключайте объявления с подозрительно низкой ценой (например, <em>iPhone 15</em> за 20 000 ₽).</li>
+    <li>Проверяйте рейтинг продавца (отсекайте аккаунты младше 3 месяцев или с оценкой ниже 4.0).</li>
+    <li>Используйте сервисы вроде <em>Whois</em> для проверки домена в описании (мошенники часто оставляют ссылки на фишинговые сайты).</li>
+  </ul>
+</details>
+
+<details>
+  <summary>❓ Можно ли отслеживать изменения в уже существующих объявлениях (например, снижение цены)?</summary>
+  <p>Да, для этого нужна база данных с историей. Например, в <em>Google Sheets</</div>
+                    <!--#include virtual="/ssi/article_after.html" -->
+
+                </article>
+                <aside class="article-sidebar"><!--#include virtual="/ssi/sidebar_top.html" --><nav class="sidebar-search"><div class="sidebar-search-box"><input type="text" id="globalSearchInput" placeholder="🔍 Поиск статей..." autocomplete="off"><div class="search-dropdown" id="globalSearchDropdown"></div></div></nav><!--#include virtual="/ssi/sidebar_before_toc.html" --><nav class="sidebar-toc" id="sidebarToc"><h3>Содержание</h3><ul><li><a href="#почему-ручной-мониторинг-avito-неэффективен">Почему ручной мониторинг Avito неэффективен</a></li><li><a href="#способ-1-браузерные-расширения-для-мониторинга">Способ 1: Браузерные расширения для мониторинга</a></li><li><a href="#способ-2-парсеры-на-python-с-использованием-api-avito">Способ 2: Парсеры на Python с использованием API Avito</a></li><li><a href="#способ-3-telegram-боты-для-уведомлений">Способ 3: Telegram-боты для уведомлений</a></li><li><a href="#способ-4-автоматизация-через-google-apps-script">Способ 4: Автоматизация через Google Apps Script</a></li><li><a href="#способ-5-сервисы-для-бизнес-мониторинга-avito-business-data360">Способ 5: Сервисы для бизнес-мониторинга (Avito Business, Data360)</a></li><li><a href="#способ-6-облачные-парсеры-parsehub-octoparse">Способ 6: Облачные парсеры (ParseHub, Octoparse)</a></li><li><a href="#способ-7-создание-собственной-системы-с-базой-данных">Способ 7: Создание собственной системы с базой данных</a></li><li><a href="#как-обойти-блокировки-и-не-попасть-под-бан">Как обойти блокировки и не попасть под бан</a></li><li><a href="#faq-частые-вопросы-об-автомониторинге-avito">FAQ: Частые вопросы об автомониторинге Avito</a></li></ul></nav><!--#include virtual="/ssi/sidebar_before_related.html" --><nav class="sidebar-related"><h3>Похожие статьи</h3><ul><li><a href="/articles/k/ka/kakoj-izognutyj-monitor-vybrat-dlya-kompyutera.html" class="related-card">Как выбрать изогнутый монитор: гид по кривизне, размерам и задачам</a></li><li><a href="/articles/k/ku/kuda-kidat-drajvera-monitora-v-windows-10.html" class="related-card">Куда установить драйвер монитора в Windows 10: полный путь и методы</a></li><li><a href="/articles/c/ch/chto-za-programma-monitor-proizvoditelnosti.html" class="related-card">Что за программа Монитор производительности: полный разбор</a></li><li><a href="/articles/k/ka/kak-razdelit-ekran-monitora-na-dve-chasti.html" class="related-card">Как разделить экран монитора на две части: 5 способов для Windows и macOS</a></li><li><a href="/articles/k/ka/kak-podklyuchit-2-j-monitor-cherez-hdmi.html" class="related-card">Как подключить 2-й монитор через HDMI: пошаговая инструкция</a></li></ul></nav><!--#include virtual="/ssi/sidebar_after_related.html" --></aside>
+            </div>
+        </div>
+    </main>
+
+    <!--#include virtual="/ssi/before_related_bottom.html" -->
+    <section class="related-bottom">
+        <div class="container">
+            <h2 class="related-bottom-heading">📖 Читайте также</h2>
+            <div class="related-bottom-grid"><a href="/articles/k/ka/kakoj-izognutyj-monitor-vybrat-dlya-kompyutera.html" class="related-bottom-card"><span class="related-bottom-title">Как выбрать изогнутый монитор: гид по кривизне, размерам и задачам</span><span class="related-bottom-desc">Полный разбор критериев выбора изогнутого монитора. Узнайте, какая кривизна лучше для игр и работы, </span></a><a href="/articles/k/ku/kuda-kidat-drajvera-monitora-v-windows-10.html" class="related-bottom-card"><span class="related-bottom-title">Куда установить драйвер монитора в Windows 10: полный путь и методы</span><span class="related-bottom-desc">Узнайте точный путь, куда кидать драйвера монитора в Windows 10. Пошаговая инструкция через Диспетче</span></a><a href="/articles/c/ch/chto-za-programma-monitor-proizvoditelnosti.html" class="related-bottom-card"><span class="related-bottom-title">Что за программа Монитор производительности: полный разбор</span><span class="related-bottom-desc">Узнайте, что такое Монитор производительности Windows, как настроить сбор данных и анализировать сос</span></a><a href="/articles/k/ka/kak-razdelit-ekran-monitora-na-dve-chasti.html" class="related-bottom-card"><span class="related-bottom-title">Как разделить экран монитора на две части: 5 способов для Windows и macOS</span><span class="related-bottom-desc">Пошаговая инструкция по разделению экрана монитора на 2 части в Windows 10/11 и macOS. Горячие клави</span></a><a href="/articles/k/ka/kak-podklyuchit-2-j-monitor-cherez-hdmi.html" class="related-bottom-card"><span class="related-bottom-title">Как подключить 2-й монитор через HDMI: пошаговая инструкция</span><span class="related-bottom-desc">Подробное руководство по подключению второго монитора через HDMI к ПК или ноутбуку. Разберём настрой</span></a><a href="/articles/c/ch/chem-bolshoj-monitor-luchshe-malenkogo.html" class="related-bottom-card"><span class="related-bottom-title">Почему большой монитор лучше маленького: 5 причин для продуктивности и комфорта</span><span class="related-bottom-desc">Узнайте, как большой монитор влияет на здоровье глаз, скорость работы и игровой опыт. Сравнение диаг</span></a></div>
+        </div>
+    </section>
+    <!--#include virtual="/ssi/after_related_bottom.html" -->
+
+    <footer class="site-footer-premium">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-col">
+                    <div class="footer-brand">🖥️ Мониторум</div>
+                    <p class="footer-about">Полный справочник по настройке, ремонту и выбору компьютерных мониторов для любых задач.</p>
+                </div>
+                <div class="footer-col">
+                    <h4>Разделы</h4>
+                    <ul><li><a href="/category/nastrojka-ekrana/">⚙️ Настройка экрана</a></li>
+<li><a href="/category/podklyuchenie-ustrojstv/">🔌 Подключение устройств</a></li>
+<li><a href="/category/mnozhestvennye-ekrany/">🖥️🖥️ Множественные экраны</a></li>
+<li><a href="/category/zvuk-i-audio/">🔊 Звук и аудио</a></li>
+<li><a href="/category/remont-i-polomki/">🔧 Ремонт и поломки</a></li>
+<li><a href="/category/ukhod-i-chistka/">🧼 Уход и чистка</a></li></ul>
+                </div>
+                <div class="footer-col">
+                    <h4>Информация</h4>
+                    <ul>
+                        <li><a href="/">Главная</a></li>
+                        <li><a href="/about.html">О проекте</a></li>
+                        <li><a href="/categories.html">Все разделы</a></li>
+                        <li><a href="/contact.html">Контакты</a></li>
+                        <li><a href="/privacy.html">Конфиденциальность</a></li>
+                        <li><a href="/sitemap.xml">Карта сайта</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>© Мониторум. Все права защищены.</p>
+                <!--LiveInternet counter--><div style="margin-top:10px;"><a href="https://www.liveinternet.ru/click"
+                target="_blank"><img id="licnt06C4" width="88" height="15" style="border:0" 
+                title="LiveInternet: показано число посетителей за сегодня"
+                src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAEALAAAAAABAAEAAAIBTAA7"
+                alt=""/></a><script>(function(d,s){d.getElementById("licnt06C4").src=
+                "https://counter.yadro.ru/hit?t26.5;r"+escape(d.referrer)+
+                ((typeof(s)=="undefined")?"":";s"+s.width+"*"+s.height+"*"+
+                (s.colorDepth?s.colorDepth:s.pixelDepth))+";u"+escape(d.URL)+
+                ";h"+escape(d.title.substring(0,150))+";"+Math.random()})(document,screen)</script></div><!--/LiveInternet-->
+            </div>
+        </div>
+    </footer>
+    <div id="cookie-consent" class="cookie-popup">
+        <div class="cookie-inner">
+            <span>🍪 Мы используем файлы cookie для улучшения работы сайта.</span>
+            <button id="cookie-accept" class="cookie-btn">Принять</button>
+        </div>
+    </div>
+    <script src="/static/js/main.js"></script>
+    <script>
+    (function() {
+        const popup = document.getElementById('cookie-consent');
+        const btn = document.getElementById('cookie-accept');
+        if (popup && btn && !localStorage.getItem('cookie-accepted')) {
+            popup.classList.add('visible');
+            btn.onclick = () => {
+                localStorage.setItem('cookie-accepted', 'true');
+                popup.classList.remove('visible');
+            };
+        }
+    })();
+    </script>
+    <script>
+    function pbPollVote(el) {
+        var poll = el.closest('.poll-widget');
+        if (poll.classList.contains('voted')) return;
+        poll.classList.add('voted');
+        el.classList.add('selected');
+        var opts = poll.querySelectorAll('.poll-widget-option');
+        var n = opts.length;
+        var raw = [];
+        var sum = 0;
+        for (var i = 0; i < n; i++) {
+            var v = Math.random() * 50 + 5;
+            if (opts[i] === el) v += 30;
+            raw.push(v);
+            sum += v;
+        }
+        var pcts = raw.map(function(v) { return Math.round(v / sum * 100); });
+        var diff = 100 - pcts.reduce(function(a,b){ return a+b; }, 0);
+        pcts[Array.from(opts).indexOf(el)] += diff;
+        setTimeout(function() {
+            opts.forEach(function(opt, i) {
+                opt.querySelector('.poll-widget-bar').style.width = pcts[i] + '%';
+                opt.querySelector('.poll-widget-pct').textContent = pcts[i] + '%';
+            });
+        }, 50);
+    }
+    </script>
+    <!--#include virtual="/ssi/body_bottom.html" -->
+    <script src="/static/js/inject.js" defer></script>
+</body>
+</html>

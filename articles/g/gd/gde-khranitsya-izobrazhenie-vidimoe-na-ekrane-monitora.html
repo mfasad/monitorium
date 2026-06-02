@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27><text y=%27.9em%27 font-size=%2790%27>🖥️</text></svg>">
+    <title>Где хранится изображение на экране: от видеокарты до матрицы — Мониторум</title>
+    <meta name="description" content="Узнайте, где физически и логически хранятся данные изображения, видимые на мониторе. Разбор видеопамяти, кадровых буферов и процесса рендеринга.">
+    <link rel="canonical" href="https://monitorium.vercel.app/articles/g/gd/gde-khranitsya-izobrazhenie-vidimoe-na-ekrane-monitora.html">
+
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="Где хранится изображение на экране: от видеокарты до матрицы">
+    <meta property="og:description" content="Узнайте, где физически и логически хранятся данные изображения, видимые на мониторе. Разбор видеопамяти, кадровых буферов и процесса рендеринга.">
+    <meta property="og:locale" content="ru_RU">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css?v=1780420684">
+    <style>
+    .site-footer-premium {
+        margin-top: 60px; padding: 40px 0 0; background: #1e293b; color: #94a3b8;
+    }
+    .footer-grid {
+        display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 40px;
+        padding-bottom: 32px; border-bottom: 1px solid #334155;
+    }
+    .footer-brand { font-size: 1.2rem; font-weight: 700; color: #f1f5f9; margin-bottom: 12px; }
+    .footer-about { font-size: 0.9rem; line-height: 1.6; margin-bottom: 8px; }
+    .footer-updated { font-size: 0.8rem; color: #64748b; }
+    .footer-col h4 { color: #f1f5f9; font-size: 0.95rem; margin-bottom: 16px; }
+    .footer-col ul { list-style: none; }
+    .footer-col li { margin-bottom: 8px; }
+    .footer-col a { color: #94a3b8; font-size: 0.9rem; transition: color 0.2s; }
+    .footer-col a:hover { color: #60a5fa; }
+    .footer-bottom { padding: 20px 0; text-align: center; font-size: 0.85rem; }
+    @media (max-width: 640px) {
+        .footer-grid { grid-template-columns: 1fr; gap: 24px; }
+    }
+    .cookie-popup {
+        position: fixed; bottom: 0; left: 0; right: 0; background: #1e293b; color: #fff;
+        padding: 16px; transition: transform 0.5s ease; z-index: 9999; border-top: 2px solid #2563eb;
+        transform: translateY(100%);
+    }
+    .cookie-popup.visible { transform: translateY(0); }
+    .cookie-inner { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; gap: 16px; font-size: 0.9rem; }
+    .cookie-btn { background: #2563eb; color: #fff; border: none; padding: 8px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+    .cookie-btn:hover { background: #1d4ed8; }
+    @media (max-width: 640px) {
+        .cookie-inner { flex-direction: column; text-align: center; }
+    }
+</style>
+    
+    <!--#include virtual="/ssi/head.html" -->
+</head>
+<body>
+        <!--#include virtual="/ssi/body_top.html" -->
+    <style>
+    .nav-dropdown { position: relative; display: inline-block; }
+    .dropdown-toggle {
+        background: none; border: none; cursor: pointer;
+        font: inherit; color: inherit; padding: 8px 12px;
+        border-radius: 8px; transition: background 0.2s;
+    }
+    .dropdown-toggle:hover { background: rgba(0,0,0,0.05); }
+    .dropdown-menu {
+        display: none; position: absolute; right: 0; top: 100%;
+        min-width: 240px; max-height: 70vh; overflow-y: auto;
+        background: var(--card-bg, #fff); border: 1px solid var(--border, #e5e7eb);
+        border-radius: 12px; box-shadow: 0 12px 40px rgba(0,0,0,0.12);
+        padding: 8px 0; z-index: 1000;
+    }
+    .nav-dropdown::after {
+        content: ''; position: absolute; left: 0; right: 0;
+        top: 100%; height: 12px;
+    }
+    .nav-dropdown:hover .dropdown-menu,
+    .nav-dropdown:focus-within .dropdown-menu { display: block; }
+    .dropdown-item {
+        display: block; padding: 10px 20px; color: var(--text, #1f2937);
+        text-decoration: none; font-size: 0.95rem; transition: background 0.15s;
+        white-space: nowrap;
+    }
+    .dropdown-item:hover { background: rgba(37,99,235,0.06); color: var(--primary, #2563eb); }
+    @media (max-width: 768px) {
+        .main-nav > .nav-link { display: none; }
+        .dropdown-toggle { display: none; }
+        .dropdown-menu {
+            display: block !important; position: static;
+            box-shadow: none; border: none; border-radius: 0;
+            min-width: auto; max-height: none; padding: 0;
+            background: transparent;
+        }
+        .dropdown-item {
+            padding: 8px 0; font-size: 1rem;
+        }
+    }
+    </style>
+    <header class="site-header">
+        <div class="container header-inner">
+            <a href="/" class="logo">
+                <span class="logo-icon">🖥️</span>
+                <span>Мониторум</span>
+            </a>
+            <button class="mobile-menu-btn" aria-label="Меню" id="menuBtn">☰</button>
+            <nav class="main-nav" id="mainNav">
+                <a href="/category/nastrojka-ekrana/" class="nav-link">⚙️ Настройка экрана</a>
+<a href="/category/podklyuchenie-ustrojstv/" class="nav-link">🔌 Подключение устройств</a>
+<a href="/category/mnozhestvennye-ekrany/" class="nav-link">🖥️🖥️ Множественные экраны</a>
+<a href="/category/zvuk-i-audio/" class="nav-link">🔊 Звук и аудио</a>
+<div class="nav-dropdown">
+            <button class="nav-link dropdown-toggle">📂 Все разделы ▾</button>
+            <div class="dropdown-menu"><a href="/category/nastrojka-ekrana/" class="dropdown-item">⚙️ Настройка экрана</a>
+<a href="/category/podklyuchenie-ustrojstv/" class="dropdown-item">🔌 Подключение устройств</a>
+<a href="/category/mnozhestvennye-ekrany/" class="dropdown-item">🖥️🖥️ Множественные экраны</a>
+<a href="/category/zvuk-i-audio/" class="dropdown-item">🔊 Звук и аудио</a>
+<a href="/category/remont-i-polomki/" class="dropdown-item">🔧 Ремонт и поломки</a>
+<a href="/category/ukhod-i-chistka/" class="dropdown-item">🧼 Уход и чистка</a>
+<a href="/category/vybor-i-kharakteristiki/" class="dropdown-item">📊 Выбор и характеристики</a>
+<a href="/category/drajvery-i-po/" class="dropdown-item">💿 Драйверы и ПО</a>
+<a href="/category/krepleniya-i-ustanovka/" class="dropdown-item">🔩 Крепления и установка</a>
+<a href="/category/utilizatsiya-i-prodazha/" class="dropdown-item">♻️ Утилизация и продажа</a>
+<a href="/category/spetsialnye-rezhimy/" class="dropdown-item">🎮 Специальные режимы</a>
+<a href="/category/drugoe/" class="dropdown-item">📁 Другое</a></div>
+        </div>
+            </nav>
+        </div>
+    </header>
+
+    <nav class="breadcrumbs" aria-label="Навигация">
+        <div class="container"><a href="/">Главная</a><span class="breadcrumb-sep">›</span><a href="/category/drajvery-i-po/">Драйверы и ПО</a><span class="breadcrumb-sep">›</span><span class="breadcrumb-current">Где хранится изображение на экране: от видеокарты до матрицы</span></div>
+    </nav>
+
+    <main class="site-main">
+        <div class="container">
+            <div class="article-layout">
+                <article class="article-main">
+                    
+                    <h1>Где хранится изображение, видимое на экране монитора?</h1>
+                    <nav class="mobile-toc"><details><summary>📋 Содержание</summary><ul><li><a href="#роль-видеопамяти-в-хранении-визуальной-информации">Роль видеопамяти в хранении визуальной информации</a></li><li><a href="#от-процессора-к-экрану-путь-данных">От процессора к экрану: путь данных</a></li><li><a href="#внутренняя-память-монитора-и-буферизация">Внутренняя память монитора и буферизация</a></li><li><a href="#разница-между-файлами-на-диске-и-пикселями-на-экране">Разница между файлами на диске и пикселями на экране</a></li><li><a href="#проблемы-доступа-и-неисправности-хранения">Проблемы доступа и неисправности хранения</a></li><li><a href="#будущее-технологий-хранения-видеосигнала">Будущее технологий хранения видеосигнала</a></li><li><a href="#faq-часто-задаваемые-вопросы">FAQ: Часто задаваемые вопросы</a></li></ul></details></nav>
+                    <!--#include virtual="/ssi/article_before.html" -->
+                    <div class="article-body">
+
+<p>Когда вы смотрите на рабочий стол вашего компьютера или играете в динамичную игру, вы видите результат сложной цепочки преобразований данных. Многие пользователи полагают, что картинка просто «висит» на экране, но на самом деле это непрерывный поток информации, обрабатываемый несколькими уровнями аппаратного и программного обеспечения. Понимание того, где именно хранятся пиксели в каждый конкретный момент времени, критически важно для диагностики ошибок, настройки производительности и понимания принципов работы <strong>графических интерфейсов</strong>.</p>
+
+<p>Ключевая особенность цифрового дисплея заключается в его эфемерности: изображение не сохраняется на экране статично, как на фотографии. Оно постоянно обновляется, и в любой момент времени его «дом» находится в специализированной памяти видеоадаптера. Именно оттуда данные считываются и отправляются на <em>матрицу</em> монитора для отображения. Если оборудование работает корректно, этот процесс для глаз пользователя абсолютно незаметен и выглядит как цельная, стабильная картинка.</p>
+
+<h2 id="роль-видеопамяти-в-хранении-визуальной-информации">Роль видеопамяти в хранении визуальной информации</h2>
+<p>Центральным хранилищем для изображения, которое вы видите в данный момент, является <strong>видеопамять</strong> (VRAM). Это высокоскоростная память, интегрированная в графический процессор или расположенная непосредственно на плате видеокарты. В отличие от оперативной памяти системы, видеопамять оптимизирована для огромных потоков данных о цвете и текстуре каждого пикселя.</p>
+
+<p>Именно здесь формируется так называемый <strong>кадровый буфер</strong> (framebuffer) — область памяти, где хранится полная карта изображения для одного кадра. Когда вы перемещаете окно или запускаете анимацию, система обновляет данные в этом буфере. Современные карты, такие как серии <em>NVIDIA RTX</em> или <em>AMD Radeon RX</em>, используют несколько буферов для предотвращения мерцания и разрывов изображения.</p>
+
+<p>Объем видеопамяти напрямую влияет на то, какие текстуры и разрешения могут быть сохранены. Если вы работаете в разрешении <code>4K</code>, объем данных для одного кадра возрастает многократно по сравнению с <code>Full HD</code>. При недостатке <strong>видеопамяти</strong> система вынуждена использовать медленную системную память, что приводит к торможению.</p>
+
+<blockquote>⚠️ Внимание! Если вы наблюдаете артефакты в виде «снега», полос или мерцания, это часто свидетельствует о перегреве кристалла памяти или физическом повреждении чипов <strong>видеопамяти</strong>, а не о программном сбое.</blockquote>
+
+<p>Важно различать типы памяти, такие как <em>GDDR6</em> или <em>HBM2e</em>, так как они определяют скорость обмена данными между процессором и буфером изображения. Чем выше пропускная способность, тем быстрее обновляется картинка на экране.</p>
+
+<h2 id="от-процессора-к-экрану-путь-данных">От процессора к экрану: путь данных</h2>
+<p>Процесс формирования изображения начинается не в памяти монитора, а в центральном процессоре, который генерирует команды для <strong>графического ядра</strong>. Эти команды описывают геометрию сцены, освещение и текстуры. Затем они передаются в <strong>видеопамять</strong>, где рендер-движок преобразует их в растровое изображение.</p>
+
+<p>После того как кадр готов и записан в кадровый буфер, начинается процесс <strong>сканирования</strong> (raster scanning). Специальный блок в видеокарте, называемый RAMDAC (в старых системах) или цифровой интерфейс (в современных), считывает данные построчно и отправляет их по кабелю.</p>
+
+<p>Современные интерфейсы, такие как <code>HDMI</code> или <code>DisplayPort</code>, передают уже оцифрованный сигнал. Монитор получает этот поток и временно хранит его в своем собственном буфере перед запуском на пиксели. Это необходимо для синхронизации частоты обновления.</p>
+
+<div class="poll-widget" id="poll-5329856a"><div class="poll-widget-question">📊 Где вы чаще всего замечаете проблемы с отображением графики?</div><div class="poll-widget-option" data-poll="5329856a" data-idx="0" onclick="pbPollVote(this)"><span class="poll-widget-label">В играх</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="5329856a" data-idx="1" onclick="pbPollVote(this)"><span class="poll-widget-label">При работе с видео</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="5329856a" data-idx="2" onclick="pbPollVote(this)"><span class="poll-widget-label">При просмотре фото</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="5329856a" data-idx="3" onclick="pbPollVote(this)"><span class="poll-widget-label">Никогда не замечал</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div></div>
+
+<h2 id="внутренняя-память-монитора-и-буферизация">Внутренняя память монитора и буферизация</h2>
+<p>Многие пользователи ошибочно полагают, что монитор — это просто пассивное зеркало, отражающее сигнал с видеокарты. На самом деле, внутри корпуса дисплея также есть небольшая электронная плата с <strong>оперативной памятью</strong>, которая выполняет роль промежуточного хранилища.</p>
+
+<p>Эта локальная память используется для <strong>кадровой буферизации</strong> (frame buffering). Она принимает поток данных от видеокарты, который может идти с переменной частотой, и преобразует его в строго синхронизированные кадры для матрицы. Без этого буфера вы бы видели постоянные разрывы изображения, если частота кадров в игре не совпадает с герцовкой монитора.</p>
+
+<p>В игровых мониторах этот процесс усложнен технологиями адаптивной синхронизации, такими как <em>G-Sync</em> или <em>FreeSync</em>. В таких случаях монитор динамически меняет время хранения кадра в своем буфере, чтобы он совпал с моментом вывода нового кадра видеокартой.</p>
+
+<p>Объем внутренней памяти монитора крайне мал по сравнению с памятью видеокарты, так как он хранит лишь текущий и следующий кадры. Однако его качество и скорость обработки критичны для отсутствия задержек ввода (input lag).</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Компонент</th>
+      <th>Тип памяти</th>
+      <th>Роль в хранении изображения</th>
+      <th>Накопительная способность</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Видеокарта</td>
+      <td>GDDR6 / GDDR6X</td>
+      <td>Основной рендеринг, хранение текстур и кадров</td>
+      <td>Высокая (до 24 ГБ и более)</td>
+    </tr>
+    <tr>
+      <td>Материнская плата</td>
+      <td>DDR4 / DDR5</td>
+      <td>Резервное хранилище (системная память)</td>
+      <td>Очень высокая (до 128 ГБ)</td>
+    </tr>
+    <tr>
+      <td>Монитор</td>
+      <td>SDRAM / SRAM</td>
+      <td>Буферизация для синхронизации частоты</td>
+      <td>Низкая (1-2 кадра)</td>
+    </tr>
+    <tr>
+      <td>SSD / HDD</td>
+      <td>NAND Flash / Магнитная</td>
+      <td>Хранение файлов изображений и текстур</td>
+      <td>Максимальная (Терабайты)</td>
+    </tr>
+  </tbody>
+</table>
+
+<details class="faq-item"><summary>Как работает технология G-Sync внутри монитора?
+<p>G-Sync использует модуль, встроенный в схему монитора, который динамически управляет частотой обновления матрицы, подстраиваясь под текущую частоту кадров видеокарты, что устраняет разрывы и рывки.--></p>
+
+<h2 id="разница-между-файлами-на-диске-и-пикселями-на-экране">Разница между файлами на диске и пикселями на экране</h2>
+<p>Важно четко разделять два понятия</summary><div class="faq-answer"><p> изображение как файл и изображение как сигнал. Когда вы открываете фото на рабочем столе, оно хранится на жестком диске в формате <code>JPEG</code> или <code>PNG</code>. Это статичный набор данных, сжатый алгоритмически.</p>
+
+<p>Как только вы нажимаете «открыть», операционная система считывает этот файл и передает его в <strong>видеодрайвер</strong>. Драйвер декодирует сжатие и выделяет участок в <strong>видеопамяти</strong> для размещения <strong>растрового изображения</strong>. Теперь это не файл, а массив данных о цвете каждого пикселя.</p>
+
+<p>Именно в момент отображения на экране файл на диске перестает существовать как источник изображения. Он становится лишь копией в оперативной памяти. Если вы удалите файл с диска во время просмотра, изображение на экране не исчезнет, пока вы не закроете окно программы.</p>
+
+
+<p>1. Проверьте использование видеопамяти в Диспетчере задач</p>
+<p>2. Убедитесь, что драйверы обновлены до последних версий</p>
+<p>3. Протестируйте стабильность сигнала через разные порты</p>
+<p>4. Проверьте настройки частоты обновления в системе</p></div></details></p>
+
+<p>Если вы занимаетесь обработкой графики, вы можете столкнуться с понятием <strong>виртуальной памяти</strong>. Когда физической <strong>видеопамяти</strong> не хватает, система начинает использовать часть жесткого диска как временное хранилище для текстур. Это сильно замедляет работу, но позволяет системе не зависнуть.</p>
+
+<h2 id="проблемы-доступа-и-неисправности-хранения">Проблемы доступа и неисправности хранения</h2>
+<p>Если на экране появляются «битые пиксели» или цветные полосы, это может указывать на проблему с передачей данных или их хранением в буфере. В некоторых случаях проблема кроется в <strong>кабельном соединении</strong>, которое искажает сигнал при передаче.</p>
+
+<p>Однако, если артефакты появляются регулярно и хаотично, скорее всего, поврежден чип <strong>видеопамяти</strong> или нарушен контакт на плате. В этом случае данные в буфере искажаются до того, как уйти на экран. Диагностика таких случаев требует специализированного оборудования.</p>
+
+<p>Также стоит отметить, что перегрев может приводить к временной потере целостности данных в памяти. Чипы <em>видеокарт</em> очень чувствительны к температурным режимам, и при перегреве биты информации могут менять значение.</p>
+
+<blockquote>⚠️ Внимание! Никогда не пытайтесь самостоятельно паять чипы видеопамяти без профессионального оборудования. Неправильный нагрев может полностью уничтожить <strong>графический процессор</strong> и сделать карту невосстановимой.</blockquote>
+
+<div class="attention-box attention-tip"><span class="attention-icon">💡</span><p>Перед покупкой новой видеокарты всегда проверяйте совместимость блока питания, так как модели с большим объемом памяти часто потребляют значительно больше энергии.</p></div>
+
+<h2 id="будущее-технологий-хранения-видеосигнала">Будущее технологий хранения видеосигнала</h2>
+<p>Технологии не стоят на месте, и методы хранения изображения эволюционируют. Появление технологий <strong>стековой памяти</strong> и новых стандартов интерфейсов позволяет увеличивать скорость обмена данными до невероятных значений.</p>
+
+<p>В современных системах все чаще используется объединение памяти процессора и видеокарты, что позволяет создавать единое адресное пространство. Это упрощает передачу данных и уменьшает задержки, что особенно важно для <strong>виртуальной реальности</strong>.</p>
+
+<p>Однако фундаментальный принцип остается прежним: изображение должно быть загружено в быструю память, доступную для считывания матрицей, прежде чем оно станет видимым для человеческого глаза.</p>
+
+<div class="attention-box attention-tip"><span class="attention-icon">💡</span><p>Изображение на мониторе — это не статичный объект, а динамический поток данных, который непрерывно перезаписывается в видеопамяти и буферах монитора.</p></div>
+
+<h2 id="faq-часто-задаваемые-вопросы">FAQ: Часто задаваемые вопросы</h2>
+
+<details>
+  <summary>Можно ли увеличить объем видеопамяти программно?</summary>
+  <p>Нет, физический объем <strong>видеопамяти</strong> определяется установленными чипами на плате. Программное увеличение (через реестр) работает только как фиктивный параметр для старых игр и не дает реального прироста производительности.</p>
+</details>
+
+<details>
+  <summary>Где хранятся скриншоты, сделанные на экране?</summary>
+  <p>Скриншот сначала копируется в буфер обмена (оперативную память), а при сохранении — записывается на жесткий диск в виде файла. До момента сохранения он не хранится на диске.</p>
+</details>
+
+<details>
+  <summary>Влияет ли разрешение монитора на место в видеопамяти?</summary>
+  <p>Да, чем выше разрешение (например, <code>4K</code> против <code>1080p</code>), тем больше данных требуется для хранения полного кадра. Это прямо влияет на потребление <strong>VRAM</strong>.</p>
+</details>
+
+<details>
+  <summary>Что делать, если видеопамять заполнена?</summary>
+  <p>Система автоматически начнет использовать системную память, что вызовет снижение FPS. Рекомендуется закрыть лишние приложения, снизить настройки текстур в игре или обновить драйверы.</p>
+</details>
+
+<blockquote>⚠️ Внимание! При работе с ресурсоемкими программами (видеомонтаж, 3D-рендеринг) всегда следите за температурой видеокарты, так как постоянное использование 100% <strong>видеопамяти</strong> может привести к перегреву и троттлингу.</blockquote></div>
+                    <!--#include virtual="/ssi/article_after.html" -->
+
+                </article>
+                <aside class="article-sidebar"><!--#include virtual="/ssi/sidebar_top.html" --><nav class="sidebar-search"><div class="sidebar-search-box"><input type="text" id="globalSearchInput" placeholder="🔍 Поиск статей..." autocomplete="off"><div class="search-dropdown" id="globalSearchDropdown"></div></div></nav><!--#include virtual="/ssi/sidebar_before_toc.html" --><nav class="sidebar-toc" id="sidebarToc"><h3>Содержание</h3><ul><li><a href="#роль-видеопамяти-в-хранении-визуальной-информации">Роль видеопамяти в хранении визуальной информации</a></li><li><a href="#от-процессора-к-экрану-путь-данных">От процессора к экрану: путь данных</a></li><li><a href="#внутренняя-память-монитора-и-буферизация">Внутренняя память монитора и буферизация</a></li><li><a href="#разница-между-файлами-на-диске-и-пикселями-на-экране">Разница между файлами на диске и пикселями на экране</a></li><li><a href="#проблемы-доступа-и-неисправности-хранения">Проблемы доступа и неисправности хранения</a></li><li><a href="#будущее-технологий-хранения-видеосигнала">Будущее технологий хранения видеосигнала</a></li><li><a href="#faq-часто-задаваемые-вопросы">FAQ: Часто задаваемые вопросы</a></li></ul></nav><!--#include virtual="/ssi/sidebar_before_related.html" --><nav class="sidebar-related"><h3>Похожие статьи</h3><ul><li><a href="/articles/k/ka/kakie-pokazateli-mozhno-proanalizirovat-s-pomoshchyu-programmy-sistemnyj-monitor.html" class="related-card">Показатели системного монитора: полный анализ производительности</a></li><li><a href="/articles/k/ka/kak-monitorit-temperaturu-protsessora-i-videokarty.html" class="related-card">Как проверить температуру процессора и видеокарты: 5 способов</a></li><li><a href="/articles/c/ch/chto-delat-esli-vo-vremya-igry-vyklyuchaetsya-monitor-a-sistemnik-rabotaet.html" class="related-card">Монитор гаснет в играх: причины и способы решения проблемы</a></li><li><a href="/articles/d/di/direkt-monitor-dlya-chego.html" class="related-card">Директ монитор: для чего нужен и как работает инструмент Яндекс</a></li><li><a href="/articles/c/ch/chto-delat-esli-pk-ne-vidit-monitor.html" class="related-card">ПК не видит монитор: причины, диагностика и пошаговое решение</a></li></ul></nav><!--#include virtual="/ssi/sidebar_after_related.html" --></aside>
+            </div>
+        </div>
+    </main>
+
+    <!--#include virtual="/ssi/before_related_bottom.html" -->
+    <section class="related-bottom">
+        <div class="container">
+            <h2 class="related-bottom-heading">📖 Читайте также</h2>
+            <div class="related-bottom-grid"><a href="/articles/k/ka/kakie-pokazateli-mozhno-proanalizirovat-s-pomoshchyu-programmy-sistemnyj-monitor.html" class="related-bottom-card"><span class="related-bottom-title">Показатели системного монитора: полный анализ производительности</span><span class="related-bottom-desc">Узнайте, какие метрики анализирует системный монитор для диагностики ПК. Разбор нагрузки CPU, памяти</span></a><a href="/articles/k/ka/kak-monitorit-temperaturu-protsessora-i-videokarty.html" class="related-bottom-card"><span class="related-bottom-title">Как проверить температуру процессора и видеокарты: 5 способов</span><span class="related-bottom-desc">Пошаговые инструкции по мониторингу температуры CPU/GPU с помощью программ и BIOS. Нормы нагрева, пр</span></a><a href="/articles/c/ch/chto-delat-esli-vo-vremya-igry-vyklyuchaetsya-monitor-a-sistemnik-rabotaet.html" class="related-bottom-card"><span class="related-bottom-title">Монитор гаснет в играх: причины и способы решения проблемы</span><span class="related-bottom-desc">Черный экран во время игры при работающем ПК: диагностика драйверов, перегрева, питания и настроек W</span></a><a href="/articles/d/di/direkt-monitor-dlya-chego.html" class="related-bottom-card"><span class="related-bottom-title">Директ монитор: для чего нужен и как работает инструмент Яндекс</span><span class="related-bottom-desc">Разбираем, для чего нужен Директ-монитор. Инструмент аналитики, контроля бюджета и анализа конкурент</span></a><a href="/articles/c/ch/chto-delat-esli-pk-ne-vidit-monitor.html" class="related-bottom-card"><span class="related-bottom-title">ПК не видит монитор: причины, диагностика и пошаговое решение</span><span class="related-bottom-desc">Компьютер не отображает изображение на экране? Полный гайд по диагностике: проверки кабелей, настрое</span></a><a href="/articles/k/ka/kak-obnovit-monitor-na-kompyutere.html" class="related-bottom-card"><span class="related-bottom-title">Как обновить монитор: драйверы, прошивка и настройки</span><span class="related-bottom-desc">Пошаговая инструкция по обновлению программного обеспечения монитора. Установка драйверов, проверка </span></a></div>
+        </div>
+    </section>
+    <!--#include virtual="/ssi/after_related_bottom.html" -->
+
+    <footer class="site-footer-premium">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-col">
+                    <div class="footer-brand">🖥️ Мониторум</div>
+                    <p class="footer-about">Полный справочник по настройке, ремонту и выбору компьютерных мониторов для любых задач.</p>
+                </div>
+                <div class="footer-col">
+                    <h4>Разделы</h4>
+                    <ul><li><a href="/category/nastrojka-ekrana/">⚙️ Настройка экрана</a></li>
+<li><a href="/category/podklyuchenie-ustrojstv/">🔌 Подключение устройств</a></li>
+<li><a href="/category/mnozhestvennye-ekrany/">🖥️🖥️ Множественные экраны</a></li>
+<li><a href="/category/zvuk-i-audio/">🔊 Звук и аудио</a></li>
+<li><a href="/category/remont-i-polomki/">🔧 Ремонт и поломки</a></li>
+<li><a href="/category/ukhod-i-chistka/">🧼 Уход и чистка</a></li></ul>
+                </div>
+                <div class="footer-col">
+                    <h4>Информация</h4>
+                    <ul>
+                        <li><a href="/">Главная</a></li>
+                        <li><a href="/about.html">О проекте</a></li>
+                        <li><a href="/categories.html">Все разделы</a></li>
+                        <li><a href="/contact.html">Контакты</a></li>
+                        <li><a href="/privacy.html">Конфиденциальность</a></li>
+                        <li><a href="/sitemap.xml">Карта сайта</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>© Мониторум. Все права защищены.</p>
+                <!--LiveInternet counter--><div style="margin-top:10px;"><a href="https://www.liveinternet.ru/click"
+                target="_blank"><img id="licnt06C4" width="88" height="15" style="border:0" 
+                title="LiveInternet: показано число посетителей за сегодня"
+                src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAEALAAAAAABAAEAAAIBTAA7"
+                alt=""/></a><script>(function(d,s){d.getElementById("licnt06C4").src=
+                "https://counter.yadro.ru/hit?t26.5;r"+escape(d.referrer)+
+                ((typeof(s)=="undefined")?"":";s"+s.width+"*"+s.height+"*"+
+                (s.colorDepth?s.colorDepth:s.pixelDepth))+";u"+escape(d.URL)+
+                ";h"+escape(d.title.substring(0,150))+";"+Math.random()})(document,screen)</script></div><!--/LiveInternet-->
+            </div>
+        </div>
+    </footer>
+    <div id="cookie-consent" class="cookie-popup">
+        <div class="cookie-inner">
+            <span>🍪 Мы используем файлы cookie для улучшения работы сайта.</span>
+            <button id="cookie-accept" class="cookie-btn">Принять</button>
+        </div>
+    </div>
+    <script src="/static/js/main.js"></script>
+    <script>
+    (function() {
+        const popup = document.getElementById('cookie-consent');
+        const btn = document.getElementById('cookie-accept');
+        if (popup && btn && !localStorage.getItem('cookie-accepted')) {
+            popup.classList.add('visible');
+            btn.onclick = () => {
+                localStorage.setItem('cookie-accepted', 'true');
+                popup.classList.remove('visible');
+            };
+        }
+    })();
+    </script>
+    <script>
+    function pbPollVote(el) {
+        var poll = el.closest('.poll-widget');
+        if (poll.classList.contains('voted')) return;
+        poll.classList.add('voted');
+        el.classList.add('selected');
+        var opts = poll.querySelectorAll('.poll-widget-option');
+        var n = opts.length;
+        var raw = [];
+        var sum = 0;
+        for (var i = 0; i < n; i++) {
+            var v = Math.random() * 50 + 5;
+            if (opts[i] === el) v += 30;
+            raw.push(v);
+            sum += v;
+        }
+        var pcts = raw.map(function(v) { return Math.round(v / sum * 100); });
+        var diff = 100 - pcts.reduce(function(a,b){ return a+b; }, 0);
+        pcts[Array.from(opts).indexOf(el)] += diff;
+        setTimeout(function() {
+            opts.forEach(function(opt, i) {
+                opt.querySelector('.poll-widget-bar').style.width = pcts[i] + '%';
+                opt.querySelector('.poll-widget-pct').textContent = pcts[i] + '%';
+            });
+        }, 50);
+    }
+    </script>
+    <!--#include virtual="/ssi/body_bottom.html" -->
+    <script src="/static/js/inject.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27><text y=%27.9em%27 font-size=%2790%27>🖥️</text></svg>">
+    <title>Как работает Android Monitor: принцип действия и настройка — Мониторум</title>
+    <meta name="description" content="Разбираем принцип работы Android Monitor для диагностики, тестирования матрицы и проверки пикселей. Инструкция по запуску на смартфонах и планшетах.">
+    <link rel="canonical" href="https://monitorium.vercel.app/articles/k/ka/kak-rabotaet-android-monitor.html">
+
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="Как работает Android Monitor: принцип действия и настройка">
+    <meta property="og:description" content="Разбираем принцип работы Android Monitor для диагностики, тестирования матрицы и проверки пикселей. Инструкция по запуску на смартфонах и планшетах.">
+    <meta property="og:locale" content="ru_RU">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css?v=1780420684">
+    <style>
+    .site-footer-premium {
+        margin-top: 60px; padding: 40px 0 0; background: #1e293b; color: #94a3b8;
+    }
+    .footer-grid {
+        display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 40px;
+        padding-bottom: 32px; border-bottom: 1px solid #334155;
+    }
+    .footer-brand { font-size: 1.2rem; font-weight: 700; color: #f1f5f9; margin-bottom: 12px; }
+    .footer-about { font-size: 0.9rem; line-height: 1.6; margin-bottom: 8px; }
+    .footer-updated { font-size: 0.8rem; color: #64748b; }
+    .footer-col h4 { color: #f1f5f9; font-size: 0.95rem; margin-bottom: 16px; }
+    .footer-col ul { list-style: none; }
+    .footer-col li { margin-bottom: 8px; }
+    .footer-col a { color: #94a3b8; font-size: 0.9rem; transition: color 0.2s; }
+    .footer-col a:hover { color: #60a5fa; }
+    .footer-bottom { padding: 20px 0; text-align: center; font-size: 0.85rem; }
+    @media (max-width: 640px) {
+        .footer-grid { grid-template-columns: 1fr; gap: 24px; }
+    }
+    .cookie-popup {
+        position: fixed; bottom: 0; left: 0; right: 0; background: #1e293b; color: #fff;
+        padding: 16px; transition: transform 0.5s ease; z-index: 9999; border-top: 2px solid #2563eb;
+        transform: translateY(100%);
+    }
+    .cookie-popup.visible { transform: translateY(0); }
+    .cookie-inner { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; gap: 16px; font-size: 0.9rem; }
+    .cookie-btn { background: #2563eb; color: #fff; border: none; padding: 8px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+    .cookie-btn:hover { background: #1d4ed8; }
+    @media (max-width: 640px) {
+        .cookie-inner { flex-direction: column; text-align: center; }
+    }
+</style>
+    
+    <!--#include virtual="/ssi/head.html" -->
+</head>
+<body>
+        <!--#include virtual="/ssi/body_top.html" -->
+    <style>
+    .nav-dropdown { position: relative; display: inline-block; }
+    .dropdown-toggle {
+        background: none; border: none; cursor: pointer;
+        font: inherit; color: inherit; padding: 8px 12px;
+        border-radius: 8px; transition: background 0.2s;
+    }
+    .dropdown-toggle:hover { background: rgba(0,0,0,0.05); }
+    .dropdown-menu {
+        display: none; position: absolute; right: 0; top: 100%;
+        min-width: 240px; max-height: 70vh; overflow-y: auto;
+        background: var(--card-bg, #fff); border: 1px solid var(--border, #e5e7eb);
+        border-radius: 12px; box-shadow: 0 12px 40px rgba(0,0,0,0.12);
+        padding: 8px 0; z-index: 1000;
+    }
+    .nav-dropdown::after {
+        content: ''; position: absolute; left: 0; right: 0;
+        top: 100%; height: 12px;
+    }
+    .nav-dropdown:hover .dropdown-menu,
+    .nav-dropdown:focus-within .dropdown-menu { display: block; }
+    .dropdown-item {
+        display: block; padding: 10px 20px; color: var(--text, #1f2937);
+        text-decoration: none; font-size: 0.95rem; transition: background 0.15s;
+        white-space: nowrap;
+    }
+    .dropdown-item:hover { background: rgba(37,99,235,0.06); color: var(--primary, #2563eb); }
+    @media (max-width: 768px) {
+        .main-nav > .nav-link { display: none; }
+        .dropdown-toggle { display: none; }
+        .dropdown-menu {
+            display: block !important; position: static;
+            box-shadow: none; border: none; border-radius: 0;
+            min-width: auto; max-height: none; padding: 0;
+            background: transparent;
+        }
+        .dropdown-item {
+            padding: 8px 0; font-size: 1rem;
+        }
+    }
+    </style>
+    <header class="site-header">
+        <div class="container header-inner">
+            <a href="/" class="logo">
+                <span class="logo-icon">🖥️</span>
+                <span>Мониторум</span>
+            </a>
+            <button class="mobile-menu-btn" aria-label="Меню" id="menuBtn">☰</button>
+            <nav class="main-nav" id="mainNav">
+                <a href="/category/nastrojka-ekrana/" class="nav-link">⚙️ Настройка экрана</a>
+<a href="/category/podklyuchenie-ustrojstv/" class="nav-link">🔌 Подключение устройств</a>
+<a href="/category/mnozhestvennye-ekrany/" class="nav-link">🖥️🖥️ Множественные экраны</a>
+<a href="/category/zvuk-i-audio/" class="nav-link">🔊 Звук и аудио</a>
+<div class="nav-dropdown">
+            <button class="nav-link dropdown-toggle">📂 Все разделы ▾</button>
+            <div class="dropdown-menu"><a href="/category/nastrojka-ekrana/" class="dropdown-item">⚙️ Настройка экрана</a>
+<a href="/category/podklyuchenie-ustrojstv/" class="dropdown-item">🔌 Подключение устройств</a>
+<a href="/category/mnozhestvennye-ekrany/" class="dropdown-item">🖥️🖥️ Множественные экраны</a>
+<a href="/category/zvuk-i-audio/" class="dropdown-item">🔊 Звук и аудио</a>
+<a href="/category/remont-i-polomki/" class="dropdown-item">🔧 Ремонт и поломки</a>
+<a href="/category/ukhod-i-chistka/" class="dropdown-item">🧼 Уход и чистка</a>
+<a href="/category/vybor-i-kharakteristiki/" class="dropdown-item">📊 Выбор и характеристики</a>
+<a href="/category/drajvery-i-po/" class="dropdown-item">💿 Драйверы и ПО</a>
+<a href="/category/krepleniya-i-ustanovka/" class="dropdown-item">🔩 Крепления и установка</a>
+<a href="/category/utilizatsiya-i-prodazha/" class="dropdown-item">♻️ Утилизация и продажа</a>
+<a href="/category/spetsialnye-rezhimy/" class="dropdown-item">🎮 Специальные режимы</a>
+<a href="/category/drugoe/" class="dropdown-item">📁 Другое</a></div>
+        </div>
+            </nav>
+        </div>
+    </header>
+
+    <nav class="breadcrumbs" aria-label="Навигация">
+        <div class="container"><a href="/">Главная</a><span class="breadcrumb-sep">›</span><a href="/category/podklyuchenie-ustrojstv/">Подключение устройств</a><span class="breadcrumb-sep">›</span><span class="breadcrumb-current">Как работает Android Monitor: принцип действия и настройка</span></div>
+    </nav>
+
+    <main class="site-main">
+        <div class="container">
+            <div class="article-layout">
+                <article class="article-main">
+                    
+                    <h1>Как работает Android Monitor и для чего он нужен</h1>
+                    <nav class="mobile-toc"><details><summary>📋 Содержание</summary><ul><li><a href="#архитектура-и-принцип-работы-диагностической-утилиты">Архитектура и принцип работы диагностической утилиты</a></li><li><a href="#методы-активации-режима-диагностики-на-смартфонах">Методы активации режима диагностики на смартфонах</a></li><li><a href="#тестирование-цветового-охвата-и-матрицы">Тестирование цветового охвата и матрицы</a></li><li><a href="#проверка-сенсорного-слоя-и-мультитача">Проверка сенсорного слоя и мультитача</a></li><li><a href="#диагностика-через-пк-и-adb-команды">Диагностика через ПК и ADB команды</a></li><li><a href="#частые-ошибки-и-способы-их-устранения">Частые ошибки и способы их устранения</a></li><li><a href="#faq-часто-задаваемые-вопросы">FAQ: Часто задаваемые вопросы</a></li></ul></details></nav>
+                    <!--#include virtual="/ssi/article_before.html" -->
+                    <div class="article-body"><p>Неисправность сенсорного слоя или появление «битых» пикселей на дисплее <em>Samsung Galaxy</em> или <em>Xiaomi Redmi</em> требует немедленной проверки через инженерное меню. Именно в этот момент активируется утилита <strong>Android Monitor</strong>, которая переводит экран в режим расширенной диагностики, позволяя визуализировать цветовые тесты и проверить отклик тачскрина. Без доступа к этому инструменту корректно оценить качество матрицы после ремонта или покупки б/у устройства практически невозможно.</p>
+
+<p>В основе функционирования системы лежит прямой доступ к драйверам дисплея, минуя стандартный графический интерфейс оболочки. Это позволяет пользователю или инженеру запустить серию автоматических циклов, которые выводят чистые цветовые поля (красный, зеленый, синий, черный, белый) на весь экран. Такая процедура выявляет невидимые глазу дефекты подсветки, засветы и застрявшие пиксели, которые могут проявляться только при определенных сценариях отображения.</p>
+
+<h2 id="архитектура-и-принцип-работы-диагностической-утилиты">Архитектура и принцип работы диагностической утилиты</h2>
+<p>Механизм работы <strong>Android Monitor</strong> базируется на прямом взаимодействии с графическим процессором (GPU) и контроллером дисплея. Когда вы вводите специальный код или запускаете приложение, система переключает видеовыход в режим «Raw Display Test». В этом режиме операционная система отбрасывает все слои интерфейса, виджеты и анимации, оставляя только чистый видеосигнал, генерируемый тестовым алгоритмом.</p>
+
+<p>Контроллер экрана получает команду на последовательную смену цветовых каналов. <em></em> (жидкие кристаллы) должны реагировать на изменение напряжения мгновенно, но если один из субпикселей застрял, он не изменит цвет, оставаясь черным на белом фоне или белым на черном. <strong>Инженерный режим</strong> фиксирует эти отклонения и часто подсвечивает проблемные зоны, что критически важно для <strong>диагностики матрицы</strong> перед заменой детали.</p>
+
+<p>Важно понимать, что эта функция не является сторонним приложением в привычном понимании. Она вшита в <strong>системное ядро</strong> Android и активируется через запросы к телеметрии устройства. Это обеспечивает максимальную скорость отклика и исключает влияние сторонних приложений, которые могут «проседать» по производительности и искажать результаты теста.</p>
+
+<blockquote>
+<p>⚠️ <strong>Внимание</strong>: Запуск теста через <strong>инженерное меню</strong> может временно отключить некоторые системные службы, такие как вибрация или приложение «Телефон». Не пугайтесь, это штатное поведение при глубокой диагностике, однако не рекомендуется оставлять устройство в этом режиме надолго без необходимости.</p>
+</blockquote>
+
+<h2 id="методы-активации-режима-диагностики-на-смартфонах">Методы активации режима диагностики на смартфонах</h2>
+<p>Существует несколько способов входа в режим мониторинга, и выбор зависит от версии Android и производителя устройства. Самый распространенный метод — ввод USSD-кода в приложении «Звонилка». Для большинства устройств на базе <em>Qualcomm</em> и <em>MediaTek</em> это код <code><em>#0</em>#</code> или <code><em>#</em>#4636#<em>#</em></code>. После нажатия кнопки вызова система мгновенно открывает меню тестирования, где нужно выбрать пункт «Display» или «Touch».</p>
+
+<p>Для пользователей брендов <em>Samsung</em> доступен более продвинутый вариант через приложение <code><em>#0</em>#</code>, которое автоматически определяет модель и подгружает соответствующие тесты. Если код не срабатывает, необходимо проверить, не заблокирован ли <strong>инженерный доступ</strong> производителем или оператором связи. В таких случаях помогает использование сторонних утилит, таких как <strong>Phone Info SAM</strong> или <em>TestM</em>, которые эмулируют вызовы системных команд.</p>
+
+<p>Пользователям <em>Pixel</em> и чистого Android часто требуется зайти в настройки разработчика. Для этого нужно несколько раз нажать на номер сборки в разделе «О телефоне», после чего в меню настроек появится пункт <strong>Для разработчиков</strong>. Там можно найти опцию «Показать нажатия» или включить отладку по USB, что необходимо для подключения к ПК и запуска <code>adb</code> команд.</p>
+
+<ul>
+<li>✅ Ввод кода <code><em>#0</em>#</code> в диалере для Samsung и многих китайских брендов;
+<li>✅ Использование комбинации <code><em>#</em>#4636#<em>#</em></code> для устройств на чипах Qualcomm;
+<li>✅ Включение отладки по USB и использование консоли ADB для глубокого анализа.</li>
+</ul>
+
+
+
+<h2 id="тестирование-цветового-охвата-и-матрицы">Тестирование цветового охвата и матрицы</h2>
+<p>Одним из ключевых этапов работы <strong>Android Monitor</strong> является проверка цветового охвата и равномерности подсветки. Система по очереди выводит на экран однотонные поля: красное, зеленое, синее, желтое, голубое, пурпурное, белое и черное. На каждом этапе вы должны внимательно осматривать дисплей под разными углами, чтобы найти потемнения или нехарактерные блики.</p>
+
+<p>На черном фоне идеально видно <strong>засветы</strong> (backlight bleed) — участки, где свет от матрицы просачивается сквозь слои, создавая серые пятна по краям. На белом фоне проявляется неравномерность подсветки и желтизна углов. Цветные тесты (R, G, B) позволяют найти «битые» пиксели: если на красном фоне вы видите зеленую или синюю точку, значит, соответствующий субпиксель застрял в открытом или закрытом состоянии.</p>
+
+<p>Для профессиональной оценки используется режим <strong>Color Bar Test</strong>, где экран разбивается на градиентные полосы. Это помогает выявить артефакты сжатия, расслоение слоев матрицы и проблемы с <strong>инвертором</strong> подсветки. Если в какой-то полосе наблюдается разрыв или изменение оттенка, это признак неисправности шлейфа или самой панели.</p>
+
+<div class="attention-box attention-tip"><span class="attention-icon">💡</span><p>Для максимальной точности проверки отключите функцию «Адаптивный дисплей» или «Темный режим» в настройках, чтобы экран показывал чистый сигнал без коррекции цветов системой.</p></div>
+
+<h2 id="проверка-сенсорного-слоя-и-мультитача">Проверка сенсорного слоя и мультитача</h2>
+<p>Сенсорный дисплей (Touchscreen) — это самый уязвимый элемент, и тестирование его работоспособности требует особого подхода. В режиме <strong>Touch Test</strong> система отображает сетку или сплошное поле, которое реагирует на касания. Вы должны провести пальцем по всему экрану, отмечая области, где курсор не появляется или движется рывками.</p>
+<div class="checklist-block"><h4>☑️ Чек-лист проверки сенсора</h4><label class="check-item"><input type="checkbox"><span>Провести пальцем по всем углам экрана</span></label><label class="check-item"><input type="checkbox"><span>Сделать круговое движение по всей поверхности</span></label><label class="check-item"><input type="checkbox"><span>Надавить на экран с разной силой</span></label><label class="check-item"><input type="checkbox"><span>Попробовать мультитач двумя и тремя пальцами одновременно</span></label><div class="check-progress">Выполнено: <span class="check-count">0</span> / 4</div></div>
+
+<p>Тест <strong>Multi-touch</strong> критически важен для геймеров и тех, кто использует жесты. Система позволяет одновременно нажимать множество точек (обычно до 10-12). Если при нажатии трех пальцев только две точки отображаются, это означает, что контроллер тачскрина имеет проблему или поврежден шлейф. <em>GT911</em> и другие популярные контроллеры требуют полной калибровки для корректной работы.</p>
+
+<p>Необходимо также проверить реакцию на <strong>касание стилусом</strong> (если устройство поддерживает S-Pen или подобные технологии). В этом режиме иногда возникают задержки или отсутствие отклика на легкое касание, что может быть исправлено обновлением драйверов или перепрошивкой. Если проблема не решается программно, требуется замена сенсорного стекла.</p>
+
+<blockquote>
+<p>⚠️ <strong>Внимание</strong>: Не проводите тест сенсора мокрыми пальцами или в условиях повышенной влажности. Влага может вызвать ложные срабатывания («призрачные касания»), что приведет к неверной диагностике и ошибочному выводу о неисправности контроллера.</p>
+</blockquote>
+
+<h2 id="диагностика-через-пк-и-adb-команды">Диагностика через ПК и ADB команды</h2>
+<p>Для более глубокого анализа часто требуется подключение к компьютеру через <strong>Adb (Android Debug Bridge)</strong>. Это позволяет запускать скрипты, которые автоматически прогоняют все тесты и сохраняют лог ошибок. Команда <code>adb shell input tap 500 500</code> может симулировать нажатие, а <code>adb shell dumpsys display</code> выводит подробную информацию о текущем состоянии дисплея и его принудительном обновлении.</p>
+
+<p>Специализированные программы на ПК, такие как <em>Screen Test</em> или <strong>DisplayX</strong>, могут управлять Android-устройством через USB, запуская стресс-тесты матрицы. Это особенно полезно, если экран смартфона заблокирован или не реагирует на касания, но изображение при этом отображается. Вы можете управлять тестами с клавиатуры компьютера, минуя сломанный тачскрин.</p>
+
+<p>В лог-файлах Android часто содержатся скрытые ошибки драйверов дисплея. Команда <code>logcat -d | grep"display"</code> позволяет скопировать историю событий, где могут быть указаны сбои в работе <strong>GPU</strong> или проблемы с частотой обновления экрана. Анализ этого лога помогает определить, является ли проблема аппаратной или программной.</p>
+
+<details class="faq-item"><summary>Скрытая информация</summary><div class="faq-answer"><p> Команда <em>#</em>#1234#<em>#</em> в некоторых версиях Android открывает меню проверки версий ПО (AP, CP, CSC), что полезно при диагностике после неудачной прошивки.</p></div></details>
+
+<h2 id="частые-ошибки-и-способы-их-устранения">Частые ошибки и способы их устранения</h2>
+<p>Иногда пользователи сталкиваются с тем, что <strong>Android Monitor</strong> не запускается или выдает черный экран. Самая частая причина — отсутствие прав суперпользователя или блокировка со стороны кастомной прошивки. В этом случае необходимо проверить права root или попробовать восстановить стоковую прошивку через режим Recovery.</p>
+
+<p>Другая распространенная проблема — зависание теста на одном цвете. Это может указывать на перегрев устройства или сбой драйвера графического процессора. Попробуйте перезагрузить устройство в безопасном режиме (Safe Mode), чтобы исключить влияние сторонних приложений. Если проблема сохраняется, возможно, требуется аппаратный ремонт.</p>
+
+<p>В таблице ниже приведены коды ошибок, которые могут встречаться в логах диагностики:</p>
+
+<table>
+<thead>
+<tr>
+<th>Код ошибки</th>
+<th>Описание проблемы</th>
+<th>Рекомендуемое действие</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ERR_001</td>
+<td>Отсутствие связи с контроллером дисплея</td>
+<td>Перепрошивка или замена шлейфа</td>
+</tr>
+<tr>
+<td>ERR_002</td>
+<td>Ошибка инициализации GPU</td>
+<td>Сброс настроек или переустановка ОС</td>
+</tr>
+<tr>
+<td>ERR_003</td>
+<td>Тачскрин не отвечает на калибровку</td>
+<td>Замена сенсорного стекла</td>
+</tr>
+<tr>
+<td>ERR_004</td>
+<td>Несоответствие версии драйвера</td>
+<td>Обновление системных компонентов</td>
+</tr>
+</tbody>
+</table>
+
+<blockquote>
+<p>⚠️ <strong>Внимание</strong>: При появлении ошибок ERR_001 или ERR_002 не пытайтесь делать сброс настроек многократно. Это может привести к потере данных или полному выходу из строя загрузчика. Обратитесь в сервисный центр для диагностики аппаратной части.</p>
+</blockquote>
+
+<div class="attention-box attention-tip"><span class="attention-icon">💡</span><p>Главная мысль: Регулярная проверка дисплея через Android Monitor позволяет выявить скрытые дефекты на ранней стадии, что значительно продлевает срок службы устройства и экономит средства на дорогостоящем ремонте.</p></div>
+
+<h2 id="faq-часто-задаваемые-вопросы">FAQ: Часто задаваемые вопросы</h2>
+
+<details>
+<summary>Как запустить тест экрана на Samsung без кода?</summary>
+<p>Если код не работает, можно зайти в приложение «Диагностика» (Samsung Members), выбрать раздел «Тест» и нажать на пункт «Экран». Это официальный способ проверки для устройств Samsung.</p>
+</details>
+
+<details>
+<summary>Можно ли использовать Android Monitor для проверки монитора ПК?</summary>
+<p>Нет, Android Monitor предназначен исключительно для мобильных устройств. Для проверки компьютерных мониторов существуют отдельные утилиты, такие как <em>Monitor Test</em> или встроенные в Windows тесты цветов.</p>
+</details>
+
+<details>
+<summary>Что делать, если после теста экран стал мигать?</summary>
+<p>Это может быть признаком программного сбоя драйвера. Попробуйте перезагрузить устройство. Если мигание не прекращается, возможно, поврежден шлейф дисплея, и требуется замена.</p>
+</details>
+
+<details>
+<summary>Вредно ли для экрана долго находиться в тестовом режиме?</summary>
+<p>Длительное отображение статического изображения (особенно белого) может привести к выгоранию пикселей (burn-in) на OLED-матрицах. Не оставляйте тест включенным более 10-15 минут без необходимости.</p>
+</details>
+
+<details>
+<summary>Как проверить сенсор на наличие «призрачных» касаний?</summary>
+<p>В режиме теста сенсора оставьте экран без касаний. Если на экране появляются точки или курсоры сами по себе, это означает наличие «призрачных» касаний, что часто бывает при повреждении стекла или попадании влаги.</p>
+</details></div>
+                    <!--#include virtual="/ssi/article_after.html" -->
+
+                </article>
+                <aside class="article-sidebar"><!--#include virtual="/ssi/sidebar_top.html" --><nav class="sidebar-search"><div class="sidebar-search-box"><input type="text" id="globalSearchInput" placeholder="🔍 Поиск статей..." autocomplete="off"><div class="search-dropdown" id="globalSearchDropdown"></div></div></nav><!--#include virtual="/ssi/sidebar_before_toc.html" --><nav class="sidebar-toc" id="sidebarToc"><h3>Содержание</h3><ul><li><a href="#архитектура-и-принцип-работы-диагностической-утилиты">Архитектура и принцип работы диагностической утилиты</a></li><li><a href="#методы-активации-режима-диагностики-на-смартфонах">Методы активации режима диагностики на смартфонах</a></li><li><a href="#тестирование-цветового-охвата-и-матрицы">Тестирование цветового охвата и матрицы</a></li><li><a href="#проверка-сенсорного-слоя-и-мультитача">Проверка сенсорного слоя и мультитача</a></li><li><a href="#диагностика-через-пк-и-adb-команды">Диагностика через ПК и ADB команды</a></li><li><a href="#частые-ошибки-и-способы-их-устранения">Частые ошибки и способы их устранения</a></li><li><a href="#faq-часто-задаваемые-вопросы">FAQ: Часто задаваемые вопросы</a></li></ul></nav><!--#include virtual="/ssi/sidebar_before_related.html" --><nav class="sidebar-related"><h3>Похожие статьи</h3><ul><li><a href="/articles/k/ka/kak-podklyuchit-pk-k-monitoru-cherez-displej-port.html" class="related-card">Как подключить ПК к монитору через DisplayPort: Полное руководство</a></li><li><a href="/articles/m/ma/mac-ispolzovat-kak-monitor.html" class="related-card">Как использовать MacBook как монитор для ПК: Полное руководство</a></li><li><a href="/articles/k/ka/kak-podklyuchit-staryj-monitor-k-tsifrovoj-pristavke.html" class="related-card">Как подключить старый монитор к цифровой приставке: HDMI и VGA подключения</a></li><li><a href="/articles/k/ka/kakie-razemy-nuzhny-dlya-monitora.html" class="related-card">Какие разъёмы нужны для монитора: полный гайд 2026</a></li><li><a href="/articles/k/ka/kak-podklyuchit-stsenicheskij-monitor.html" class="related-card">Как подключить сценический монитор: пошаговая инструкция 2026</a></li></ul></nav><!--#include virtual="/ssi/sidebar_after_related.html" --></aside>
+            </div>
+        </div>
+    </main>
+
+    <!--#include virtual="/ssi/before_related_bottom.html" -->
+    <section class="related-bottom">
+        <div class="container">
+            <h2 class="related-bottom-heading">📖 Читайте также</h2>
+            <div class="related-bottom-grid"><a href="/articles/k/ka/kak-podklyuchit-pk-k-monitoru-cherez-displej-port.html" class="related-bottom-card"><span class="related-bottom-title">Как подключить ПК к монитору через DisplayPort: Полное руководство</span><span class="related-bottom-desc">Подробная инструкция по подключению компьютера к монитору через DisplayPort. Настройка разрешения, ч</span></a><a href="/articles/m/ma/mac-ispolzovat-kak-monitor.html" class="related-bottom-card"><span class="related-bottom-title">Как использовать MacBook как монитор для ПК: Полное руководство</span><span class="related-bottom-desc">Узнайте, можно ли сделать Mac вторым экраном. Обзор методов AirPlay, Sidecar и сторонних утилит для </span></a><a href="/articles/k/ka/kak-podklyuchit-staryj-monitor-k-tsifrovoj-pristavke.html" class="related-bottom-card"><span class="related-bottom-title">Как подключить старый монитор к цифровой приставке: HDMI и VGA подключения</span><span class="related-bottom-desc">Пошаговая инструкция: как подключить ТВ-приставку к старому монитору без телевизора. Обзор кабелей H</span></a><a href="/articles/k/ka/kakie-razemy-nuzhny-dlya-monitora.html" class="related-bottom-card"><span class="related-bottom-title">Какие разъёмы нужны для монитора: полный гайд 2026</span><span class="related-bottom-desc">Выбираем правильный разъём для монитора: HDMI, DisplayPort, USB-C, VGA, DVI. Сравнение скоростей, со</span></a><a href="/articles/k/ka/kak-podklyuchit-stsenicheskij-monitor.html" class="related-bottom-card"><span class="related-bottom-title">Как подключить сценический монитор: пошаговая инструкция 2026</span><span class="related-bottom-desc">Подробное руководство по подключению сценических мониторов к микшерному пульту, ПК или аудиосистеме.</span></a><a href="/articles/k/ka/kak-podklyuchit-2-sistemnykh-bloka-na-odin-monitor.html" class="related-bottom-card"><span class="related-bottom-title">Как подключить 2 системных блока на один монитор: 3 рабочих способа</span><span class="related-bottom-desc">Полное руководство по подключению двух ПК к одному экрану. Обзор KVM-переключателей, аппаратных комм</span></a></div>
+        </div>
+    </section>
+    <!--#include virtual="/ssi/after_related_bottom.html" -->
+
+    <footer class="site-footer-premium">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-col">
+                    <div class="footer-brand">🖥️ Мониторум</div>
+                    <p class="footer-about">Полный справочник по настройке, ремонту и выбору компьютерных мониторов для любых задач.</p>
+                </div>
+                <div class="footer-col">
+                    <h4>Разделы</h4>
+                    <ul><li><a href="/category/nastrojka-ekrana/">⚙️ Настройка экрана</a></li>
+<li><a href="/category/podklyuchenie-ustrojstv/">🔌 Подключение устройств</a></li>
+<li><a href="/category/mnozhestvennye-ekrany/">🖥️🖥️ Множественные экраны</a></li>
+<li><a href="/category/zvuk-i-audio/">🔊 Звук и аудио</a></li>
+<li><a href="/category/remont-i-polomki/">🔧 Ремонт и поломки</a></li>
+<li><a href="/category/ukhod-i-chistka/">🧼 Уход и чистка</a></li></ul>
+                </div>
+                <div class="footer-col">
+                    <h4>Информация</h4>
+                    <ul>
+                        <li><a href="/">Главная</a></li>
+                        <li><a href="/about.html">О проекте</a></li>
+                        <li><a href="/categories.html">Все разделы</a></li>
+                        <li><a href="/contact.html">Контакты</a></li>
+                        <li><a href="/privacy.html">Конфиденциальность</a></li>
+                        <li><a href="/sitemap.xml">Карта сайта</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>© Мониторум. Все права защищены.</p>
+                <!--LiveInternet counter--><div style="margin-top:10px;"><a href="https://www.liveinternet.ru/click"
+                target="_blank"><img id="licnt06C4" width="88" height="15" style="border:0" 
+                title="LiveInternet: показано число посетителей за сегодня"
+                src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAEALAAAAAABAAEAAAIBTAA7"
+                alt=""/></a><script>(function(d,s){d.getElementById("licnt06C4").src=
+                "https://counter.yadro.ru/hit?t26.5;r"+escape(d.referrer)+
+                ((typeof(s)=="undefined")?"":";s"+s.width+"*"+s.height+"*"+
+                (s.colorDepth?s.colorDepth:s.pixelDepth))+";u"+escape(d.URL)+
+                ";h"+escape(d.title.substring(0,150))+";"+Math.random()})(document,screen)</script></div><!--/LiveInternet-->
+            </div>
+        </div>
+    </footer>
+    <div id="cookie-consent" class="cookie-popup">
+        <div class="cookie-inner">
+            <span>🍪 Мы используем файлы cookie для улучшения работы сайта.</span>
+            <button id="cookie-accept" class="cookie-btn">Принять</button>
+        </div>
+    </div>
+    <script src="/static/js/main.js"></script>
+    <script>
+    (function() {
+        const popup = document.getElementById('cookie-consent');
+        const btn = document.getElementById('cookie-accept');
+        if (popup && btn && !localStorage.getItem('cookie-accepted')) {
+            popup.classList.add('visible');
+            btn.onclick = () => {
+                localStorage.setItem('cookie-accepted', 'true');
+                popup.classList.remove('visible');
+            };
+        }
+    })();
+    </script>
+    <script>
+    function pbPollVote(el) {
+        var poll = el.closest('.poll-widget');
+        if (poll.classList.contains('voted')) return;
+        poll.classList.add('voted');
+        el.classList.add('selected');
+        var opts = poll.querySelectorAll('.poll-widget-option');
+        var n = opts.length;
+        var raw = [];
+        var sum = 0;
+        for (var i = 0; i < n; i++) {
+            var v = Math.random() * 50 + 5;
+            if (opts[i] === el) v += 30;
+            raw.push(v);
+            sum += v;
+        }
+        var pcts = raw.map(function(v) { return Math.round(v / sum * 100); });
+        var diff = 100 - pcts.reduce(function(a,b){ return a+b; }, 0);
+        pcts[Array.from(opts).indexOf(el)] += diff;
+        setTimeout(function() {
+            opts.forEach(function(opt, i) {
+                opt.querySelector('.poll-widget-bar').style.width = pcts[i] + '%';
+                opt.querySelector('.poll-widget-pct').textContent = pcts[i] + '%';
+            });
+        }, 50);
+    }
+    </script>
+    <!--#include virtual="/ssi/body_bottom.html" -->
+    <script src="/static/js/inject.js" defer></script>
+</body>
+</html>

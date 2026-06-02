@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27><text y=%27.9em%27 font-size=%2790%27>🖥️</text></svg>">
+    <title>Методы фильтрации пакетов при захвате в сетевых мониторах — Мониторум</title>
+    <meta name="description" content="Подробный обзор способов фильтрации трафика при захвате пакетов. Разбор фильтров BPF, выражений Wireshark и аппаратных методов для эффективной диагностики.">
+    <link rel="canonical" href="https://monitorium.vercel.app/articles/k/ka/kakie-sposoby-filtratsii-paketov-pri-zakhvate-realizovany-v-setevom-monitore.html">
+
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="Методы фильтрации пакетов при захвате в сетевых мониторах">
+    <meta property="og:description" content="Подробный обзор способов фильтрации трафика при захвате пакетов. Разбор фильтров BPF, выражений Wireshark и аппаратных методов для эффективной диагностики.">
+    <meta property="og:locale" content="ru_RU">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css?v=1780420684">
+    <style>
+    .site-footer-premium {
+        margin-top: 60px; padding: 40px 0 0; background: #1e293b; color: #94a3b8;
+    }
+    .footer-grid {
+        display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 40px;
+        padding-bottom: 32px; border-bottom: 1px solid #334155;
+    }
+    .footer-brand { font-size: 1.2rem; font-weight: 700; color: #f1f5f9; margin-bottom: 12px; }
+    .footer-about { font-size: 0.9rem; line-height: 1.6; margin-bottom: 8px; }
+    .footer-updated { font-size: 0.8rem; color: #64748b; }
+    .footer-col h4 { color: #f1f5f9; font-size: 0.95rem; margin-bottom: 16px; }
+    .footer-col ul { list-style: none; }
+    .footer-col li { margin-bottom: 8px; }
+    .footer-col a { color: #94a3b8; font-size: 0.9rem; transition: color 0.2s; }
+    .footer-col a:hover { color: #60a5fa; }
+    .footer-bottom { padding: 20px 0; text-align: center; font-size: 0.85rem; }
+    @media (max-width: 640px) {
+        .footer-grid { grid-template-columns: 1fr; gap: 24px; }
+    }
+    .cookie-popup {
+        position: fixed; bottom: 0; left: 0; right: 0; background: #1e293b; color: #fff;
+        padding: 16px; transition: transform 0.5s ease; z-index: 9999; border-top: 2px solid #2563eb;
+        transform: translateY(100%);
+    }
+    .cookie-popup.visible { transform: translateY(0); }
+    .cookie-inner { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; gap: 16px; font-size: 0.9rem; }
+    .cookie-btn { background: #2563eb; color: #fff; border: none; padding: 8px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+    .cookie-btn:hover { background: #1d4ed8; }
+    @media (max-width: 640px) {
+        .cookie-inner { flex-direction: column; text-align: center; }
+    }
+</style>
+    
+    <!--#include virtual="/ssi/head.html" -->
+</head>
+<body>
+        <!--#include virtual="/ssi/body_top.html" -->
+    <style>
+    .nav-dropdown { position: relative; display: inline-block; }
+    .dropdown-toggle {
+        background: none; border: none; cursor: pointer;
+        font: inherit; color: inherit; padding: 8px 12px;
+        border-radius: 8px; transition: background 0.2s;
+    }
+    .dropdown-toggle:hover { background: rgba(0,0,0,0.05); }
+    .dropdown-menu {
+        display: none; position: absolute; right: 0; top: 100%;
+        min-width: 240px; max-height: 70vh; overflow-y: auto;
+        background: var(--card-bg, #fff); border: 1px solid var(--border, #e5e7eb);
+        border-radius: 12px; box-shadow: 0 12px 40px rgba(0,0,0,0.12);
+        padding: 8px 0; z-index: 1000;
+    }
+    .nav-dropdown::after {
+        content: ''; position: absolute; left: 0; right: 0;
+        top: 100%; height: 12px;
+    }
+    .nav-dropdown:hover .dropdown-menu,
+    .nav-dropdown:focus-within .dropdown-menu { display: block; }
+    .dropdown-item {
+        display: block; padding: 10px 20px; color: var(--text, #1f2937);
+        text-decoration: none; font-size: 0.95rem; transition: background 0.15s;
+        white-space: nowrap;
+    }
+    .dropdown-item:hover { background: rgba(37,99,235,0.06); color: var(--primary, #2563eb); }
+    @media (max-width: 768px) {
+        .main-nav > .nav-link { display: none; }
+        .dropdown-toggle { display: none; }
+        .dropdown-menu {
+            display: block !important; position: static;
+            box-shadow: none; border: none; border-radius: 0;
+            min-width: auto; max-height: none; padding: 0;
+            background: transparent;
+        }
+        .dropdown-item {
+            padding: 8px 0; font-size: 1rem;
+        }
+    }
+    </style>
+    <header class="site-header">
+        <div class="container header-inner">
+            <a href="/" class="logo">
+                <span class="logo-icon">🖥️</span>
+                <span>Мониторум</span>
+            </a>
+            <button class="mobile-menu-btn" aria-label="Меню" id="menuBtn">☰</button>
+            <nav class="main-nav" id="mainNav">
+                <a href="/category/nastrojka-ekrana/" class="nav-link">⚙️ Настройка экрана</a>
+<a href="/category/podklyuchenie-ustrojstv/" class="nav-link">🔌 Подключение устройств</a>
+<a href="/category/mnozhestvennye-ekrany/" class="nav-link">🖥️🖥️ Множественные экраны</a>
+<a href="/category/zvuk-i-audio/" class="nav-link">🔊 Звук и аудио</a>
+<div class="nav-dropdown">
+            <button class="nav-link dropdown-toggle">📂 Все разделы ▾</button>
+            <div class="dropdown-menu"><a href="/category/nastrojka-ekrana/" class="dropdown-item">⚙️ Настройка экрана</a>
+<a href="/category/podklyuchenie-ustrojstv/" class="dropdown-item">🔌 Подключение устройств</a>
+<a href="/category/mnozhestvennye-ekrany/" class="dropdown-item">🖥️🖥️ Множественные экраны</a>
+<a href="/category/zvuk-i-audio/" class="dropdown-item">🔊 Звук и аудио</a>
+<a href="/category/remont-i-polomki/" class="dropdown-item">🔧 Ремонт и поломки</a>
+<a href="/category/ukhod-i-chistka/" class="dropdown-item">🧼 Уход и чистка</a>
+<a href="/category/vybor-i-kharakteristiki/" class="dropdown-item">📊 Выбор и характеристики</a>
+<a href="/category/drajvery-i-po/" class="dropdown-item">💿 Драйверы и ПО</a>
+<a href="/category/krepleniya-i-ustanovka/" class="dropdown-item">🔩 Крепления и установка</a>
+<a href="/category/utilizatsiya-i-prodazha/" class="dropdown-item">♻️ Утилизация и продажа</a>
+<a href="/category/spetsialnye-rezhimy/" class="dropdown-item">🎮 Специальные режимы</a>
+<a href="/category/drugoe/" class="dropdown-item">📁 Другое</a></div>
+        </div>
+            </nav>
+        </div>
+    </header>
+
+    <nav class="breadcrumbs" aria-label="Навигация">
+        <div class="container"><a href="/">Главная</a><span class="breadcrumb-sep">›</span><a href="/category/drugoe/">Другое</a><span class="breadcrumb-sep">›</span><span class="breadcrumb-current">Методы фильтрации пакетов при захвате в сетевых мониторах</span></div>
+    </nav>
+
+    <main class="site-main">
+        <div class="container">
+            <div class="article-layout">
+                <article class="article-main">
+                    
+                    <h1>Способы фильтрации пакетов при захвате в сетевом мониторе</h1>
+                    <nav class="mobile-toc"><details><summary>📋 Содержание</summary><ul><li><a href="#введение-в-фильтрацию-сетевых-пакетов">Введение в фильтрацию сетевых пакетов</a></li><li><a href="#аппаратная-фильтрация-на-уровне-драйверов">Аппаратная фильтрация на уровне драйверов</a></li><li><a href="#фильтрация-по-выражениям-bpf-berkeley-packet-filter">Фильтрация по выражениям BPF (Berkeley Packet Filter)</a></li><li><a href="#фильтрация-в-интерфейсах-анализа-трафика">Фильтрация в интерфейсах анализа трафика</a></li><li><a href="#сравнение-фильтров-захвата-и-отображения">Сравнение фильтров захвата и отображения</a></li><li><a href="#продвинутые-методы-фильтры-по-содержимому-и-поведенческие">Продвинутые методы: фильтры по содержимому и поведенческие</a></li><li><a href="#типичные-ошибки-при-настройке-фильтров">Типичные ошибки при настройке фильтров</a></li><li><a href="#заключение-и-лучшие-практики">Заключение и лучшие практики</a></li></ul></details></nav>
+                    <!--#include virtual="/ssi/article_before.html" -->
+                    <div class="article-body"><h2 id="введение-в-фильтрацию-сетевых-пакетов">Введение в фильтрацию сетевых пакетов</h2>
+<p>Современные сетевые инфраструктуры генерируют колоссальные объемы данных, где полезный сигнал часто теряется в шуме. Именно здесь на сцену выходят сетевые мониторы и анализаторы протоколов, способные захватывать и структурировать трафик. Однако сам по себе захват <strong>пакетов</strong> без фильтрации часто приводит к переполнению буферов и невозможности анализа данных в реальном времени.</p>
+<p>Фильтрация — это механизм, позволяющий отсечь ненужную информацию еще на этапе приема или в процессе обработки. Вы можете настроить отбор данных по IP-адресам, портам или конкретным протоколам, чтобы сосредоточиться только на проблемных узлах сети. Эффективное использование этих инструментов критически важно для администраторов безопасности и инженеров по оптимизации трафика.</p>
+
+<h2 id="аппаратная-фильтрация-на-уровне-драйверов">Аппаратная фильтрация на уровне драйверов</h2>
+<p>Первый и самый эффективный уровень защиты от информационного шума происходит непосредственно на сетевой карте (NIC). Современные <em>адаптеры</em> оснащены собственными процессорами, которые могут отфильтровывать пакеты до того, как они попадут в ОЗУ компьютера. Это значительно снижает нагрузку на центральный процессор и предотвращает потерю пакетов при высоких скоростях передачи данных.</p>
+<p>Драйверы сетевых карт поддерживают встроенные фильтры, которые проверяют заголовки пакетов. Если пакет не соответствует заданным критериям, он просто отбрасывается на физическом уровне или уровне драйвера, не загружая систему. Это особенно актуально при использовании <strong>режима промискуитетности</strong>, когда карта должна перехватывать весь трафик сегмента, а не только адресованный ей.</p>
+<p>Важно учитывать, что возможности аппаратной фильтрации зависят от конкретной модели сетевой карты. Некоторые бюджетные решения не поддерживают сложные выражения <em>фильтрации</em>, ограничиваясь простыми логическими операциями.</p>
+
+<blockquote>
+<p>⚠️ Внимание: Аппаратная фильтрация может не срабатывать на некоторых виртуальных интерфейсах, где драйвер эмулирует сетевую карту. В таких случаях фильтрация переносится на уровень ОС, что увеличивает нагрузку на процессор.</p>
+</blockquote>
+
+<h2 id="фильтрация-по-выражениям-bpf-berkeley-packet-filter">Фильтрация по выражениям BPF (Berkeley Packet Filter)</h2>
+<p>Самым распространенным стандартом фильтрации в Unix-подобных системах является Berkeley Packet Filter (BPF). Это механизм, позволяющий пользователю загружать собственную программу фильтрации непосредственно в ядро операционной системы. <strong>BPF</strong> работает с высокой скоростью, так как фильтры выполняются в пространстве ядра, минимизируя переключение контекста между пользовательским и системным режимом.</p>
+<p>Язык BPF позволяет создавать сложные логические цепочки. Вы можете указать: «покажи мне все пакеты от IP-адреса 192.168.1.10, кроме тех, которые принадлежат порту 80». Эти выражения компилируются в байт-код, который интерпретируется виртуальной машиной BPF внутри ядра. Поддержка этого стандарта стала фактом де-факто в большинстве сетевых утилит.</p>
+<p>Примеры выражений для консоли или скриптов захвата включают команды вида <code>tcp port 443</code> или <code>src host 10.0.0.5 and not dst port 22</code>. Понимание синтаксиса BPF необходимо для любого специалиста, работающего с <em>анализом трафика</em> на низком уровне.</p>
+
+<div class="poll-widget" id="poll-3bb41186"><div class="poll-widget-question">📊 Какой метод фильтрации вы используете чаще всего?</div><div class="poll-widget-option" data-poll="3bb41186" data-idx="0" onclick="pbPollVote(this)"><span class="poll-widget-label">Встроенные фильтры Wireshark</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="3bb41186" data-idx="1" onclick="pbPollVote(this)"><span class="poll-widget-label">BPF выражения</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="3bb41186" data-idx="2" onclick="pbPollVote(this)"><span class="poll-widget-label">Аппаратная фильтрация NIC</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="3bb41186" data-idx="3" onclick="pbPollVote(this)"><span class="poll-widget-label">Другой</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div></div>
+
+<h2 id="фильтрация-в-интерфейсах-анализа-трафика">Фильтрация в интерфейсах анализа трафика</h2>
+<p>После того как пакеты захвачены, наступает этап их визуального анализа. Здесь на первый план выходят такие инструменты, как <em>Wireshark</em> или <em>tcpdump</em>. В этих программах фильтрация делится на два принципиально разных типа: фильтрацию захвата (Capture Filter) и фильтрацию отображения (Display Filter).</p>
+<p>Фильтр захвата применяется до сохранения файла. Если пакет не проходит этот фильтр, он никогда не попадет в файл дампа. Фильтр отображения, напротив, применяется уже к сохраненным данным, скрывая ненужные пакеты из виду, но не удаляя их физически. Это позволяет сохранять полную картину событий, сохраняя возможность вернуться к скрытым данным.</p>
+<p>Синтаксис фильтров отображения в <strong>Wireshark</strong> значительно более гибок и понятен для новичков, чем классический BPF. Вы можете использовать полнотекстовый поиск, сложные логические операции и даже скрипты для фильтрации по содержимому payload пакета. Это делает интерфейс анализа мощным инструментом расследования инцидентов.</p>
+
+<div class="checklist-block"><h4>☑️ Настройка фильтрации в Wireshark</h4><label class="check-item"><input type="checkbox"><span>Определить целевой трафик</span></label><label class="check-item"><input type="checkbox"><span>Создать выражение Capture Filter</span></label><label class="check-item"><input type="checkbox"><span>Применить Display Filter для поиска</span></label><label class="check-item"><input type="checkbox"><span>Сохранить отфильтрованный файл</span></label><div class="check-progress">Выполнено: <span class="check-count">0</span> / 4</div></div>
+
+<h2 id="сравнение-фильтров-захвата-и-отображения">Сравнение фильтров захвата и отображения</h2>
+<p>Понимание разницы между этими двумя типами фильтров критически важно для правильной работы. Ошибка в выборе типа фильтра может привести к потере критически важной информации или к невозможности воспроизвести сетевую атаку. В таблице ниже приведены ключевые отличия:</p>
+<table>
+<thead>
+<tr>
+<th>Характеристика</th>
+<th>Фильтр захвата (Capture)</th>
+<th>Фильтр отображения (Display)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Момент применения</strong></td>
+<td>До сохранения в файл</td>
+<td>После захвата, при просмотре</td>
+</tr>
+<tr>
+<td><strong>Влияние на данные</strong></td>
+<td>Уничтожает несовпадающие пакеты</td>
+<td>Скрывает пакеты из вида</td>
+</tr>
+<tr>
+<td><strong>Скорость работы</strong></td>
+<td>Критична для производительности</td>
+<td>Влияет только на рендеринг</td>
+</tr>
+<tr>
+<td><strong>Синтаксис</strong></td>
+<td>BPF (жесткий)</td>
+<td>Собственный (гибкий)</td>
+</tr>
+<tr>
+<td><strong>Применение</strong></td>
+<td>Снижение объема диска</td>
+<td>Глубокий анализ</td>
+</tr>
+</tbody>
+</table>
+
+<p>Использование фильтра захвата оправдано, когда объем трафика превышает возможности дисковой подсистемы или памяти. Однако, если вы не уверены в критериях отбора, лучше использовать фильтрацию отображения. <mark>Фильтр захвата необратим: удаленный пакет нельзя восстановить без повторного запуска мониторинга.</mark></p>
+
+<details class="faq-item"><summary>Почему фильтр захвата опасен?</summary><div class="faq-answer"><p>Если вы случайно зададите слишком строгий фильтр захвата, например, исключив протокол, который используется для установления соединения (как TCP handshake), вы можете получить дамп, в котором отсутствуют ключевые пакеты (SYN, ACK), что сделает анализ сессии невозможным.</p></div></details>
+
+<h2 id="продвинутые-методы-фильтры-по-содержимому-и-поведенческие">Продвинутые методы: фильтры по содержимому и поведенческие</h2>
+<p>Современные мониторы выходят за рамки проверки заголовков. Возможность анализировать <strong>полезную нагрузку</strong> (payload) позволяет находить специфические сигнатуры атак или утечек данных. Вы можете настроить фильтр на поиск конкретного слова в HTTP-запросе или определенной последовательности байтов в бинарном файле.</p>
+<p>Поведенческие фильтры работают на основе статистики. Система может автоматически выделять пакеты, отклоняющиеся от нормального профиля трафика. Например, если обычно объем трафика составляет 100 Мбит/с, а в определенный момент он скакнул до 500 Мбит/с, фильтр может подсветить этот всплеск. Это полезно для обнаружения DDoS-атак или аномалий в работе приложений.</p>
+<p>Некоторые специализированные решения позволяют создавать фильтры на основе временных меток и корреляции событий. Вы можете запросить: «показать все пакеты, отправленные сервером в течение 100 мс после получения запроса с ошибкой». Такие <em>контекстные запросы</em> требуют значительных вычислительных мощностей, но дают глубокий инсайт.</p>
+
+<div class="attention-box attention-tip"><span class="attention-icon">💡</span><p>При фильтрации по содержимому будьте осторожны с большими объемами данных. Сканирование всего payload каждого пакета может замедлить работу анализатора на порядки. Используйте этот метод только для точечных проверок.</p></div>
+
+<h2 id="типичные-ошибки-при-настройке-фильтров">Типичные ошибки при настройке фильтров</h2>
+<p>Начинающие специалисты часто совершают логические ошибки при составлении сложных выражений. Самая распространенная проблема — неверное использование логических операторов «И» и «ИЛИ». Например, выражение <code>ip and tcp or udp</code> в некоторых интерпретациях может сработать не так, как вы ожидаете, из-за приоритета операторов. Необходимо всегда использовать скобки для явного указания порядка вычислений.</p>
+<p>Другая ошибка — игнорирование направления трафика. Фильтр <code>port 80</code> захватит и входящие, и исходящие соединения, что может размыть фокус анализа. Явное указание <code>src port</code> или <code>dst port</code> делает фильтр более точным и эффективным. Также важно помнить про <strong>MAC-адреса</strong> на уровне канала связи, которые могут не совпадать с IP-адресами при маршрутизации.</p>
+<p>Иногда проблема заключается в самой сетевой карте. Если она работает в режиме полудуплекса или имеет ограничения по буферу, даже идеально настроенный фильтр не спасет от потери пакетов. В таких случаях необходимо переходить на оборудование с поддержкой Jumbo Frames и более быстрых шин передачи данных.</p>
+
+<blockquote>
+<p>⚠️ Внимание: Фильтры, содержащие сложные регулярные выражения, могут привести к зависанию процесса захвата трафика. Тестируйте сложные фильтры на небольших дампах перед применением к живому трафику.</p>
+</blockquote>
+
+<div class="attention-box attention-tip"><span class="attention-icon">💡</span><p>Правильная настройка фильтров позволяет снизить нагрузку на систему в десятки раз, но требует тщательного тестирования синтаксиса и понимания логики работы протоколов.</p></div>
+
+<h2 id="заключение-и-лучшие-практики">Заключение и лучшие практики</h2>
+<p>Эффективная фильтрация пакетов — это баланс между полнотой данных и производительностью системы. Нет универсального решения: для отладки браузера подойдут простые фильтры по портам, а для расследования кибератаки потребуются глубокие поведенческие анализаторы. Комбинация аппаратных фильтров и программных выражений BPF дает наилучший результат.</p>
+<p>Всегда начинайте с широкого захвата, если позволяет место на диске, и используйте фильтры отображения для анализа. Это гарантирует, что вы не упустили важные детали. Используйте инструменты визуализации для быстрой настройки фильтров, но не забывайте проверять итоговый синтаксис вручную. <strong>Сетевая диагностика</strong> требует точности и внимания к деталям.</p>
+<p>Развивайте навыки чтения спецификаций протоколов, так как понимание структуры пакета — залог успешной фильтрации. Чем лучше вы понимаете, как устроен трафик, тем точнее будут ваши запросы и тем быстрее вы найдете причину проблем в сети.</p>
+
+<details>
+<summary>В чем разница между BPF и фильтром отображения в Wireshark?</summary>
+<p>Фильтр BPF (фильтр захвата) применяется до сохранения пакета и физически удаляет ненужные данные из дампа. Фильтр отображения применяется только к уже сохраненным данным и просто скрывает строки из таблицы, позволяя вернуть их обратно в любой момент.</p>
+</details>
+
+<details>
+<summary>Можно ли отфильтровать пакеты по содержимому (payload)?</summary>
+<p>Да, большинство современных анализаторов поддерживают фильтрацию по содержимому. В Wireshark это делается через операторы типа `http contains "password"` или `frame contains "hex_code"`. Однако такая фильтрация ресурсоемка.</p>
+</details>
+
+<details>
+<summary>Что делать, если фильтр захвата слишком строгий и я потерял пакеты?</summary>
+<p>К сожалению, если пакет был отфильтрован на этапе захвата и не записан в файл, его восстановление невозможно. Необходимо изменить настройки фильтрации и перезапустить захват, убедившись в правильности синтаксиса перед началом.</p>
+</details>
+
+<details>
+<summary>Влияет ли аппаратная фильтрация на производительность сервера?</summary>
+<p>Аппаратная фильтрация снижает нагрузку на CPU, так как сетевая карта отбрасывает ненужные пакеты до того, как они будут обработаны процессором. Это критично для серверов с высокой нагрузкой и быстрыми сетевыми интерфейсами (10 Гбит/с и выше).</p>
+</details></div>
+                    <!--#include virtual="/ssi/article_after.html" -->
+
+                </article>
+                <aside class="article-sidebar"><!--#include virtual="/ssi/sidebar_top.html" --><nav class="sidebar-search"><div class="sidebar-search-box"><input type="text" id="globalSearchInput" placeholder="🔍 Поиск статей..." autocomplete="off"><div class="search-dropdown" id="globalSearchDropdown"></div></div></nav><!--#include virtual="/ssi/sidebar_before_toc.html" --><nav class="sidebar-toc" id="sidebarToc"><h3>Содержание</h3><ul><li><a href="#введение-в-фильтрацию-сетевых-пакетов">Введение в фильтрацию сетевых пакетов</a></li><li><a href="#аппаратная-фильтрация-на-уровне-драйверов">Аппаратная фильтрация на уровне драйверов</a></li><li><a href="#фильтрация-по-выражениям-bpf-berkeley-packet-filter">Фильтрация по выражениям BPF (Berkeley Packet Filter)</a></li><li><a href="#фильтрация-в-интерфейсах-анализа-трафика">Фильтрация в интерфейсах анализа трафика</a></li><li><a href="#сравнение-фильтров-захвата-и-отображения">Сравнение фильтров захвата и отображения</a></li><li><a href="#продвинутые-методы-фильтры-по-содержимому-и-поведенческие">Продвинутые методы: фильтры по содержимому и поведенческие</a></li><li><a href="#типичные-ошибки-при-настройке-фильтров">Типичные ошибки при настройке фильтров</a></li><li><a href="#заключение-и-лучшие-практики">Заключение и лучшие практики</a></li></ul></nav><!--#include virtual="/ssi/sidebar_before_related.html" --><nav class="sidebar-related"><h3>Похожие статьи</h3><ul><li><a href="/articles/m/mo/monitor-los-kak-vklyuchit-igrovoj-rezhim.html" class="related-card">Монитор LG: как включить игровой режим и настроить киберспорт</a></li><li><a href="/articles/k/ka/kak-razognat-gertsovku-na-monitore-s-vidyukhoj-ot-amd.html" class="related-card">Как разогнать герцовку на мониторе с видеокартой AMD</a></li><li><a href="/articles/r/ra/rasshirenie-ekrana-monitora-na-noutbuke-kak-uznat.html" class="related-card">Как узнать разрешение и расширить экран монитора на ноутбуке</a></li><li><a href="/articles/k/ka/kak-nastroit-nasyshchennost-na-monitore-lg.html" class="related-card">Как настроить насыщенность цветов на мониторе LG: Полное руководство</a></li><li><a href="/articles/y/ya/yarkost-monitora-na-noutbuke-kak-nastroit-windows-7.html" class="related-card">Как настроить яркость на ноутбуке с Windows 7: полное руководство</a></li></ul></nav><!--#include virtual="/ssi/sidebar_after_related.html" --></aside>
+            </div>
+        </div>
+    </main>
+
+    <!--#include virtual="/ssi/before_related_bottom.html" -->
+    <section class="related-bottom">
+        <div class="container">
+            <h2 class="related-bottom-heading">📖 Читайте также</h2>
+            <div class="related-bottom-grid"><a href="/articles/m/mo/monitor-los-kak-vklyuchit-igrovoj-rezhim.html" class="related-bottom-card"><span class="related-bottom-title">Монитор LG: как включить игровой режим и настроить киберспорт</span><span class="related-bottom-desc">Полная инструкция по активации игрового режима на мониторах LG. Настройка OLED Tone, Game Optimizer,</span></a><a href="/articles/k/ka/kak-razognat-gertsovku-na-monitore-s-vidyukhoj-ot-amd.html" class="related-bottom-card"><span class="related-bottom-title">Как разогнать герцовку на мониторе с видеокартой AMD</span><span class="related-bottom-desc">Пошаговая инструкция по разгону герцовки через AMD Adrenalin. Настройка частоты обновления, устранен</span></a><a href="/articles/r/ra/rasshirenie-ekrana-monitora-na-noutbuke-kak-uznat.html" class="related-bottom-card"><span class="related-bottom-title">Как узнать разрешение и расширить экран монитора на ноутбуке</span><span class="related-bottom-desc">Пошаговая инструкция: как проверить текущее разрешение, расширить рабочий стол и настроить внешний м</span></a><a href="/articles/k/ka/kak-nastroit-nasyshchennost-na-monitore-lg.html" class="related-bottom-card"><span class="related-bottom-title">Как настроить насыщенность цветов на мониторе LG: Полное руководство</span><span class="related-bottom-desc">Пошаговая инструкция по регулировке насыщенности на мониторах LG через OSD и ПО. Настройка gamma, RG</span></a><a href="/articles/y/ya/yarkost-monitora-na-noutbuke-kak-nastroit-windows-7.html" class="related-bottom-card"><span class="related-bottom-title">Как настроить яркость на ноутбуке с Windows 7: полное руководство</span><span class="related-bottom-desc">Пошаговая инструкция по изменению яркости экрана в Windows 7. Узнайте, как использовать горячие клав</span></a><a href="/articles/k/ka/kak-pereklyuchatsya-mezhdu-monitorami-windows.html" class="related-bottom-card"><span class="related-bottom-title">Как переключаться между мониторами в Windows: горячие клавиши и настройки</span><span class="related-bottom-desc">Полное руководство по переключению окон между мониторами. Горячие клавиши, настройки проекции и реше</span></a></div>
+        </div>
+    </section>
+    <!--#include virtual="/ssi/after_related_bottom.html" -->
+
+    <footer class="site-footer-premium">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-col">
+                    <div class="footer-brand">🖥️ Мониторум</div>
+                    <p class="footer-about">Полный справочник по настройке, ремонту и выбору компьютерных мониторов для любых задач.</p>
+                </div>
+                <div class="footer-col">
+                    <h4>Разделы</h4>
+                    <ul><li><a href="/category/nastrojka-ekrana/">⚙️ Настройка экрана</a></li>
+<li><a href="/category/podklyuchenie-ustrojstv/">🔌 Подключение устройств</a></li>
+<li><a href="/category/mnozhestvennye-ekrany/">🖥️🖥️ Множественные экраны</a></li>
+<li><a href="/category/zvuk-i-audio/">🔊 Звук и аудио</a></li>
+<li><a href="/category/remont-i-polomki/">🔧 Ремонт и поломки</a></li>
+<li><a href="/category/ukhod-i-chistka/">🧼 Уход и чистка</a></li></ul>
+                </div>
+                <div class="footer-col">
+                    <h4>Информация</h4>
+                    <ul>
+                        <li><a href="/">Главная</a></li>
+                        <li><a href="/about.html">О проекте</a></li>
+                        <li><a href="/categories.html">Все разделы</a></li>
+                        <li><a href="/contact.html">Контакты</a></li>
+                        <li><a href="/privacy.html">Конфиденциальность</a></li>
+                        <li><a href="/sitemap.xml">Карта сайта</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>© Мониторум. Все права защищены.</p>
+                <!--LiveInternet counter--><div style="margin-top:10px;"><a href="https://www.liveinternet.ru/click"
+                target="_blank"><img id="licnt06C4" width="88" height="15" style="border:0" 
+                title="LiveInternet: показано число посетителей за сегодня"
+                src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAEALAAAAAABAAEAAAIBTAA7"
+                alt=""/></a><script>(function(d,s){d.getElementById("licnt06C4").src=
+                "https://counter.yadro.ru/hit?t26.5;r"+escape(d.referrer)+
+                ((typeof(s)=="undefined")?"":";s"+s.width+"*"+s.height+"*"+
+                (s.colorDepth?s.colorDepth:s.pixelDepth))+";u"+escape(d.URL)+
+                ";h"+escape(d.title.substring(0,150))+";"+Math.random()})(document,screen)</script></div><!--/LiveInternet-->
+            </div>
+        </div>
+    </footer>
+    <div id="cookie-consent" class="cookie-popup">
+        <div class="cookie-inner">
+            <span>🍪 Мы используем файлы cookie для улучшения работы сайта.</span>
+            <button id="cookie-accept" class="cookie-btn">Принять</button>
+        </div>
+    </div>
+    <script src="/static/js/main.js"></script>
+    <script>
+    (function() {
+        const popup = document.getElementById('cookie-consent');
+        const btn = document.getElementById('cookie-accept');
+        if (popup && btn && !localStorage.getItem('cookie-accepted')) {
+            popup.classList.add('visible');
+            btn.onclick = () => {
+                localStorage.setItem('cookie-accepted', 'true');
+                popup.classList.remove('visible');
+            };
+        }
+    })();
+    </script>
+    <script>
+    function pbPollVote(el) {
+        var poll = el.closest('.poll-widget');
+        if (poll.classList.contains('voted')) return;
+        poll.classList.add('voted');
+        el.classList.add('selected');
+        var opts = poll.querySelectorAll('.poll-widget-option');
+        var n = opts.length;
+        var raw = [];
+        var sum = 0;
+        for (var i = 0; i < n; i++) {
+            var v = Math.random() * 50 + 5;
+            if (opts[i] === el) v += 30;
+            raw.push(v);
+            sum += v;
+        }
+        var pcts = raw.map(function(v) { return Math.round(v / sum * 100); });
+        var diff = 100 - pcts.reduce(function(a,b){ return a+b; }, 0);
+        pcts[Array.from(opts).indexOf(el)] += diff;
+        setTimeout(function() {
+            opts.forEach(function(opt, i) {
+                opt.querySelector('.poll-widget-bar').style.width = pcts[i] + '%';
+                opt.querySelector('.poll-widget-pct').textContent = pcts[i] + '%';
+            });
+        }, 50);
+    }
+    </script>
+    <!--#include virtual="/ssi/body_bottom.html" -->
+    <script src="/static/js/inject.js" defer></script>
+</body>
+</html>

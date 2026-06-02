@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27><text y=%27.9em%27 font-size=%2790%27>🖥️</text></svg>">
+    <title>Монитор в ОС: что это такое, функции и принцип работы системы — Мониторум</title>
+    <meta name="description" content="Разбираем понятие монитора операционной системы: ядро, планировщик задач, системные вызовы и роль в защите данных. Технические детали для продвинутых пользователей.">
+    <link rel="canonical" href="https://monitorium.vercel.app/articles/c/ch/chto-takoe-monitor-v-operatsionnykh-sistemakh.html">
+
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="Монитор в ОС: что это такое, функции и принцип работы системы">
+    <meta property="og:description" content="Разбираем понятие монитора операционной системы: ядро, планировщик задач, системные вызовы и роль в защите данных. Технические детали для продвинутых пользователей.">
+    <meta property="og:locale" content="ru_RU">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css?v=1780420684">
+    <style>
+    .site-footer-premium {
+        margin-top: 60px; padding: 40px 0 0; background: #1e293b; color: #94a3b8;
+    }
+    .footer-grid {
+        display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 40px;
+        padding-bottom: 32px; border-bottom: 1px solid #334155;
+    }
+    .footer-brand { font-size: 1.2rem; font-weight: 700; color: #f1f5f9; margin-bottom: 12px; }
+    .footer-about { font-size: 0.9rem; line-height: 1.6; margin-bottom: 8px; }
+    .footer-updated { font-size: 0.8rem; color: #64748b; }
+    .footer-col h4 { color: #f1f5f9; font-size: 0.95rem; margin-bottom: 16px; }
+    .footer-col ul { list-style: none; }
+    .footer-col li { margin-bottom: 8px; }
+    .footer-col a { color: #94a3b8; font-size: 0.9rem; transition: color 0.2s; }
+    .footer-col a:hover { color: #60a5fa; }
+    .footer-bottom { padding: 20px 0; text-align: center; font-size: 0.85rem; }
+    @media (max-width: 640px) {
+        .footer-grid { grid-template-columns: 1fr; gap: 24px; }
+    }
+    .cookie-popup {
+        position: fixed; bottom: 0; left: 0; right: 0; background: #1e293b; color: #fff;
+        padding: 16px; transition: transform 0.5s ease; z-index: 9999; border-top: 2px solid #2563eb;
+        transform: translateY(100%);
+    }
+    .cookie-popup.visible { transform: translateY(0); }
+    .cookie-inner { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; gap: 16px; font-size: 0.9rem; }
+    .cookie-btn { background: #2563eb; color: #fff; border: none; padding: 8px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+    .cookie-btn:hover { background: #1d4ed8; }
+    @media (max-width: 640px) {
+        .cookie-inner { flex-direction: column; text-align: center; }
+    }
+</style>
+    
+    <!--#include virtual="/ssi/head.html" -->
+</head>
+<body>
+        <!--#include virtual="/ssi/body_top.html" -->
+    <style>
+    .nav-dropdown { position: relative; display: inline-block; }
+    .dropdown-toggle {
+        background: none; border: none; cursor: pointer;
+        font: inherit; color: inherit; padding: 8px 12px;
+        border-radius: 8px; transition: background 0.2s;
+    }
+    .dropdown-toggle:hover { background: rgba(0,0,0,0.05); }
+    .dropdown-menu {
+        display: none; position: absolute; right: 0; top: 100%;
+        min-width: 240px; max-height: 70vh; overflow-y: auto;
+        background: var(--card-bg, #fff); border: 1px solid var(--border, #e5e7eb);
+        border-radius: 12px; box-shadow: 0 12px 40px rgba(0,0,0,0.12);
+        padding: 8px 0; z-index: 1000;
+    }
+    .nav-dropdown::after {
+        content: ''; position: absolute; left: 0; right: 0;
+        top: 100%; height: 12px;
+    }
+    .nav-dropdown:hover .dropdown-menu,
+    .nav-dropdown:focus-within .dropdown-menu { display: block; }
+    .dropdown-item {
+        display: block; padding: 10px 20px; color: var(--text, #1f2937);
+        text-decoration: none; font-size: 0.95rem; transition: background 0.15s;
+        white-space: nowrap;
+    }
+    .dropdown-item:hover { background: rgba(37,99,235,0.06); color: var(--primary, #2563eb); }
+    @media (max-width: 768px) {
+        .main-nav > .nav-link { display: none; }
+        .dropdown-toggle { display: none; }
+        .dropdown-menu {
+            display: block !important; position: static;
+            box-shadow: none; border: none; border-radius: 0;
+            min-width: auto; max-height: none; padding: 0;
+            background: transparent;
+        }
+        .dropdown-item {
+            padding: 8px 0; font-size: 1rem;
+        }
+    }
+    </style>
+    <header class="site-header">
+        <div class="container header-inner">
+            <a href="/" class="logo">
+                <span class="logo-icon">🖥️</span>
+                <span>Мониторум</span>
+            </a>
+            <button class="mobile-menu-btn" aria-label="Меню" id="menuBtn">☰</button>
+            <nav class="main-nav" id="mainNav">
+                <a href="/category/nastrojka-ekrana/" class="nav-link">⚙️ Настройка экрана</a>
+<a href="/category/podklyuchenie-ustrojstv/" class="nav-link">🔌 Подключение устройств</a>
+<a href="/category/mnozhestvennye-ekrany/" class="nav-link">🖥️🖥️ Множественные экраны</a>
+<a href="/category/zvuk-i-audio/" class="nav-link">🔊 Звук и аудио</a>
+<div class="nav-dropdown">
+            <button class="nav-link dropdown-toggle">📂 Все разделы ▾</button>
+            <div class="dropdown-menu"><a href="/category/nastrojka-ekrana/" class="dropdown-item">⚙️ Настройка экрана</a>
+<a href="/category/podklyuchenie-ustrojstv/" class="dropdown-item">🔌 Подключение устройств</a>
+<a href="/category/mnozhestvennye-ekrany/" class="dropdown-item">🖥️🖥️ Множественные экраны</a>
+<a href="/category/zvuk-i-audio/" class="dropdown-item">🔊 Звук и аудио</a>
+<a href="/category/remont-i-polomki/" class="dropdown-item">🔧 Ремонт и поломки</a>
+<a href="/category/ukhod-i-chistka/" class="dropdown-item">🧼 Уход и чистка</a>
+<a href="/category/vybor-i-kharakteristiki/" class="dropdown-item">📊 Выбор и характеристики</a>
+<a href="/category/drajvery-i-po/" class="dropdown-item">💿 Драйверы и ПО</a>
+<a href="/category/krepleniya-i-ustanovka/" class="dropdown-item">🔩 Крепления и установка</a>
+<a href="/category/utilizatsiya-i-prodazha/" class="dropdown-item">♻️ Утилизация и продажа</a>
+<a href="/category/spetsialnye-rezhimy/" class="dropdown-item">🎮 Специальные режимы</a>
+<a href="/category/drugoe/" class="dropdown-item">📁 Другое</a></div>
+        </div>
+            </nav>
+        </div>
+    </header>
+
+    <nav class="breadcrumbs" aria-label="Навигация">
+        <div class="container"><a href="/">Главная</a><span class="breadcrumb-sep">›</span><a href="/category/podklyuchenie-ustrojstv/">Подключение устройств</a><span class="breadcrumb-sep">›</span><span class="breadcrumb-current">Монитор в ОС: что это такое, функции и принцип работы системы</span></div>
+    </nav>
+
+    <main class="site-main">
+        <div class="container">
+            <div class="article-layout">
+                <article class="article-main">
+                    
+                    <h1>Что такое монитор в операционных системах: от ядра до планировщика задач</h1>
+                    <nav class="mobile-toc"><details><summary>📋 Содержание</summary><ul><li><a href="#фундаментальные-принципы-работы-системного-монитора">Фундаментальные принципы работы системного монитора</a></li><li><a href="#архитектура-критических-секций-и-управление-потоками">Архитектура критических секций и управление потоками</a></li><li><a href="#сравнение-мониторов-с-другими-механизмами-синхронизации">Сравнение мониторов с другими механизмами синхронизации</a></li><li><a href="#реализация-в-современных-операционных-системах">Реализация в современных операционных системах</a></li><li><a href="#проблемы-производительности-и-взаимоблокировки">Проблемы производительности и взаимоблокировки</a></li><li><a href="#безопасность-и-защита-данных-в-многопоточной-среде">Безопасность и защита данных в многопоточной среде</a></li><li><a href="#перспективы-развития-механизмов-синхронизации">Перспективы развития механизмов синхронизации</a></li></ul></details></nav>
+                    <!--#include virtual="/ssi/article_before.html" -->
+                    <div class="article-body"><p>Когда речь заходит о компьютере, слово «монитор» у большинства людей автоматически вызывает образ устройства вывода изображения. Однако в контексте архитектуры программного обеспечения и операционных систем (ОС) этот термин имеет совершенно иное, фундаментальное значение. Монитор в операционной системе — это не экран, а специальный механизм синхронизации, гарантирующий корректный доступ к разделяемым ресурсам.</p>
+
+<p>Понимание работы этого компонента критически важно для разработчиков, системных администраторов и специалистов по кибербезопасности. Без соблюдения принципов, заложенных в <strong>механизм монитора</strong>, многопоточные приложения начали бы работать хаотично, приводя к катастрофическим сбоям данных. В этой статье мы разберем, как именно ОС управляет конкурентным доступом к памяти и процессуору, и почему это невидимый, но жизненно важный «сторож» вашего компьютера.</p>
+
+<h2 id="фундаментальные-принципы-работы-системного-монитора">Фундаментальные принципы работы системного монитора</h2>
+
+<p>В мире операционных систем монитор определяется как абстрактный тип данных, который инкапсулирует общие ресурсы и процедуры для работы с ними. Его главная задача — обеспечить эксклюзивный доступ: в любой момент времени внутри монитора может выполняться только одна процедура. Это кардинально отличает его от простых блокировок (locks), так как монитор автоматически управляет очередями процессов, ожидающих доступа к ресурсу.</p>
+
+<p>Представьте, что вы пытаетесь войти в узкую комнату, где может находиться только один человек. Монитор действует как строгий привратник. Если процесс пытается вызвать метод монитора, он должен сначала получить «ключ» (владение монитором). Если ключ уже занят другим процессом, новый процесс помещается в очередь ожидания, а не продолжает выполняться, что предотвращает <strong>состояние гонки</strong> (race condition).</p>
+
+<p>Ключевым аспектом здесь является автоматизация. В отличие от примитивных семафоров, где программист должен вручную управлять сигналами, мониторы встроены в синтаксис языка или предоставляются API ОС как <em>объектно-ориентированный</em> механизм. Это снижает вероятность ошибок человека при написании многопоточного кода.</p>
+
+<p>Стоит отметить, что реализация мониторов может варьироваться в зависимости от конкретной ОС. В то время как Windows использует собственные вызовы API, UNIX-подобные системы часто полагаются на стандартные POSIX-механизмы. Независимо от реализации, цель остается неизменной: изоляция критических секций кода.</p>
+
+<h2 id="архитектура-критических-секций-и-управление-потоками">Архитектура критических секций и управление потоками</h2>
+
+<p>Сердцем работы монитора являются критические секции. Это участки кода, где происходит доступ к разделяемым переменным. Если два потока одновременно попытаются изменить одну и ту же ячейку памяти без защиты, результат операции станет непредсказуемым. Монитор гарантирует, что <strong>критическая секция</strong> будет выполнена атомарно, то есть как единое неделимое действие.</p>
+
+<p>Процесс взаимодействия выглядит следующим образом: поток запрашивает вход в монитор, система проверяет статус владения и либо разрешает вход, либо блокирует поток. Внутри монитора поток может выполнять необходимые вычисления, и только после выхода из него (вызывая процедуру завершения) владение передается следующему в очереди. Это обеспечивает строгую последовательность и целостность данных.</p>
+
+<p>Особое внимание уделяется ожиданиям. Если процессу внутри монитора нужно подождать выполнения какого-то условия (например, заполнения буфера), он не просто «засыпает», а временно освобождает монитор, позволяя другим потокам войти. Как только условие становится истинным, поток снова ждет освобождения ресурса для входа. Такая тонкая настройка предотвращает <strong>взаимную блокировку</strong> (deadlock), когда процессы ждут друг друга бесконечно.</p>
+
+<blockquote>⚠️ <strong>Внимание:</strong> Неправильная реализация логики ожидания внутри монитора может привести к голоданию (starvation), когда некоторые потоки никогда не получают доступа к ресурсу, несмотря на его доступность.</blockquote>
+
+<div class="poll-widget" id="poll-c6105744"><div class="poll-widget-question">📊 Какая ОС используется для серверной разработки чаще всего?</div><div class="poll-widget-option" data-poll="c6105744" data-idx="0" onclick="pbPollVote(this)"><span class="poll-widget-label">Windows Server</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="c6105744" data-idx="1" onclick="pbPollVote(this)"><span class="poll-widget-label">Linux (Ubuntu/Debian)</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="c6105744" data-idx="2" onclick="pbPollVote(this)"><span class="poll-widget-label">FreeBSD</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="c6105744" data-idx="3" onclick="pbPollVote(this)"><span class="poll-widget-label">macOS Server</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div></div>
+
+<h2 id="сравнение-мониторов-с-другими-механизмами-синхронизации">Сравнение мониторов с другими механизмами синхронизации</h2>
+
+<p>Понимание места мониторов в иерархии синхронизации требует сравнения их с другими инструментами, такими как семафоры, мьютексы и условные переменные. Хотя семафоры предлагают более гибкую гибкость, они требуют от программиста ручного управления счетчиками, что часто приводит к ошибкам. Мониторы, напротив, инкапсулируют состояние и операции, делая код чище и безопаснее.</p>
+
+<p>Мьютекс (Mutex) часто путают с монитором, но это разные сущности. Мьютекс — это просто бинарный замок, который говорит «занято» или «свободно». Он не имеет встроенной очереди ожидания условий. Монитор же включает в себя мьютекс, но добавляет к нему возможности условных переменных и автоматическое управление очередями потоков. Именно это делает мониторы предпочтительным выбором для сложной бизнес-логики.</p>
+
+<p>В таблице ниже приведено сравнение основных характеристик различных механизмов синхронизации, чтобы вы могли наглядно увидеть различия:</p>
+
+<table>
+<thead>
+<tr>
+<th>Механизм</th>
+<th>Тип доступа</th>
+<th>Управление очередью</th>
+<th>Сложность реализации</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Монитор</td>
+<td>Эксклюзивный</td>
+<td>Автоматическое</td>
+<td>Средняя (встроен в язык)</td>
+</tr>
+<tr>
+<td>Семафор</td>
+<td>Счетчик (N потоков)</td>
+<td>Ручное (wait/signal)</td>
+<td>Высокая (риск ошибок)</td>
+</tr>
+<tr>
+<td>Мьютекс</td>
+<td>Бинарный (1 поток)</td>
+<td>Нет (только владение)</td>
+<td>Низкая</td>
+</tr>
+<tr>
+<td>Спинлок</td>
+<td>Эксклюзивный</td>
+<td>Нет (активное ожидание)</td>
+<td>Низкая (для ядра)</td>
+</tr>
+</tbody>
+</table>
+
+<p>Выбор правильного инструмента зависит от задач. Если вам нужно просто защитить доступ к переменной, мьютекса может быть достаточно. Но если задача требует сложного взаимодействия между потоками с ожиданием событий, <strong>монитор ОС</strong> становится незаменимым инструментом.</p>
+
+<h2 id="реализация-в-современных-операционных-системах">Реализация в современных операционных системах</h2>
+
+<p>В зависимости от архитектуры ОС, реализация мониторов может отличаться. В Windows API прямое понятие «монитор» встречается реже, чем в академической литературе, но его функции выполняются через комбинацию <code>CRITICAL_SECTION</code> и <code>SleepConditionVariableCS</code>. Разработчики часто используют эти примитивы для создания высокопроизводительных приложений.</p>
+
+<p>В UNIX-системах и ядрах Linux ситуация схожа. Ядро предоставляет низкоуровневые примитивы (futex), на базе которых строятся высокоуровневые мониторы. Языки программирования, такие как Java, имеют встроенную поддержку мониторов: каждый объект в Java является монитором, что позволяет использовать ключевое слово <code>synchronized</code> для защиты методов.</p>
+
+<p>Интересно, что в современных многопроцессорных системах управление мониторами требует особого внимания к кэш-когерентности. Процессоры могут кэшировать значения переменных локально, что приводит к тому, что один процессор не видит изменений, сделанных другим. ОС должна использовать специальные инструкции процессора (барьеры памяти) для обеспечения актуальности данных внутри монитора.</p>
+
+<blockquote>⚠️ <strong>Внимание:</strong> При работе с мониторами на многопроцессорных системах необходимо учитывать накладные расходы на синхронизацию кэшей, которые могут снижать производительность при частых переключениях контекста.</blockquote>
+
+<div class="checklist-block"><h4>☑️ Проверка настроек синхронизации в ОС</h4><label class="check-item"><input type="checkbox"><span>Проверить наличие драйверов многопоточности</span></label><label class="check-item"><input type="checkbox"><span>Убедиться в отсутствии конфликтов ресурсов</span></label><label class="check-item"><input type="checkbox"><span>Настроить приоритеты потоков</span></label><label class="check-item"><input type="checkbox"><span>Проверить журналы системных ошибок</span></label><div class="check-progress">Выполнено: <span class="check-count">0</span> / 4</div></div>
+
+<h2 id="проблемы-производительности-и-взаимоблокировки">Проблемы производительности и взаимоблокировки</h2>
+
+<p>Несмотря на преимущества, использование мониторов не лишено недостатков. Основной проблемой является риск возникновения взаимоблокировок (deadlock). Это происходит, когда два или более процесса блокируют друг друга, ожидая освобождения ресурсов, которые удерживаются оппонентами. В случае с мониторами это часто случается при неправильном порядке захвата ресурсов.</p>
+
+<p>Еще одной проблемой является снижение производительности из-за частых переключений контекста. Если монитор используется слишком агрессивно и удерживается долго, другие потоки вынуждены простаивать. Это приводит к снижению общей пропускной способности системы, особенно в средах с высокой нагрузкой, где тысячи потоков пытаются получить доступ к общим данным.</p>
+
+<p>Для решения этих проблем разработчики применяют различные стратегии. Одной из них является разделение ресурсов на более мелкие блоки (fine-grained locking), что позволяет уменьшить время удержания монитора. Другой подход — использование безблокировочных алгоритмов (lock-free), которые полностью обходят механизмы мониторов в пользу атомарных операций процессора.</p>
+
+<p> В одних случаях лучше использовать <strong>широкозахватные мониторы</strong> для простоты кода, а в других — сложные схемы безблокировочного доступа для максимальной скорости. Выбор зависит от конкретной задачи и требований к производительности.</p>
+
+<details class="faq-item"><summary>Что происходит при переполнении очереди монитора?</summary><div class="faq-answer"><p>Если очередь ожидания монитора переполняется или система не может выделить память для новых процессов, новые запросы могут быть отклонены с ошибкой, что приведет к сбою приложения или его зависанию.</p></div></details>
+
+<h2 id="безопасность-и-защита-данных-в-многопоточной-среде">Безопасность и защита данных в многопоточной среде</h2>
+
+<p>В контексте кибербезопасности мониторы играют роль первого рубежа защиты целостности данных. Без них злоумышленник мог бы внедрить вредоносный код, который изменит состояние разделяемой памяти в момент, когда законный процесс выполняет критическую операцию. Мониторы делают такие атаки невозможными, так как блокируют доступ к памяти снаружи.</p>
+
+<p>Однако безопасность зависит от правильной реализации. Уязвимости, связанные с <em>time-of-check to time-of-use</em> (TOCTOU), могут возникать, если проверка условия и использование ресурса не выполняются атомарно внутри монитора. В таких случаях злоумышленник может изменить данные между проверкой и действием.</p>
+
+<p>Современные ОС внедряют дополнительные механизмы для защиты от атак на мониторы. Например, контроль целостности стека и защищенные области памяти предотвращают переполнение буфера, которое могло бы привести к захвату управления монитором. Это особенно важно для серверных систем, где данные обрабатываются непрерывно.</p>
+
+<div class="attention-box attention-tip"><span class="attention-icon">💡</span><p>При отладке многопоточных приложений всегда используйте инструменты статического анализа кода, которые могут автоматически обнаруживать потенциальные ошибки синхронизации и уязвимости в мониторах.</p></div>
+
+<h2 id="перспективы-развития-механизмов-синхронизации">Перспективы развития механизмов синхронизации</h2>
+
+<p>С развитием технологий, таких как квантовые вычисления и нейроморфные процессоры, традиционные модели мониторов могут потребовать пересмотра. В условиях, где параллелизм достигает экстремальных уровней, классические механизмы блокировки могут стать узким местом. Исследователи уже сейчас работают над адаптивными алгоритмами, которые динамически меняют стратегию синхронизации.</p>
+
+<p>Однако принципы инкапсуляции и эксклюзивного доступа останутся актуальными. Даже в новых архитектурах нужна гарантия того, что данные не будут повреждены одновременным доступом. Будущее мониторов, вероятно, лежит в гибридизации с аппаратными средствами, где процессор будет брать на себя часть работы по управлению очередями.</p>
+
+<p>Для разработчиков это означает необходимость постоянного обучения и адаптации. Понимание того, как работает <strong>монитор</strong> на низком уровне, поможет создавать более эффективные и безопасные приложения в будущем, независимо от того, какие технологии будут доминировать на рынке.</p>
+
+<div class="attention-box attention-tip"><span class="attention-icon">💡</span><p>Мониторы обеспечивают критически важную синхронизацию в ОС, но требуют осторожного использования для избежания блокировок и потери производительности.</p></div>
+
+<blockquote>⚠️ <strong>Внимание:</strong> Детали реализации механизмов синхронизации могут меняться в новых версиях операционных систем и библиотек, поэтому всегда сверяйте документацию с актуальными стандартами.</blockquote>
+
+<p>Таким образом, монитор в операционной системе — это сложный и мощный инструмент, обеспечивающий стабильность работы многозадачных приложений. Он скрывает от программиста сложные детали управления ресурсами, предоставляя удобный интерфейс для безопасной работы с данными. Понимание его принципов работы является обязательным для любого профессионала в сфере IT.</p>
+
+<details>
+<summary>В чем главное отличие монитора от семафора?</summary>
+<p>Главное отличие заключается в автоматическом управлении очередями и инкапсуляции данных. Семафор требует ручного управления счетчиками и сигналами, тогда как монитор предоставляет структуру, которая сама управляет доступом и ожиданием процессов внутри.</p>
+</details>
+
+<details>
+<summary>Могут ли мониторы вызывать проблемы с производительностью?</summary>
+<p>Да, при неправильном использовании мониторы могут стать «узким местом». Если процесс удерживает монитор слишком долго, другие потоки вынуждены ждать, что снижает общую пропускную способность системы и может привести к задержкам.</p>
+</details>
+
+<details>
+<summary>Как мониторы помогают в защите данных?</summary>
+<p>Мониторы предотвращают состояние гонки, гарантируя, что только один поток в момент времени может изменять критические данные. Это защищает целостность информации от случайных или злонамеренных вмешательств со стороны других процессов.</p>
+</details>
+
+<details>
+<summary>Что такое «критическая секция» в контексте монитора?</summary>
+<p>Критическая секция — это часть кода, где происходит доступ к разделяемым ресурсам. Монитор гарантирует, что в этот момент внутри этой секции может находиться только один поток, исключая конфликты.</p>
+</details></div>
+                    <!--#include virtual="/ssi/article_after.html" -->
+
+                </article>
+                <aside class="article-sidebar"><!--#include virtual="/ssi/sidebar_top.html" --><nav class="sidebar-search"><div class="sidebar-search-box"><input type="text" id="globalSearchInput" placeholder="🔍 Поиск статей..." autocomplete="off"><div class="search-dropdown" id="globalSearchDropdown"></div></div></nav><!--#include virtual="/ssi/sidebar_before_toc.html" --><nav class="sidebar-toc" id="sidebarToc"><h3>Содержание</h3><ul><li><a href="#фундаментальные-принципы-работы-системного-монитора">Фундаментальные принципы работы системного монитора</a></li><li><a href="#архитектура-критических-секций-и-управление-потоками">Архитектура критических секций и управление потоками</a></li><li><a href="#сравнение-мониторов-с-другими-механизмами-синхронизации">Сравнение мониторов с другими механизмами синхронизации</a></li><li><a href="#реализация-в-современных-операционных-системах">Реализация в современных операционных системах</a></li><li><a href="#проблемы-производительности-и-взаимоблокировки">Проблемы производительности и взаимоблокировки</a></li><li><a href="#безопасность-и-защита-данных-в-многопоточной-среде">Безопасность и защита данных в многопоточной среде</a></li><li><a href="#перспективы-развития-механизмов-синхронизации">Перспективы развития механизмов синхронизации</a></li></ul></nav><!--#include virtual="/ssi/sidebar_before_related.html" --><nav class="sidebar-related"><h3>Похожие статьи</h3><ul><li><a href="/articles/k/ka/kak-podklyuchit-monitor-k-staromu-kompyuteru.html" class="related-card">Как подключить монитор к старому компьютеру: полное руководство</a></li><li><a href="/articles/k/ka/kak-vklyuchit-kolonki-cherez-monitor.html" class="related-card">Как подключить колонки через монитор: пошаговая инструкция 2026</a></li><li><a href="/articles/p/po/pochemu-nout-ne-vidit-monitor.html" class="related-card">Ноутбук не видит монитор: 10 причин и решений (2026)</a></li><li><a href="/articles/k/ka/kak-podklyuchit-monitor-televizora-k-kompyuteru-cherez-hdmi.html" class="related-card">Как подключить монитор или телевизор к компьютеру через HDMI: полное руководство</a></li><li><a href="/articles/p/po/pochemu-po-hdmi-ne-peredaetsya-zvuk-na-monitor.html" class="related-card">Нет звука по HDMI на мониторе: причины и способы решения</a></li></ul></nav><!--#include virtual="/ssi/sidebar_after_related.html" --></aside>
+            </div>
+        </div>
+    </main>
+
+    <!--#include virtual="/ssi/before_related_bottom.html" -->
+    <section class="related-bottom">
+        <div class="container">
+            <h2 class="related-bottom-heading">📖 Читайте также</h2>
+            <div class="related-bottom-grid"><a href="/articles/k/ka/kak-podklyuchit-monitor-k-staromu-kompyuteru.html" class="related-bottom-card"><span class="related-bottom-title">Как подключить монитор к старому компьютеру: полное руководство</span><span class="related-bottom-desc">Пошаговая инструкция по подключению монитора к устаревшему ПК. Разбор портов VGA, DVI, HDMI, адаптер</span></a><a href="/articles/k/ka/kak-vklyuchit-kolonki-cherez-monitor.html" class="related-bottom-card"><span class="related-bottom-title">Как подключить колонки через монитор: пошаговая инструкция 2026</span><span class="related-bottom-desc">Подробное руководство по подключению акустики через монитор с HDMI, DisplayPort, 3.5 мм и USB. Разби</span></a><a href="/articles/p/po/pochemu-nout-ne-vidit-monitor.html" class="related-bottom-card"><span class="related-bottom-title">Ноутбук не видит монитор: 10 причин и решений (2026)</span><span class="related-bottom-desc">Почему ноутбук не распознает внешний монитор через HDMI/DisplayPort? Проверенные способы диагностики</span></a><a href="/articles/k/ka/kak-podklyuchit-monitor-televizora-k-kompyuteru-cherez-hdmi.html" class="related-bottom-card"><span class="related-bottom-title">Как подключить монитор или телевизор к компьютеру через HDMI: полное руководство</span><span class="related-bottom-desc">Пошаговая инструкция по подключению телевизора или монитора к ПК через HDMI. Настройка разрешения, ч</span></a><a href="/articles/p/po/pochemu-po-hdmi-ne-peredaetsya-zvuk-na-monitor.html" class="related-bottom-card"><span class="related-bottom-title">Нет звука по HDMI на мониторе: причины и способы решения</span><span class="related-bottom-desc">Звук не идет через HDMI на монитор? Узнайте основные причины: настройки Windows, драйверы, выбор уст</span></a><a href="/articles/k/ka/kak-nazyvaetsya-provod-ot-monitora-k-sistemnomu-bloku-sinij.html" class="related-bottom-card"><span class="related-bottom-title">Синий кабель от монитора к системному блоку — как называется и зачем нужен</span><span class="related-bottom-desc">Узнайте название синего провода между монитором и ПК: VGA, DVI или другой? Разберём виды разъёмов, о</span></a></div>
+        </div>
+    </section>
+    <!--#include virtual="/ssi/after_related_bottom.html" -->
+
+    <footer class="site-footer-premium">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-col">
+                    <div class="footer-brand">🖥️ Мониторум</div>
+                    <p class="footer-about">Полный справочник по настройке, ремонту и выбору компьютерных мониторов для любых задач.</p>
+                </div>
+                <div class="footer-col">
+                    <h4>Разделы</h4>
+                    <ul><li><a href="/category/nastrojka-ekrana/">⚙️ Настройка экрана</a></li>
+<li><a href="/category/podklyuchenie-ustrojstv/">🔌 Подключение устройств</a></li>
+<li><a href="/category/mnozhestvennye-ekrany/">🖥️🖥️ Множественные экраны</a></li>
+<li><a href="/category/zvuk-i-audio/">🔊 Звук и аудио</a></li>
+<li><a href="/category/remont-i-polomki/">🔧 Ремонт и поломки</a></li>
+<li><a href="/category/ukhod-i-chistka/">🧼 Уход и чистка</a></li></ul>
+                </div>
+                <div class="footer-col">
+                    <h4>Информация</h4>
+                    <ul>
+                        <li><a href="/">Главная</a></li>
+                        <li><a href="/about.html">О проекте</a></li>
+                        <li><a href="/categories.html">Все разделы</a></li>
+                        <li><a href="/contact.html">Контакты</a></li>
+                        <li><a href="/privacy.html">Конфиденциальность</a></li>
+                        <li><a href="/sitemap.xml">Карта сайта</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>© Мониторум. Все права защищены.</p>
+                <!--LiveInternet counter--><div style="margin-top:10px;"><a href="https://www.liveinternet.ru/click"
+                target="_blank"><img id="licnt06C4" width="88" height="15" style="border:0" 
+                title="LiveInternet: показано число посетителей за сегодня"
+                src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAEALAAAAAABAAEAAAIBTAA7"
+                alt=""/></a><script>(function(d,s){d.getElementById("licnt06C4").src=
+                "https://counter.yadro.ru/hit?t26.5;r"+escape(d.referrer)+
+                ((typeof(s)=="undefined")?"":";s"+s.width+"*"+s.height+"*"+
+                (s.colorDepth?s.colorDepth:s.pixelDepth))+";u"+escape(d.URL)+
+                ";h"+escape(d.title.substring(0,150))+";"+Math.random()})(document,screen)</script></div><!--/LiveInternet-->
+            </div>
+        </div>
+    </footer>
+    <div id="cookie-consent" class="cookie-popup">
+        <div class="cookie-inner">
+            <span>🍪 Мы используем файлы cookie для улучшения работы сайта.</span>
+            <button id="cookie-accept" class="cookie-btn">Принять</button>
+        </div>
+    </div>
+    <script src="/static/js/main.js"></script>
+    <script>
+    (function() {
+        const popup = document.getElementById('cookie-consent');
+        const btn = document.getElementById('cookie-accept');
+        if (popup && btn && !localStorage.getItem('cookie-accepted')) {
+            popup.classList.add('visible');
+            btn.onclick = () => {
+                localStorage.setItem('cookie-accepted', 'true');
+                popup.classList.remove('visible');
+            };
+        }
+    })();
+    </script>
+    <script>
+    function pbPollVote(el) {
+        var poll = el.closest('.poll-widget');
+        if (poll.classList.contains('voted')) return;
+        poll.classList.add('voted');
+        el.classList.add('selected');
+        var opts = poll.querySelectorAll('.poll-widget-option');
+        var n = opts.length;
+        var raw = [];
+        var sum = 0;
+        for (var i = 0; i < n; i++) {
+            var v = Math.random() * 50 + 5;
+            if (opts[i] === el) v += 30;
+            raw.push(v);
+            sum += v;
+        }
+        var pcts = raw.map(function(v) { return Math.round(v / sum * 100); });
+        var diff = 100 - pcts.reduce(function(a,b){ return a+b; }, 0);
+        pcts[Array.from(opts).indexOf(el)] += diff;
+        setTimeout(function() {
+            opts.forEach(function(opt, i) {
+                opt.querySelector('.poll-widget-bar').style.width = pcts[i] + '%';
+                opt.querySelector('.poll-widget-pct').textContent = pcts[i] + '%';
+            });
+        }, 50);
+    }
+    </script>
+    <!--#include virtual="/ssi/body_bottom.html" -->
+    <script src="/static/js/inject.js" defer></script>
+</body>
+</html>

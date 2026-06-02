@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27><text y=%27.9em%27 font-size=%2790%27>🖥️</text></svg>">
+    <title>Системный монитор PerfMon: как запустить и настроить в Windows — Мониторум</title>
+    <meta name="description" content="Пошаговая инструкция: как быстро открыть PerfMon. Разбор основных отчетов, создание счетчиков и анализ производительности системы для диагностики.">
+    <link rel="canonical" href="https://monitorium.vercel.app/articles/s/si/sistemnyj-monitor-perfmon-kak-zapustit.html">
+
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="Системный монитор PerfMon: как запустить и настроить в Windows">
+    <meta property="og:description" content="Пошаговая инструкция: как быстро открыть PerfMon. Разбор основных отчетов, создание счетчиков и анализ производительности системы для диагностики.">
+    <meta property="og:locale" content="ru_RU">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css?v=1780420684">
+    <style>
+    .site-footer-premium {
+        margin-top: 60px; padding: 40px 0 0; background: #1e293b; color: #94a3b8;
+    }
+    .footer-grid {
+        display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 40px;
+        padding-bottom: 32px; border-bottom: 1px solid #334155;
+    }
+    .footer-brand { font-size: 1.2rem; font-weight: 700; color: #f1f5f9; margin-bottom: 12px; }
+    .footer-about { font-size: 0.9rem; line-height: 1.6; margin-bottom: 8px; }
+    .footer-updated { font-size: 0.8rem; color: #64748b; }
+    .footer-col h4 { color: #f1f5f9; font-size: 0.95rem; margin-bottom: 16px; }
+    .footer-col ul { list-style: none; }
+    .footer-col li { margin-bottom: 8px; }
+    .footer-col a { color: #94a3b8; font-size: 0.9rem; transition: color 0.2s; }
+    .footer-col a:hover { color: #60a5fa; }
+    .footer-bottom { padding: 20px 0; text-align: center; font-size: 0.85rem; }
+    @media (max-width: 640px) {
+        .footer-grid { grid-template-columns: 1fr; gap: 24px; }
+    }
+    .cookie-popup {
+        position: fixed; bottom: 0; left: 0; right: 0; background: #1e293b; color: #fff;
+        padding: 16px; transition: transform 0.5s ease; z-index: 9999; border-top: 2px solid #2563eb;
+        transform: translateY(100%);
+    }
+    .cookie-popup.visible { transform: translateY(0); }
+    .cookie-inner { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; gap: 16px; font-size: 0.9rem; }
+    .cookie-btn { background: #2563eb; color: #fff; border: none; padding: 8px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+    .cookie-btn:hover { background: #1d4ed8; }
+    @media (max-width: 640px) {
+        .cookie-inner { flex-direction: column; text-align: center; }
+    }
+</style>
+    
+    <!--#include virtual="/ssi/head.html" -->
+</head>
+<body>
+        <!--#include virtual="/ssi/body_top.html" -->
+    <style>
+    .nav-dropdown { position: relative; display: inline-block; }
+    .dropdown-toggle {
+        background: none; border: none; cursor: pointer;
+        font: inherit; color: inherit; padding: 8px 12px;
+        border-radius: 8px; transition: background 0.2s;
+    }
+    .dropdown-toggle:hover { background: rgba(0,0,0,0.05); }
+    .dropdown-menu {
+        display: none; position: absolute; right: 0; top: 100%;
+        min-width: 240px; max-height: 70vh; overflow-y: auto;
+        background: var(--card-bg, #fff); border: 1px solid var(--border, #e5e7eb);
+        border-radius: 12px; box-shadow: 0 12px 40px rgba(0,0,0,0.12);
+        padding: 8px 0; z-index: 1000;
+    }
+    .nav-dropdown::after {
+        content: ''; position: absolute; left: 0; right: 0;
+        top: 100%; height: 12px;
+    }
+    .nav-dropdown:hover .dropdown-menu,
+    .nav-dropdown:focus-within .dropdown-menu { display: block; }
+    .dropdown-item {
+        display: block; padding: 10px 20px; color: var(--text, #1f2937);
+        text-decoration: none; font-size: 0.95rem; transition: background 0.15s;
+        white-space: nowrap;
+    }
+    .dropdown-item:hover { background: rgba(37,99,235,0.06); color: var(--primary, #2563eb); }
+    @media (max-width: 768px) {
+        .main-nav > .nav-link { display: none; }
+        .dropdown-toggle { display: none; }
+        .dropdown-menu {
+            display: block !important; position: static;
+            box-shadow: none; border: none; border-radius: 0;
+            min-width: auto; max-height: none; padding: 0;
+            background: transparent;
+        }
+        .dropdown-item {
+            padding: 8px 0; font-size: 1rem;
+        }
+    }
+    </style>
+    <header class="site-header">
+        <div class="container header-inner">
+            <a href="/" class="logo">
+                <span class="logo-icon">🖥️</span>
+                <span>Мониторум</span>
+            </a>
+            <button class="mobile-menu-btn" aria-label="Меню" id="menuBtn">☰</button>
+            <nav class="main-nav" id="mainNav">
+                <a href="/category/nastrojka-ekrana/" class="nav-link">⚙️ Настройка экрана</a>
+<a href="/category/podklyuchenie-ustrojstv/" class="nav-link">🔌 Подключение устройств</a>
+<a href="/category/mnozhestvennye-ekrany/" class="nav-link">🖥️🖥️ Множественные экраны</a>
+<a href="/category/zvuk-i-audio/" class="nav-link">🔊 Звук и аудио</a>
+<div class="nav-dropdown">
+            <button class="nav-link dropdown-toggle">📂 Все разделы ▾</button>
+            <div class="dropdown-menu"><a href="/category/nastrojka-ekrana/" class="dropdown-item">⚙️ Настройка экрана</a>
+<a href="/category/podklyuchenie-ustrojstv/" class="dropdown-item">🔌 Подключение устройств</a>
+<a href="/category/mnozhestvennye-ekrany/" class="dropdown-item">🖥️🖥️ Множественные экраны</a>
+<a href="/category/zvuk-i-audio/" class="dropdown-item">🔊 Звук и аудио</a>
+<a href="/category/remont-i-polomki/" class="dropdown-item">🔧 Ремонт и поломки</a>
+<a href="/category/ukhod-i-chistka/" class="dropdown-item">🧼 Уход и чистка</a>
+<a href="/category/vybor-i-kharakteristiki/" class="dropdown-item">📊 Выбор и характеристики</a>
+<a href="/category/drajvery-i-po/" class="dropdown-item">💿 Драйверы и ПО</a>
+<a href="/category/krepleniya-i-ustanovka/" class="dropdown-item">🔩 Крепления и установка</a>
+<a href="/category/utilizatsiya-i-prodazha/" class="dropdown-item">♻️ Утилизация и продажа</a>
+<a href="/category/spetsialnye-rezhimy/" class="dropdown-item">🎮 Специальные режимы</a>
+<a href="/category/drugoe/" class="dropdown-item">📁 Другое</a></div>
+        </div>
+            </nav>
+        </div>
+    </header>
+
+    <nav class="breadcrumbs" aria-label="Навигация">
+        <div class="container"><a href="/">Главная</a><span class="breadcrumb-sep">›</span><a href="/category/drugoe/">Другое</a><span class="breadcrumb-sep">›</span><span class="breadcrumb-current">Системный монитор PerfMon: как запустить и настроить в Windows</span></div>
+    </nav>
+
+    <main class="site-main">
+        <div class="container">
+            <div class="article-layout">
+                <article class="article-main">
+                    
+                    <h1>Как запустить системный монитор PerfMon в Windows для диагностики</h1>
+                    <nav class="mobile-toc"><details><summary>📋 Содержание</summary><ul><li><a href="#введение-в-инструменты-мониторинга">Введение в инструменты мониторинга</a></li><li><a href="#быстрые-способы-запуска-утилиты">Быстрые способы запуска утилиты</a></li><li><a href="#навигация-по-интерфейсу-монитора-производительности">Навигация по интерфейсу Монитора производительности</a></li><li><a href="#добавление-и-настройка-счетчиков">Добавление и настройка счетчиков</a></li><li><a href="#создание-отчетов-и-анализ-данных">Создание отчетов и анализ данных</a></li><li><a href="#типичные-показатели-проблем-производительности">Типичные показатели проблем производительности</a></li><li><a href="#расширенный-анализ-через-ресурсы">Расширенный анализ через Ресурсы</a></li><li><a href="#faq-часто-задаваемые-вопросы">FAQ: Часто задаваемые вопросы</a></li></ul></details></nav>
+                    <!--#include virtual="/ssi/article_before.html" -->
+                    <div class="article-body"><h2 id="введение-в-инструменты-мониторинга">Введение в инструменты мониторинга</h2>
+<p>Тормоза в работе интерфейса, периодические зависания приложений или внезапные перезагрузки Windows — это прямой сигнал о том, что система исчерпала доступные ресурсы. Чтобы точно выявить виновника сбоя и предотвратить дальнейшую деградацию производительности, необходимо использовать встроенный диагностический инструмент <strong>системный монитор</strong> (Performance Monitor), известный как <em>PerfMon</em>. Эта утилита позволяет в режиме реального времени отслеживать сотни ключевых показателей работы оборудования и программного обеспечения, предоставляя детальную картину текущей нагрузки на ПК.</p>
+<p>Многие новички полагают, что для анализа нагрузки достаточно «Диспетчера задач», однако его возможностей часто недостаточно для глубокой аналитики. <strong>PerfMon</strong> предоставляет возможность записывать данные в лог, строить сложные графики и анализировать исторические показатели. Запустить этот монитор можно множеством способов, и выбор метода зависит от ваших привычек и уровня владения операционной системой.</p>
+
+<h2 id="быстрые-способы-запуска-утилиты">Быстрые способы запуска утилиты</h2>
+<p>Самый оперативный метод получить доступ к инструменту — использование диалога «Выполнить». Нажмите комбинацию клавиш <code>Win + R</code> на клавиатуре. В открывшемся окне введите команду <code>perfmon</code> и нажмите <em>Enter</em>. Система мгновенно откроет главное окно консоли с базовым набором графиков.</p>
+<p>Альтернативный вариант подразумевает использование меню «Пуск». Введите в поиске название <code>Монитор ресурсов</code> или на английском <code>Performance Monitor</code>. Если вы предпочитаете командную строку, можно открыть терминал <em>cmd</em> или <em>PowerShell</em> и также ввести <code>perfmon</code>. Все эти методы ведут к одной цели — запуску утилиты мониторинга производительности.</p>
+<p>Интересно, что в корпоративных средах, где развернут <em>Active Directory</em>, администраторы могут настраивать запуск этого инструмента через групповые политики. В таком случае получить доступ к счетчикам можно будет только с правами администратора или конкретного пользователя, которому разрешены эти действия.</p>
+
+<blockquote>
+<p>⚠️ Внимание: Запуск утилиты <code>perfmon.msc</code> без прав администратора может ограничить доступ к некоторым глубоким системным счетчикам, особенно связанным с драйверами видеокарт или процессоров.</p>
+</blockquote>
+
+<div class="poll-widget" id="poll-22e43c3a"><div class="poll-widget-question">📊 Какая у вас основная операционная система?</div><div class="poll-widget-option" data-poll="22e43c3a" data-idx="0" onclick="pbPollVote(this)"><span class="poll-widget-label">Windows 10</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="22e43c3a" data-idx="1" onclick="pbPollVote(this)"><span class="poll-widget-label">Windows 11</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="22e43c3a" data-idx="2" onclick="pbPollVote(this)"><span class="poll-widget-label">Linux (через Wine)</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="22e43c3a" data-idx="3" onclick="pbPollVote(this)"><span class="poll-widget-label">macOS (через Parallels)</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div></div>
+
+<h2 id="навигация-по-интерфейсу-монитора-производительности">Навигация по интерфейсу Монитора производительности</h2>
+<p>После запуска утилита представляет собой структуру с деревом консоли слева и рабочей областью справа. В левой панели вы увидите разделы <code>Наблюдение</code>, <code>Отчеты</code> и <code>Диагностика</code>. Именно раздел <code>Наблюдение</code> является ключевым для просмотра графиков в реальном времени. Здесь отображается текущая загрузка процессора, использование оперативной памяти и активность диска.</p>
+<p>В правой части окна по умолчанию отображается несколько базовых счетчиков. Вы можете удалять ненужные графики или добавлять новые через контекстное меню. Кнопка <strong>Добавить счетчики</strong> позволяет выбрать из тысяч доступных метрик. Это может быть потребление сетевой полосы пропускания, количество квот файлов или температура процессора, если драйверы поддерживают передачу этих данных.</p>
+<p>Важно понимать, что интерфейс <em>PerfMon</em> может показаться перегруженным для неподготовленного пользователя. Однако именно детализация позволяет найти «узкое место». Например, если система тормозит, но загрузка <strong>CPU</strong> низкая, проблема может быть в диске или сети, что сразу видно на соответствующих графиках.</p>
+
+<div class="attention-box attention-tip"><span class="attention-icon">💡</span><p>Правильная настройка отображаемых счетчиков позволяет избежать ложных выводов о производительности системы и точно локализовать проблему.</p></div>
+
+<h2 id="добавление-и-настройка-счетчиков">Добавление и настройка счетчиков</h2>
+<p>Чтобы получить ценную информацию, необходимо добавить нужные счетчики. Нажмите кнопку <code>+</code> на панели инструментов или выберите в меню <code>Действие → Добавить счетчики</code>. Откроется окно, где нужно выбрать объект (например, <em>Processor</em>, <em>Memory</em>, <em>Disk</em>) и конкретный показатель (например, <code>% Processor Time</code>).</p>
+<p>Для диагностики проблем с тормозами чаще всего добавляют следующие параметры:</p>
+<ul>
+<li>💻 <strong>% Processor Time</strong> — показывает общую загрузку процессора всеми потоками.</li>
+<li>🧠 <strong>Available Mbytes</strong> — количество доступной физической оперативной памяти в мегабайтах.</li>
+<li>💾 <strong>Avg. Disk Queue Length</strong> — длина очереди запросов к диску, индикатор его перегруженности.</li>
+<li>🌐 <strong>Bytes Total/sec</strong> — скорость передачи данных по сетевому адаптеру.</li>
+</ul>
+<p>Выбирая конкретный экземпляр счетчика, можно анализировать работу отдельных ядер процессора или физических дисков. Например, если у вас установлен RAID-массив или несколько SSD, вы сможете увидеть, какой именно диск создает «бутылочное горлышко».</p>
+
+<blockquote>
+<p>⚠️ Внимание: Добавление слишком большого количества счетчиков одновременно (более 50-100) может исказить результаты мониторинга, так как сам процесс сбора данных создаст дополнительную нагрузку на <strong>CPU</strong>.</p>
+</blockquote>
+
+<div class="checklist-block"><h4>☑️ Проверка ключевых показателей</h4><label class="check-item"><input type="checkbox"><span>Проверить загрузку CPU</span></label><label class="check-item"><input type="checkbox"><span>Убедиться в наличии свободной RAM</span></label><label class="check-item"><input type="checkbox"><span>Отследить очередь диска</span></label><label class="check-item"><input type="checkbox"><span>Проверить сетевую нагрузку</span></label><div class="check-progress">Выполнено: <span class="check-count">0</span> / 4</div></div>
+
+<h2 id="создание-отчетов-и-анализ-данных">Создание отчетов и анализ данных</h2>
+<p>Монитор производительности не только показывает текущее состояние, но и умеет сохранять данные для последующего анализа. Это критически важно для выявления проблем, которые возникают редко и не фиксируются при разовом запуске. Используйте раздел <code>Отчеты</code> (Reports) для создания пользовательских данных.</p>
+<p>Вы можете настроить <strong>Сборщик данных</strong> (Data Collector Set), который будет записывать логи в заданное время или по расписанию. Например, настроить запись всех параметров каждый вечер в 18:00, когда нагрузка на сервер или рабочий ПК максимальна. Через несколько дней вы сможете сравнить графики и найти закономерность.</p>
+<p>Данные сохраняются в формате <em>BLG</em> или <em>CSV</em>, что позволяет открыть их в Excel для построения собственных диаграмм. Это дает возможность визуализировать тренды, которые трудно заметить на бегущих графиках монитора. Такой подход незаменим при настройке серверов или оптимизации игровых ПК.</p>
+
+<details class="faq-item"><summary>Как сохранить отчет в CSV?</summary><div class="faq-answer"><p>Для экспорта данных нажмите правой кнопкой мыши на готовый отчет, выберите «Экспорт», укажите формат CSV и папку назначения. Файл можно открыть в любой таблице.</p></div></details>
+
+<h2 id="типичные-показатели-проблем-производительности">Типичные показатели проблем производительности</h2>
+<p>Анализ графика — это искусство интерпретации цифр. Высокая загрузка процессора (более 90% в течение долгого времени) указывает на нехватку вычислительной мощности или наличие «тяжелого» процесса. Однако если загрузка процессора низкая, а система висит, обратите внимание на <strong>задержку диска</strong> (Disk Latency).</p>
+<p>Вот основные индикаторы, на которые стоит обращать внимание при диагностике:</p>
+<ul>
+<li>📉 <strong>Высокий Page Faults/sec</strong> — система активно использует файл подкачки, что означает нехватку оперативной памяти.</li>
+<li>🐢 <strong>Высокий Disk Queue Length</strong> (более 2 для SSD или 5 для HDD) — диск не успевает обрабатывать запросы.</li>
+<li>🔥 <strong>Высокая температура</strong> (если доступно) — троттлинг процессора из-за перегрева.</li>
+</ul>
+<p>Часто пользователи путают высокую активность диска с его неисправностью. На самом деле, при дефрагментации или индексиации файлов такая нагрузка является нормальной. Важно отличать штатную работу от аномалий.</p>
+
+<blockquote>
+<p>⚠️ Внимание: Показатели могут варьироваться в зависимости от типа накопителя. <strong>SSD</strong> имеют совершенно другие характеристики отклика и очереди по сравнению с механическими <strong>HDD</strong>.</p>
+</blockquote>
+
+<div class="attention-box attention-tip"><span class="attention-icon">💡</span><p>Если вы заметили резкий скачок нагрузки на диск, попробуйте сразу открыть Диспетчер задач и отсортировать процессы по столбцу "Диск", чтобы найти виновника.</p></div>
+
+<h2 id="расширенный-анализ-через-ресурсы">Расширенный анализ через Ресурсы</h2>
+<p>Если стандартные графики <em>PerfMon</em> кажутся слишком сложными, можно использовать связанный инструмент — <code>resmon</code> (Монитор ресурсов). Он запускается аналогично через диалог «Выполнить» и предоставляет более наглядную информацию о том, какие именно процессы используют ресурсы.</p>
+<p>В разделе <strong>Диск</strong> вы увидите список всех файлов, к которым обращаются программы прямо сейчас. Это позволяет понять, почему система тормозит: возможно, антивирус сканирует архив, или браузер буферизирует видео. В разделе <strong>Сеть</strong> видно, какая именно программа качает данные, что полезно для борьбы с вирусами-майнерами.</p>
+<p>Иногда достаточно одного взгляда на вкладки Монитора ресурсов, чтобы понять необходимость перезагрузки службы или отключения фоновой программы. Это более «прикладной» инструмент для рядового пользователя, в то время как <em>PerfMon</em> — для глубокого анализа.</p>
+
+<div class="attention-box attention-tip"><span class="attention-icon">💡</span><p>Использование Монитора ресурсов (resmon) дополняет данные Монитора производительности, предоставляя привязку метрик к конкретным процессам и файлам.</p></div>
+
+<h2 id="faq-часто-задаваемые-вопросы">FAQ: Часто задаваемые вопросы</h2>
+<details>
+<summary>Как сохранить график из PerfMon в виде картинки?</summary>
+<p>В окне монитора перейдите в меню <code>Правка</code> -> <code>Копировать</code> -> <code>Копировать как картинку</code>. Вставьте изображение в любой графический редактор или документ Word.</p>
+</details>
+<details>
+<summary>Можно ли запустить PerfMon на версии Windows Home?</summary>
+<p>Да, утилита <code>perfmon</code> доступна во всех редакциях Windows, включая Home, и работает без ограничений функционала.</p>
+</details>
+<details>
+<summary>Почему график процессора показывает 0%, но система тормозит?</summary>
+<p>Это может означать, что проблема не в вычислениях, а в ожидании ввода-вывода (I/O). Проверьте график загрузки диска или памяти, возможно, система использует файл подкачки.</p>
+</details>
+<details>
+<summary>Как отключить отображение лишних счетчиков?</summary>
+<p>Выделите ненужный счетчик в списке слева и нажмите кнопку <code>-</code> (Удалить) на панели инструментов или клавишу <code>Delete</code> на клавиатуре.</p>
+</details>
+
+<table>
+<thead>
+<tr>
+<th>Счетчик</th>
+<th>Объект</th>
+<th>Нормальное значение</th>
+<th>Признак проблемы</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>% Processor Time</td>
+<td>Processor</td>
+<td>До 70% в простое</td>
+<td>Устойчиво 95-100%</td>
+</tr>
+<tr>
+<td>Available MBytes</td>
+<td>Memory</td>
+<td>Более 10% от ОЗУ</td>
+<td>Близко к 0 МБ</td>
+</tr>
+<tr>
+<td>Avg. Disk Queue Length</td>
+<td>PhysicalDisk</td>
+<td>Менее 2</td>
+<td>Более 5 (HDD) / 2 (SSD)</td>
+</tr>
+<tr>
+<td>Pages/sec</td>
+<td>Memory</td>
+<td>Менее 50</td>
+<td>Высокие значения (свищи)</td>
+</tr>
+<tr>
+<td>Current Bandwidth</td>
+<td>Network Interface</td>
+<td>Зависит от провайдера</td>
+<td>Постоянно 100%</td>
+</tr>
+</tbody>
+</table>
+
+<details class="faq-item"><summary>Что такое файл подкачки?</summary><div class="faq-answer"><p>Файл подкачки (pagefile.sys) — это часть жесткого диска, используемая как оперативная память, когда физической памяти не хватает.</p></div></details>
+
+<p>Использование <strong>системного монитора</strong> — это навык, который позволяет перейти от гаданий о причинах проблем к их точному выявлению. Регулярный мониторинг помогает предотвратить критические сбои и оптимизировать работу компьютера под ваши задачи.</p>
+<p>Не бойтесь экспериментировать с настройками счетчиков и создавать свои сборщики данных. Чем больше данных вы соберете, тем точнее будет диагностика вашего оборудования. Помните, что знание параметров работы системы — залог её стабильности и долголетия.</p></div>
+                    <!--#include virtual="/ssi/article_after.html" -->
+
+                </article>
+                <aside class="article-sidebar"><!--#include virtual="/ssi/sidebar_top.html" --><nav class="sidebar-search"><div class="sidebar-search-box"><input type="text" id="globalSearchInput" placeholder="🔍 Поиск статей..." autocomplete="off"><div class="search-dropdown" id="globalSearchDropdown"></div></div></nav><!--#include virtual="/ssi/sidebar_before_toc.html" --><nav class="sidebar-toc" id="sidebarToc"><h3>Содержание</h3><ul><li><a href="#введение-в-инструменты-мониторинга">Введение в инструменты мониторинга</a></li><li><a href="#быстрые-способы-запуска-утилиты">Быстрые способы запуска утилиты</a></li><li><a href="#навигация-по-интерфейсу-монитора-производительности">Навигация по интерфейсу Монитора производительности</a></li><li><a href="#добавление-и-настройка-счетчиков">Добавление и настройка счетчиков</a></li><li><a href="#создание-отчетов-и-анализ-данных">Создание отчетов и анализ данных</a></li><li><a href="#типичные-показатели-проблем-производительности">Типичные показатели проблем производительности</a></li><li><a href="#расширенный-анализ-через-ресурсы">Расширенный анализ через Ресурсы</a></li><li><a href="#faq-часто-задаваемые-вопросы">FAQ: Часто задаваемые вопросы</a></li></ul></nav><!--#include virtual="/ssi/sidebar_before_related.html" --><nav class="sidebar-related"><h3>Похожие статьи</h3><ul><li><a href="/articles/i/im/imac-27-skolko-gerts-monitor.html" class="related-card">Частота обновления iMac 27: сколько герц у экрана Retina 5K</a></li><li><a href="/articles/c/ch/chto-takoe-chastota-na-monitore-acer.html" class="related-card">Частота обновления экрана на мониторах Acer: что это и как настроить</a></li><li><a href="/articles/k/kr/kronshtejn-dlya-monitora-chto-delaet.html" class="related-card">Кронштейн для монитора: что делает, зачем нужен и как выбрать</a></li><li><a href="/articles/d/di/displej-noutbuka-kak-vtoroj-monitor.html" class="related-card">Дисплей ноутбука как второй монитор: 3 проверенных способа подключения</a></li><li><a href="/articles/k/ka/kakuyu-videokartu-vybrat-pod-2k-monitor.html" class="related-card">Топ видеокарт для 2K монитора в 2026: выбор под задачи</a></li></ul></nav><!--#include virtual="/ssi/sidebar_after_related.html" --></aside>
+            </div>
+        </div>
+    </main>
+
+    <!--#include virtual="/ssi/before_related_bottom.html" -->
+    <section class="related-bottom">
+        <div class="container">
+            <h2 class="related-bottom-heading">📖 Читайте также</h2>
+            <div class="related-bottom-grid"><a href="/articles/i/im/imac-27-skolko-gerts-monitor.html" class="related-bottom-card"><span class="related-bottom-title">Частота обновления iMac 27: сколько герц у экрана Retina 5K</span><span class="related-bottom-desc">Узнайте точную частоту обновления экрана iMac 27. Разбор моделей Retina 5K, поддержка ProMotion, вли</span></a><a href="/articles/c/ch/chto-takoe-chastota-na-monitore-acer.html" class="related-bottom-card"><span class="related-bottom-title">Частота обновления экрана на мониторах Acer: что это и как настроить</span><span class="related-bottom-desc">Разбираем, что такое герцовка в мониторах Acer, как проверить и изменить частоту обновления в Window</span></a><a href="/articles/k/kr/kronshtejn-dlya-monitora-chto-delaet.html" class="related-bottom-card"><span class="related-bottom-title">Кронштейн для монитора: что делает, зачем нужен и как выбрать</span><span class="related-bottom-desc">Узнайте, что делает кронштейн для монитора и как он меняет рабочее место. Подробный разбор функций, </span></a><a href="/articles/d/di/displej-noutbuka-kak-vtoroj-monitor.html" class="related-bottom-card"><span class="related-bottom-title">Дисплей ноутбука как второй монитор: 3 проверенных способа подключения</span><span class="related-bottom-desc">Как использовать экран ноутбука как второй монитор для ПК. Инструкции для Windows, macOS и использов</span></a><a href="/articles/k/ka/kakuyu-videokartu-vybrat-pod-2k-monitor.html" class="related-bottom-card"><span class="related-bottom-title">Топ видеокарт для 2K монитора в 2026: выбор под задачи</span><span class="related-bottom-desc">Полный гид по выбору видеокарты для 2K разрешения. Сравнение NVIDIA и AMD, требования к PSU, оптимиз</span></a><a href="/articles/k/ka/kak-pomenyat-numeratsiyu-monitorov-nvidia.html" class="related-bottom-card"><span class="related-bottom-title">Как поменять нумерацию мониторов в панели NVIDIA</span><span class="related-bottom-desc">Пошаговая инструкция перенумерации экранов в панели управления NVIDIA. Меняем порядок дисплеев для у</span></a></div>
+        </div>
+    </section>
+    <!--#include virtual="/ssi/after_related_bottom.html" -->
+
+    <footer class="site-footer-premium">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-col">
+                    <div class="footer-brand">🖥️ Мониторум</div>
+                    <p class="footer-about">Полный справочник по настройке, ремонту и выбору компьютерных мониторов для любых задач.</p>
+                </div>
+                <div class="footer-col">
+                    <h4>Разделы</h4>
+                    <ul><li><a href="/category/nastrojka-ekrana/">⚙️ Настройка экрана</a></li>
+<li><a href="/category/podklyuchenie-ustrojstv/">🔌 Подключение устройств</a></li>
+<li><a href="/category/mnozhestvennye-ekrany/">🖥️🖥️ Множественные экраны</a></li>
+<li><a href="/category/zvuk-i-audio/">🔊 Звук и аудио</a></li>
+<li><a href="/category/remont-i-polomki/">🔧 Ремонт и поломки</a></li>
+<li><a href="/category/ukhod-i-chistka/">🧼 Уход и чистка</a></li></ul>
+                </div>
+                <div class="footer-col">
+                    <h4>Информация</h4>
+                    <ul>
+                        <li><a href="/">Главная</a></li>
+                        <li><a href="/about.html">О проекте</a></li>
+                        <li><a href="/categories.html">Все разделы</a></li>
+                        <li><a href="/contact.html">Контакты</a></li>
+                        <li><a href="/privacy.html">Конфиденциальность</a></li>
+                        <li><a href="/sitemap.xml">Карта сайта</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>© Мониторум. Все права защищены.</p>
+                <!--LiveInternet counter--><div style="margin-top:10px;"><a href="https://www.liveinternet.ru/click"
+                target="_blank"><img id="licnt06C4" width="88" height="15" style="border:0" 
+                title="LiveInternet: показано число посетителей за сегодня"
+                src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAEALAAAAAABAAEAAAIBTAA7"
+                alt=""/></a><script>(function(d,s){d.getElementById("licnt06C4").src=
+                "https://counter.yadro.ru/hit?t26.5;r"+escape(d.referrer)+
+                ((typeof(s)=="undefined")?"":";s"+s.width+"*"+s.height+"*"+
+                (s.colorDepth?s.colorDepth:s.pixelDepth))+";u"+escape(d.URL)+
+                ";h"+escape(d.title.substring(0,150))+";"+Math.random()})(document,screen)</script></div><!--/LiveInternet-->
+            </div>
+        </div>
+    </footer>
+    <div id="cookie-consent" class="cookie-popup">
+        <div class="cookie-inner">
+            <span>🍪 Мы используем файлы cookie для улучшения работы сайта.</span>
+            <button id="cookie-accept" class="cookie-btn">Принять</button>
+        </div>
+    </div>
+    <script src="/static/js/main.js"></script>
+    <script>
+    (function() {
+        const popup = document.getElementById('cookie-consent');
+        const btn = document.getElementById('cookie-accept');
+        if (popup && btn && !localStorage.getItem('cookie-accepted')) {
+            popup.classList.add('visible');
+            btn.onclick = () => {
+                localStorage.setItem('cookie-accepted', 'true');
+                popup.classList.remove('visible');
+            };
+        }
+    })();
+    </script>
+    <script>
+    function pbPollVote(el) {
+        var poll = el.closest('.poll-widget');
+        if (poll.classList.contains('voted')) return;
+        poll.classList.add('voted');
+        el.classList.add('selected');
+        var opts = poll.querySelectorAll('.poll-widget-option');
+        var n = opts.length;
+        var raw = [];
+        var sum = 0;
+        for (var i = 0; i < n; i++) {
+            var v = Math.random() * 50 + 5;
+            if (opts[i] === el) v += 30;
+            raw.push(v);
+            sum += v;
+        }
+        var pcts = raw.map(function(v) { return Math.round(v / sum * 100); });
+        var diff = 100 - pcts.reduce(function(a,b){ return a+b; }, 0);
+        pcts[Array.from(opts).indexOf(el)] += diff;
+        setTimeout(function() {
+            opts.forEach(function(opt, i) {
+                opt.querySelector('.poll-widget-bar').style.width = pcts[i] + '%';
+                opt.querySelector('.poll-widget-pct').textContent = pcts[i] + '%';
+            });
+        }, 50);
+    }
+    </script>
+    <!--#include virtual="/ssi/body_bottom.html" -->
+    <script src="/static/js/inject.js" defer></script>
+</body>
+</html>

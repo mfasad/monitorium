@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27><text y=%27.9em%27 font-size=%2790%27>🖥️</text></svg>">
+    <title>Установка Ubuntu Server без монитора: пошаговая инструкция Headless — Мониторум</title>
+    <meta name="description" content="Пошаговое руководство по установке Ubuntu Server без видеовыхода. Настройка сети, SSH, автоматизация через cloud-init и устранение неполадок.">
+    <link rel="canonical" href="https://monitorium.vercel.app/articles/k/ka/kak-ustanovit-ubuntu-server-bez-monitora.html">
+
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="Установка Ubuntu Server без монитора: пошаговая инструкция Headless">
+    <meta property="og:description" content="Пошаговое руководство по установке Ubuntu Server без видеовыхода. Настройка сети, SSH, автоматизация через cloud-init и устранение неполадок.">
+    <meta property="og:locale" content="ru_RU">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css?v=1780420684">
+    <style>
+    .site-footer-premium {
+        margin-top: 60px; padding: 40px 0 0; background: #1e293b; color: #94a3b8;
+    }
+    .footer-grid {
+        display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 40px;
+        padding-bottom: 32px; border-bottom: 1px solid #334155;
+    }
+    .footer-brand { font-size: 1.2rem; font-weight: 700; color: #f1f5f9; margin-bottom: 12px; }
+    .footer-about { font-size: 0.9rem; line-height: 1.6; margin-bottom: 8px; }
+    .footer-updated { font-size: 0.8rem; color: #64748b; }
+    .footer-col h4 { color: #f1f5f9; font-size: 0.95rem; margin-bottom: 16px; }
+    .footer-col ul { list-style: none; }
+    .footer-col li { margin-bottom: 8px; }
+    .footer-col a { color: #94a3b8; font-size: 0.9rem; transition: color 0.2s; }
+    .footer-col a:hover { color: #60a5fa; }
+    .footer-bottom { padding: 20px 0; text-align: center; font-size: 0.85rem; }
+    @media (max-width: 640px) {
+        .footer-grid { grid-template-columns: 1fr; gap: 24px; }
+    }
+    .cookie-popup {
+        position: fixed; bottom: 0; left: 0; right: 0; background: #1e293b; color: #fff;
+        padding: 16px; transition: transform 0.5s ease; z-index: 9999; border-top: 2px solid #2563eb;
+        transform: translateY(100%);
+    }
+    .cookie-popup.visible { transform: translateY(0); }
+    .cookie-inner { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; gap: 16px; font-size: 0.9rem; }
+    .cookie-btn { background: #2563eb; color: #fff; border: none; padding: 8px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+    .cookie-btn:hover { background: #1d4ed8; }
+    @media (max-width: 640px) {
+        .cookie-inner { flex-direction: column; text-align: center; }
+    }
+</style>
+    
+    <!--#include virtual="/ssi/head.html" -->
+</head>
+<body>
+        <!--#include virtual="/ssi/body_top.html" -->
+    <style>
+    .nav-dropdown { position: relative; display: inline-block; }
+    .dropdown-toggle {
+        background: none; border: none; cursor: pointer;
+        font: inherit; color: inherit; padding: 8px 12px;
+        border-radius: 8px; transition: background 0.2s;
+    }
+    .dropdown-toggle:hover { background: rgba(0,0,0,0.05); }
+    .dropdown-menu {
+        display: none; position: absolute; right: 0; top: 100%;
+        min-width: 240px; max-height: 70vh; overflow-y: auto;
+        background: var(--card-bg, #fff); border: 1px solid var(--border, #e5e7eb);
+        border-radius: 12px; box-shadow: 0 12px 40px rgba(0,0,0,0.12);
+        padding: 8px 0; z-index: 1000;
+    }
+    .nav-dropdown::after {
+        content: ''; position: absolute; left: 0; right: 0;
+        top: 100%; height: 12px;
+    }
+    .nav-dropdown:hover .dropdown-menu,
+    .nav-dropdown:focus-within .dropdown-menu { display: block; }
+    .dropdown-item {
+        display: block; padding: 10px 20px; color: var(--text, #1f2937);
+        text-decoration: none; font-size: 0.95rem; transition: background 0.15s;
+        white-space: nowrap;
+    }
+    .dropdown-item:hover { background: rgba(37,99,235,0.06); color: var(--primary, #2563eb); }
+    @media (max-width: 768px) {
+        .main-nav > .nav-link { display: none; }
+        .dropdown-toggle { display: none; }
+        .dropdown-menu {
+            display: block !important; position: static;
+            box-shadow: none; border: none; border-radius: 0;
+            min-width: auto; max-height: none; padding: 0;
+            background: transparent;
+        }
+        .dropdown-item {
+            padding: 8px 0; font-size: 1rem;
+        }
+    }
+    </style>
+    <header class="site-header">
+        <div class="container header-inner">
+            <a href="/" class="logo">
+                <span class="logo-icon">🖥️</span>
+                <span>Мониторум</span>
+            </a>
+            <button class="mobile-menu-btn" aria-label="Меню" id="menuBtn">☰</button>
+            <nav class="main-nav" id="mainNav">
+                <a href="/category/nastrojka-ekrana/" class="nav-link">⚙️ Настройка экрана</a>
+<a href="/category/podklyuchenie-ustrojstv/" class="nav-link">🔌 Подключение устройств</a>
+<a href="/category/mnozhestvennye-ekrany/" class="nav-link">🖥️🖥️ Множественные экраны</a>
+<a href="/category/zvuk-i-audio/" class="nav-link">🔊 Звук и аудио</a>
+<div class="nav-dropdown">
+            <button class="nav-link dropdown-toggle">📂 Все разделы ▾</button>
+            <div class="dropdown-menu"><a href="/category/nastrojka-ekrana/" class="dropdown-item">⚙️ Настройка экрана</a>
+<a href="/category/podklyuchenie-ustrojstv/" class="dropdown-item">🔌 Подключение устройств</a>
+<a href="/category/mnozhestvennye-ekrany/" class="dropdown-item">🖥️🖥️ Множественные экраны</a>
+<a href="/category/zvuk-i-audio/" class="dropdown-item">🔊 Звук и аудио</a>
+<a href="/category/remont-i-polomki/" class="dropdown-item">🔧 Ремонт и поломки</a>
+<a href="/category/ukhod-i-chistka/" class="dropdown-item">🧼 Уход и чистка</a>
+<a href="/category/vybor-i-kharakteristiki/" class="dropdown-item">📊 Выбор и характеристики</a>
+<a href="/category/drajvery-i-po/" class="dropdown-item">💿 Драйверы и ПО</a>
+<a href="/category/krepleniya-i-ustanovka/" class="dropdown-item">🔩 Крепления и установка</a>
+<a href="/category/utilizatsiya-i-prodazha/" class="dropdown-item">♻️ Утилизация и продажа</a>
+<a href="/category/spetsialnye-rezhimy/" class="dropdown-item">🎮 Специальные режимы</a>
+<a href="/category/drugoe/" class="dropdown-item">📁 Другое</a></div>
+        </div>
+            </nav>
+        </div>
+    </header>
+
+    <nav class="breadcrumbs" aria-label="Навигация">
+        <div class="container"><a href="/">Главная</a><span class="breadcrumb-sep">›</span><a href="/category/drajvery-i-po/">Драйверы и ПО</a><span class="breadcrumb-sep">›</span><span class="breadcrumb-current">Установка Ubuntu Server без монитора: пошаговая инструкция Headless</span></div>
+    </nav>
+
+    <main class="site-main">
+        <div class="container">
+            <div class="article-layout">
+                <article class="article-main">
+                    
+                    <h1>Как установить Ubuntu Server без монитора: полное руководство по настройке Headless</h1>
+                    <nav class="mobile-toc"><details><summary>📋 Содержание</summary><ul><li><a href="#подготовка-загрузочного-носителя-для-бесконтактной-установки">Подготовка загрузочного носителя для бесконтактной установки</a></li><li><a href="#настройка-сетевых-параметров-через-cloud-init">Настройка сетевых параметров через cloud-init</a></li><li><a href="#генерация-ssh-ключей-и-создание-пользователей">Генерация SSH-ключей и создание пользователей</a></li><li><a href="#управление-процессами-установки-и-перезагрузка">Управление процессами установки и перезагрузка</a></li><li><a href="#подключение-и-проверка-доступности-сервера">Подключение и проверка доступности сервера</a></li><li><a href="#устранение-типичных-проблем-и-отладка">Устранение типичных проблем и отладка</a></li><li><a href="#оптимизация-и-дальнейшие-шаги">Оптимизация и дальнейшие шаги</a></li></ul></details></nav>
+                    <!--#include virtual="/ssi/article_before.html" -->
+                    <div class="article-body"><p>Развертывание операционной системы на сервере в условиях отсутствия видеовыхода или дисплея — это стандартная практика для современных дата-центров и домашних лабораторий. Такой режим работы называется <strong>Headless</strong> (безголовый) и требует особого подхода к процессу инициализации и конфигурации. Вы не увидите привычного графического интерфейса установки, поэтому весь процесс должен быть автоматизирован или управляться удаленно.</p>
+<p>Основная сложность заключается в том, что стандартный установщик Ubuntu Server по умолчанию ожидает наличие подключенной периферии для отображения процесса. Чтобы обойти это ограничение, необходимо заранее подготовить носитель установки, внедрив туда необходимые конфигурационные файлы. Это позволяет системе автоматически настроить сеть и доступ сразу после загрузки с флешки, не требуя ручного вмешательства пользователя в момент инсталляции.</p>
+<p>В этой статье мы разберем детали подготовки образов, настройки сетевых интерфейсов и методов доступа к системе после завершения установки. Мы сосредоточимся на современных методах автоматизации, которые делают процесс максимально прозрачным и надежным даже для новичков, работающих с <em>Ubuntu Server</em>.</p>
+
+<h2 id="подготовка-загрузочного-носителя-для-бесконтактной-установки">Подготовка загрузочного носителя для бесконтактной установки</h2>
+<p>Первым шагом является создание загрузочного USB-накопителя с образом операционной системы. Однако простая запись ISO-образа через стандартные инструменты часто недостаточна для headless-режима. Вам нужно модифицировать структуру загрузочного раздела, добавив конфигурационные файлы, которые будут прочитаны установщиком при старте.</p>
+<p>Скачайте последнюю версию образа <code>Ubuntu Server</code> с официального сайта. Используйте утилиту <code>Rufus</code> (для Windows) или <code>dd</code> (для Linux) для записи образа на флешку. После записи откройте корневую директорию накопителя и создайте там файл <code>user-data</code>. Этот файл содержит инструкции для системы <em>cloud-init</em>, которая управляет первичной настройкой.</p>
+<p>Без наличия файла <code>user-data</code> установщик попытается запустить графический интерфейс меню, который на сервере без монитора будет невидим. Это приведет к зависанию процесса, так как система будет ждать ввода от пользователя. Правильная подготовка носителя гарантирует, что процесс пойдет автоматически, создавая пользователя и настраивая SSH сразу после загрузки ядра.</p>
+<blockquote>⚠️ Внимание: Убедитесь, что ваш USB-накопитель отформатирован в файловой системе, поддерживаемой BIOS или UEFI материнской платы сервера. Часто используемый FAT32 имеет ограничения на размер файла, но для установщика Ubuntu это редко становится проблемой, так как образы занимают меньше 4 ГБ.</blockquote>
+
+<h2 id="настройка-сетевых-параметров-через-cloud-init">Настройка сетевых параметров через cloud-init</h2>
+<p>Ключевым элементом успеха является правильное определение IP-адреса сервера. Без монитора вы не сможете зайти в настройки BIOS, чтобы посмотреть, какой адрес выдал DHCP-сервер вашему компьютеру. Поэтому критически важно использовать статический IP-адрес или заранее настроить резервацию адреса по MAC-адресу в роутере.</p>
+<p>В файл <code>user-data</code> необходимо включить секцию <code>network</code>, где прописывается конфигурация интерфейса. Для Ubuntu 22.04 и новее используется формат Netplan. Вы можете указать конкретный IP-адрес, шлюз и DNS-серверы. Если вы не знаете точный MAC-адрес интерфейса, можно использовать автоматическое обнаружение по имени интерфейса, например <code>enp0s3</code> или <code>eth0</code>.</p>
+<p>Пример конфигурации для статического IP, который сделает сервер доступным сразу после установки:</p>
+<pre><code>#cloud-config
+<p>hostname: my-server</p>
+<p>network:</p>
+<p>version: 2</p>
+<p>ethernets:</p>
+<p>eth0:</p>
+<p>dhcp4: false</p>
+<p>addresses: [192.168.1.50/24]</p>
+<p>gateway4: 192.168.1.1</p>
+<p>nameservers:</p>
+<p>addresses: [8.8.8.8, 1.1.1.1]</code></pre></p>
+<p>Этот код должен быть добавлен в начало файла <code>user-data</code>. Обратите внимание на отступы, так как формат YAML чувствителен к пробелам. Ошибка в отступах приведет к тому, что сетевая конфигурация не применится, и доступ к серверу будет невозможен.</p>
+
+<h2 id="генерация-ssh-ключей-и-создание-пользователей">Генерация SSH-ключей и создание пользователей</h2>
+<p>Доступ к установленной системе осуществляется через протокол SSH. Чтобы избежать необходимости вводить пароль или создавать его вручную, лучше всего настроить аутентификацию по ключам. Это не только удобнее, но и значительно безопаснее, так как исключает риск подбора пароля брутфорс-атаками.</p>
+<p>Вам нужно сгенерировать пару ключей на вашем рабочем компьютере, если вы еще этого не сделали. Используйте команду <code>ssh-keygen</code> в терминале. Затем публичный ключ (обычно находится в файле <code>~/.ssh/id_rsa.pub</code>) необходимо скопировать и вставить в файл <code>user-data</code> в секцию <code>ssh_authorized_keys</code>.</p>
+<p>Секция создания пользователя в <code>user-data</code> выглядит следующим образом:</p>
+<pre><code>users:
+<p>- name: admin</p>
+<p>sudo: ['ALL=(ALL) NOPASSWD:ALL']</p>
+<p>shell: /bin/bash</p>
+<p>ssh_authorized_keys:</p>
+<p>- ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQ... ваш_ключ_здесь</code></pre></p>
+<p>Это создаст пользователя <code>admin</code> с правами суперпользователя и настроит вход по ключу. Если вы используете парольную аутентификацию, убедитесь, что включили опцию <code>chpasswd</code>, но помните, что это менее безопасно для публичных серверов. В большинстве случаев рекомендуется отключить вход по паролю в конфигурации SSH после первой установки.</p>
+<blockquote>⚠️ Внимание: Никогда не используйте стандартный пользовательский аккаунт <code>root</code> для повседневных задач. Всегда создавайте отдельного пользователя с правами sudo, как показано в примере выше. Это стандарт безопасности, который предотвращает случайное удаление критических файлов системы.</blockquote>
+
+<div class="poll-widget" id="poll-75c01465"><div class="poll-widget-question">📊 Какой метод настройки сети вы предпочитаете?</div><div class="poll-widget-option" data-poll="75c01465" data-idx="0" onclick="pbPollVote(this)"><span class="poll-widget-label">DHCP (автоматический)</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="75c01465" data-idx="1" onclick="pbPollVote(this)"><span class="poll-widget-label">Статический IP</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="75c01465" data-idx="2" onclick="pbPollVote(this)"><span class="poll-widget-label">Резервация по MAC-адресу</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="75c01465" data-idx="3" onclick="pbPollVote(this)"><span class="poll-widget-label">Не знаю, какой выбрать</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div></div>
+
+<h2 id="управление-процессами-установки-и-перезагрузка">Управление процессами установки и перезагрузка</h2>
+<p>После того как флешка готова и вставлена в сервер, процесс установки начинается автоматически. Система загрузится, считает конфигурацию из <code>user-data</code> и начнет установку пакетов. На экране, подключенном к серверу (если он есть), вы увидите только бегущие строки логов, но без вашего вмешательства.</p>
+<p>Важно понимать, что процесс установки занимает время, зависящее от скорости дисков и процессора. Обычно это от 10 до 30 минут. По завершении система автоматически перезагрузится. В этот момент необходимо извлечь загрузочный USB-накопитель, иначе сервер снова попытается загрузиться с флешки.</p>
+<p>Чтобы избежать потери процесса при перезагрузке, многие пользователи настраивают BIOS на автоматический запуск при потере питания или последовательную перезагрузку. Однако самый простой способ — просто наблюдать за индикаторами активности жесткого диска. Когда мигание прекратится и система перейдет в режим ожидания, можно подключаться.</p>
+<div class="checklist-block"><h4>☑️ Контроль процесса установки</h4><label class="check-item"><input type="checkbox"><span>Подключить флешку к серверу</span></label><label class="check-item"><input type="checkbox"><span>Включить питание сервера</span></label><label class="check-item"><input type="checkbox"><span>Дождаться окончания загрузки</span></label><label class="check-item"><input type="checkbox"><span>Извлечь флешку после перезагрузки</span></label><div class="check-progress">Выполнено: <span class="check-count">0</span> / 4</div></div>
+<p>Если вы не знаете, когда именно произошла перезагрузка, используйте метод "пинга". Откройте терминал на рабочем компьютере и запустите команду <code>ping 192.168.1.50</code> (подставив ваш IP). Когда сервер перезагрузится, пинг сначала пропадет, а затем снова появится.</p>
+<details class="faq-item"><summary>Что делать, если установка зависла?</summary><div class="faq-answer"><p>Если индикаторы диска не мигают в течение длительного времени (более часа), возможно, произошел сбой. Попробуйте перезагрузить сервер вручную и проверить настройки BIOS. Убедитесь, что флешка поддерживается UEFI, если вы используете современный сервер.</p></div></details>
+
+<h2 id="подключение-и-проверка-доступности-сервера">Подключение и проверка доступности сервера</h2>
+<p>После успешной перезагрузки и установки вам нужно подключиться к серверу. Для этого на рабочем компьютере откройте терминал (Linux/macOS) или программу PuTTY (Windows). Введите команду подключения, указывая имя пользователя, созданное в файле <code>user-data</code>.</p>
+<p>Формат команды выглядит так: <code>ssh admin@192.168.1.50</code>. Если вы настраивали ключи, система сразу запросит подтверждение подключения (если это первый раз) и пустит вас в систему без пароля. Если вы настраивали пароль, система попросит его ввести.</p>
+<p>Как только вы увидите приглашение командной строки с именем хоста, поздравляю — установка прошла успешно. Вы можете начать настройку сервера, обновляя пакеты и устанавливая необходимое программное обеспечение. Проверьте версию системы командой <code>lsb_release -a</code>, чтобы убедиться, что установлена нужная версия <code>Ubuntu</code>.</p>
+<table>
+<thead>
+<tr>
+<th>Параметр</th>
+<th>Значение по умолчанию (пример)</th>
+<th>Рекомендуемая настройка</th>
+<th>Команда проверки</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SSH порт</td>
+<td>22</td>
+<td>Любой нестандартный (например, 2222)</td>
+<td><code>cat /etc/ssh/sshd_config</code></td>
+</tr>
+<tr>
+<td>Пользователь</td>
+<td>root (запрещен)</td>
+<td>Пользователь с sudo</td>
+<td><code>whoami</code></td>
+</tr>
+<tr>
+<td>Файрвол</td>
+<td>Отключен</td>
+<td>Включен (UFW)</td>
+<td><code>ufw status</code></td>
+</tr>
+<tr>
+<td>Обновления</td>
+<td>Ручные</td>
+<td>Автообновление безопасности</td>
+<td><code>unattended-upgrades</code></td>
+</tr>
+</tbody>
+</table>
+
+<h2 id="устранение-типичных-проблем-и-отладка">Устранение типичных проблем и отладка</h2>
+<p>Иногда процесс может пойти не по плану. Самая частая проблема — сервер не получает IP-адрес. Это может быть связано с тем, что сетевой интерфейс в конфигурации назван иначе, чем в системе. В современных ядрах Linux имена интерфейсов часто меняются с <code>eth0</code> на <code>enp0s3</code> или <code>ens18</code>.</p>
+<p>Чтобы найти правильное имя интерфейса, можно использовать альтернативные методы. Например, подключить монитор временно на время установки и посмотреть вывод <code>dmesg</code> или <code>ip link</code>. Либо использовать DHCP-логи в роутере, чтобы найти, какой MAC-адрес получил адрес.</p>
+<p>Если сервер не перезагружается после установки, возможно, он завис на этапе завершения. В этом случае попробуйте принудительно выключить питание и включить снова. Убедитесь, что вы отключили флешку, иначе система может зайти в бесконечный цикл загрузки с установщика.</p>
+<div class="attention-box attention-tip"><span class="attention-icon">💡</span><p>Если вы не знаете имя сетевого интерфейса, используйте универсальный подход в cloud-init: укажите в конфигурации сетевые настройки для всех доступных интерфейсов или используйте механизмы автоопределения через MAC-адрес.</p></div>
+<p>Еще одна проблема — невозможность подключения по SSH. Проверьте, что служба <code>sshd</code> запущена. Команда <code>systemctl status ssh</code> покажет статус сервиса. Если он не активен, возможно, порт заблокирован фаерволом или неверно сконфигурирован файл <code>/etc/ssh/sshd_config</code>.</p>
+<blockquote>⚠️ Внимание: Если вы не можете подключиться к серверу, проверьте физическое состояние кабелей и индикаторы на сетевой карте. Иногда проблема кроется не в программном обеспечении, а в неплотно вставленном сетевом кабеле или неработающем порту роутера.</blockquote>
+
+<div class="attention-box attention-tip"><span class="attention-icon">💡</span><p>Готовый образ с настроенным cloud-init и SSH-ключами — это единственный надежный способ установить Ubuntu Server без монитора, исключающий необходимость ручного ввода данных в процессе инсталляции.</p></div>
+
+<h2 id="оптимизация-и-дальнейшие-шаги">Оптимизация и дальнейшие шаги</h2>
+<p>После того как сервер работает, следует оптимизировать его под ваши задачи. Включите фаервол <code>UFW</code>, настройте автоматические обновления безопасности и настройте резервное копирование. Это стандартные процедуры для любого production-сервера, которые можно выполнить удаленно.</p>
+<p>Для управления сервером можно использовать современные инструменты, такие как <code>Ansible</code> или <code>Ansible Tower</code>. Они позволяют управлять десятками серверов одновременно, что особенно актуально, если у вас много headless-устройств. Это избавляет от необходимости подключать монитор к каждому устройству при обновлении.</p>
+<p>Также стоит рассмотреть возможность использования <code>IPMI</code> или <code>iDRAC</code>, если ваше оборудование поддерживает эти функции. Они предоставляют полный удаленный доступ к консоли, включая возможность видеть загрузку BIOS и установку ОС, как будто вы сидите перед монитором. Это идеальный, но более дорогой вариант для серверов.</p>
+
+<details>
+<summary>Как узнать IP-адрес сервера, если он не имеет статического IP?</summary>
+<p>Если вы не настраивали статический IP, вам нужно зайти в панель управления вашего роутера. Там обычно есть раздел "DHCP Clients List" или "Список клиентов". Найдите там устройство с именем "ubuntu-server" или по MAC-адресу сетевой карты вашего сервера.</p>
+</details>
+<details>
+<summary>Что делать, если SSH не подключается?</summary>
+<p>Попробуйте проверить, работает ли сеть, используя команду ping. Если ping проходит, а SSH нет, возможно, служба SSH не запущена или порт изменен. Если ping не проходит, проблема в сетевых настройках или физическом подключении.</p>
+</details>
+<details>
+<summary>Можно ли установить Ubuntu Server без интернета?</summary>
+<p>Да, можно. В этом случае вам нужно будет заранее скачать все необходимые пакеты и положить их на установочную флешку, либо использовать offline-образы. Однако настройка SSH и актуализация системы потребуют подключения к сети после установки.</p>
+</details>
+<details>
+<summary>Как изменить пароль пользователя после установки?</summary>
+<p>Если вы подключились к серверу, используйте команду <code>passwd</code> для смены пароля текущего пользователя или <code>sudo passwd имя_пользователя</code> для смены пароля другого пользователя.</p>
+</details></div>
+                    <!--#include virtual="/ssi/article_after.html" -->
+
+                </article>
+                <aside class="article-sidebar"><!--#include virtual="/ssi/sidebar_top.html" --><nav class="sidebar-search"><div class="sidebar-search-box"><input type="text" id="globalSearchInput" placeholder="🔍 Поиск статей..." autocomplete="off"><div class="search-dropdown" id="globalSearchDropdown"></div></div></nav><!--#include virtual="/ssi/sidebar_before_toc.html" --><nav class="sidebar-toc" id="sidebarToc"><h3>Содержание</h3><ul><li><a href="#подготовка-загрузочного-носителя-для-бесконтактной-установки">Подготовка загрузочного носителя для бесконтактной установки</a></li><li><a href="#настройка-сетевых-параметров-через-cloud-init">Настройка сетевых параметров через cloud-init</a></li><li><a href="#генерация-ssh-ключей-и-создание-пользователей">Генерация SSH-ключей и создание пользователей</a></li><li><a href="#управление-процессами-установки-и-перезагрузка">Управление процессами установки и перезагрузка</a></li><li><a href="#подключение-и-проверка-доступности-сервера">Подключение и проверка доступности сервера</a></li><li><a href="#устранение-типичных-проблем-и-отладка">Устранение типичных проблем и отладка</a></li><li><a href="#оптимизация-и-дальнейшие-шаги">Оптимизация и дальнейшие шаги</a></li></ul></nav><!--#include virtual="/ssi/sidebar_before_related.html" --><nav class="sidebar-related"><h3>Похожие статьи</h3><ul><li><a href="/articles/b/bp/bplab-sutochnyj-monitor-pause-chto.html" class="related-card">BPLab Суточный монитор: что такое Pause и как настроить</a></li><li><a href="/articles/k/ka/kak-postavit-drajver-na-monitor.html" class="related-card">Как поставить драйвер на монитор: Полная инструкция по установке</a></li><li><a href="/articles/a/ap/app-center-chto-eto-na-monitore-kak-ubrat-iz-avtozagruzki-windows-11.html" class="related-card">Приложение App Center на мониторе: что это и как убрать из автозагрузки</a></li><li><a href="/articles/d/dl/dlya-chego-nuzhen-drajver-monitora.html" class="related-card">Для чего нужен драйвер монитора: функции, установка и нюансы</a></li><li><a href="/articles/k/ka/kak-proverit-rabotu-monitora-na-kompyutere.html" class="related-card">Как проверить работу монитора: диагностика, тесты и выявление дефектов</a></li></ul></nav><!--#include virtual="/ssi/sidebar_after_related.html" --></aside>
+            </div>
+        </div>
+    </main>
+
+    <!--#include virtual="/ssi/before_related_bottom.html" -->
+    <section class="related-bottom">
+        <div class="container">
+            <h2 class="related-bottom-heading">📖 Читайте также</h2>
+            <div class="related-bottom-grid"><a href="/articles/b/bp/bplab-sutochnyj-monitor-pause-chto.html" class="related-bottom-card"><span class="related-bottom-title">BPLab Суточный монитор: что такое Pause и как настроить</span><span class="related-bottom-desc">Разбор функции Pause в суточных мониторах BPLab. Как отключить паузу записи, анализ данных и особенн</span></a><a href="/articles/k/ka/kak-postavit-drajver-na-monitor.html" class="related-bottom-card"><span class="related-bottom-title">Как поставить драйвер на монитор: Полная инструкция по установке</span><span class="related-bottom-desc">Узнайте, как правильно установить драйвер для монитора. Подробная пошаговая инструкция, способы авто</span></a><a href="/articles/a/ap/app-center-chto-eto-na-monitore-kak-ubrat-iz-avtozagruzki-windows-11.html" class="related-bottom-card"><span class="related-bottom-title">Приложение App Center на мониторе: что это и как убрать из автозагрузки</span><span class="related-bottom-desc">Узнайте, что такое App Center на экране монитора и как полностью удалить его из автозагрузки Windows</span></a><a href="/articles/d/dl/dlya-chego-nuzhen-drajver-monitora.html" class="related-bottom-card"><span class="related-bottom-title">Для чего нужен драйвер монитора: функции, установка и нюансы</span><span class="related-bottom-desc">Разбираем, зачем устанавливать драйвер монитора, как он влияет на цветовую гамму, частоту обновления</span></a><a href="/articles/k/ka/kak-proverit-rabotu-monitora-na-kompyutere.html" class="related-bottom-card"><span class="related-bottom-title">Как проверить работу монитора: диагностика, тесты и выявление дефектов</span><span class="related-bottom-desc">Полная инструкция по проверке монитора: битые пиксели, засветы, мерцание и цветопередача. Узнайте, к</span></a><a href="/articles/c/ch/chto-delat-esli-vyklyuchaetsya-monitor-pri-zapuske-igry.html" class="related-bottom-card"><span class="related-bottom-title">Монитор гаснет в играх: причины и пошаговое решение проблемы</span><span class="related-bottom-desc">Экран отключается при запуске игры? Узнайте реальные причины: от перегрева до сбоев драйверов. Пошаг</span></a></div>
+        </div>
+    </section>
+    <!--#include virtual="/ssi/after_related_bottom.html" -->
+
+    <footer class="site-footer-premium">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-col">
+                    <div class="footer-brand">🖥️ Мониторум</div>
+                    <p class="footer-about">Полный справочник по настройке, ремонту и выбору компьютерных мониторов для любых задач.</p>
+                </div>
+                <div class="footer-col">
+                    <h4>Разделы</h4>
+                    <ul><li><a href="/category/nastrojka-ekrana/">⚙️ Настройка экрана</a></li>
+<li><a href="/category/podklyuchenie-ustrojstv/">🔌 Подключение устройств</a></li>
+<li><a href="/category/mnozhestvennye-ekrany/">🖥️🖥️ Множественные экраны</a></li>
+<li><a href="/category/zvuk-i-audio/">🔊 Звук и аудио</a></li>
+<li><a href="/category/remont-i-polomki/">🔧 Ремонт и поломки</a></li>
+<li><a href="/category/ukhod-i-chistka/">🧼 Уход и чистка</a></li></ul>
+                </div>
+                <div class="footer-col">
+                    <h4>Информация</h4>
+                    <ul>
+                        <li><a href="/">Главная</a></li>
+                        <li><a href="/about.html">О проекте</a></li>
+                        <li><a href="/categories.html">Все разделы</a></li>
+                        <li><a href="/contact.html">Контакты</a></li>
+                        <li><a href="/privacy.html">Конфиденциальность</a></li>
+                        <li><a href="/sitemap.xml">Карта сайта</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>© Мониторум. Все права защищены.</p>
+                <!--LiveInternet counter--><div style="margin-top:10px;"><a href="https://www.liveinternet.ru/click"
+                target="_blank"><img id="licnt06C4" width="88" height="15" style="border:0" 
+                title="LiveInternet: показано число посетителей за сегодня"
+                src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAEALAAAAAABAAEAAAIBTAA7"
+                alt=""/></a><script>(function(d,s){d.getElementById("licnt06C4").src=
+                "https://counter.yadro.ru/hit?t26.5;r"+escape(d.referrer)+
+                ((typeof(s)=="undefined")?"":";s"+s.width+"*"+s.height+"*"+
+                (s.colorDepth?s.colorDepth:s.pixelDepth))+";u"+escape(d.URL)+
+                ";h"+escape(d.title.substring(0,150))+";"+Math.random()})(document,screen)</script></div><!--/LiveInternet-->
+            </div>
+        </div>
+    </footer>
+    <div id="cookie-consent" class="cookie-popup">
+        <div class="cookie-inner">
+            <span>🍪 Мы используем файлы cookie для улучшения работы сайта.</span>
+            <button id="cookie-accept" class="cookie-btn">Принять</button>
+        </div>
+    </div>
+    <script src="/static/js/main.js"></script>
+    <script>
+    (function() {
+        const popup = document.getElementById('cookie-consent');
+        const btn = document.getElementById('cookie-accept');
+        if (popup && btn && !localStorage.getItem('cookie-accepted')) {
+            popup.classList.add('visible');
+            btn.onclick = () => {
+                localStorage.setItem('cookie-accepted', 'true');
+                popup.classList.remove('visible');
+            };
+        }
+    })();
+    </script>
+    <script>
+    function pbPollVote(el) {
+        var poll = el.closest('.poll-widget');
+        if (poll.classList.contains('voted')) return;
+        poll.classList.add('voted');
+        el.classList.add('selected');
+        var opts = poll.querySelectorAll('.poll-widget-option');
+        var n = opts.length;
+        var raw = [];
+        var sum = 0;
+        for (var i = 0; i < n; i++) {
+            var v = Math.random() * 50 + 5;
+            if (opts[i] === el) v += 30;
+            raw.push(v);
+            sum += v;
+        }
+        var pcts = raw.map(function(v) { return Math.round(v / sum * 100); });
+        var diff = 100 - pcts.reduce(function(a,b){ return a+b; }, 0);
+        pcts[Array.from(opts).indexOf(el)] += diff;
+        setTimeout(function() {
+            opts.forEach(function(opt, i) {
+                opt.querySelector('.poll-widget-bar').style.width = pcts[i] + '%';
+                opt.querySelector('.poll-widget-pct').textContent = pcts[i] + '%';
+            });
+        }, 50);
+    }
+    </script>
+    <!--#include virtual="/ssi/body_bottom.html" -->
+    <script src="/static/js/inject.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27><text y=%27.9em%27 font-size=%2790%27>🖥️</text></svg>">
+    <title>Как подключить 2 монитора в Linux: пошаговая настройка X11 и Wayland — Мониторум</title>
+    <meta name="description" content="Полное руководство по настройке двух мониторов в Linux. Настройка через GUI, утилиту xrandr и конфиги. Решение проблем с синхронизацией и разрешением.">
+    <link rel="canonical" href="https://monitorium.vercel.app/articles/k/ka/kak-podklyuchit-2-monitor-v-linux.html">
+
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="Как подключить 2 монитора в Linux: пошаговая настройка X11 и Wayland">
+    <meta property="og:description" content="Полное руководство по настройке двух мониторов в Linux. Настройка через GUI, утилиту xrandr и конфиги. Решение проблем с синхронизацией и разрешением.">
+    <meta property="og:locale" content="ru_RU">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css?v=1780420684">
+    <style>
+    .site-footer-premium {
+        margin-top: 60px; padding: 40px 0 0; background: #1e293b; color: #94a3b8;
+    }
+    .footer-grid {
+        display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 40px;
+        padding-bottom: 32px; border-bottom: 1px solid #334155;
+    }
+    .footer-brand { font-size: 1.2rem; font-weight: 700; color: #f1f5f9; margin-bottom: 12px; }
+    .footer-about { font-size: 0.9rem; line-height: 1.6; margin-bottom: 8px; }
+    .footer-updated { font-size: 0.8rem; color: #64748b; }
+    .footer-col h4 { color: #f1f5f9; font-size: 0.95rem; margin-bottom: 16px; }
+    .footer-col ul { list-style: none; }
+    .footer-col li { margin-bottom: 8px; }
+    .footer-col a { color: #94a3b8; font-size: 0.9rem; transition: color 0.2s; }
+    .footer-col a:hover { color: #60a5fa; }
+    .footer-bottom { padding: 20px 0; text-align: center; font-size: 0.85rem; }
+    @media (max-width: 640px) {
+        .footer-grid { grid-template-columns: 1fr; gap: 24px; }
+    }
+    .cookie-popup {
+        position: fixed; bottom: 0; left: 0; right: 0; background: #1e293b; color: #fff;
+        padding: 16px; transition: transform 0.5s ease; z-index: 9999; border-top: 2px solid #2563eb;
+        transform: translateY(100%);
+    }
+    .cookie-popup.visible { transform: translateY(0); }
+    .cookie-inner { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; gap: 16px; font-size: 0.9rem; }
+    .cookie-btn { background: #2563eb; color: #fff; border: none; padding: 8px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+    .cookie-btn:hover { background: #1d4ed8; }
+    @media (max-width: 640px) {
+        .cookie-inner { flex-direction: column; text-align: center; }
+    }
+</style>
+    
+    <!--#include virtual="/ssi/head.html" -->
+</head>
+<body>
+        <!--#include virtual="/ssi/body_top.html" -->
+    <style>
+    .nav-dropdown { position: relative; display: inline-block; }
+    .dropdown-toggle {
+        background: none; border: none; cursor: pointer;
+        font: inherit; color: inherit; padding: 8px 12px;
+        border-radius: 8px; transition: background 0.2s;
+    }
+    .dropdown-toggle:hover { background: rgba(0,0,0,0.05); }
+    .dropdown-menu {
+        display: none; position: absolute; right: 0; top: 100%;
+        min-width: 240px; max-height: 70vh; overflow-y: auto;
+        background: var(--card-bg, #fff); border: 1px solid var(--border, #e5e7eb);
+        border-radius: 12px; box-shadow: 0 12px 40px rgba(0,0,0,0.12);
+        padding: 8px 0; z-index: 1000;
+    }
+    .nav-dropdown::after {
+        content: ''; position: absolute; left: 0; right: 0;
+        top: 100%; height: 12px;
+    }
+    .nav-dropdown:hover .dropdown-menu,
+    .nav-dropdown:focus-within .dropdown-menu { display: block; }
+    .dropdown-item {
+        display: block; padding: 10px 20px; color: var(--text, #1f2937);
+        text-decoration: none; font-size: 0.95rem; transition: background 0.15s;
+        white-space: nowrap;
+    }
+    .dropdown-item:hover { background: rgba(37,99,235,0.06); color: var(--primary, #2563eb); }
+    @media (max-width: 768px) {
+        .main-nav > .nav-link { display: none; }
+        .dropdown-toggle { display: none; }
+        .dropdown-menu {
+            display: block !important; position: static;
+            box-shadow: none; border: none; border-radius: 0;
+            min-width: auto; max-height: none; padding: 0;
+            background: transparent;
+        }
+        .dropdown-item {
+            padding: 8px 0; font-size: 1rem;
+        }
+    }
+    </style>
+    <header class="site-header">
+        <div class="container header-inner">
+            <a href="/" class="logo">
+                <span class="logo-icon">🖥️</span>
+                <span>Мониторум</span>
+            </a>
+            <button class="mobile-menu-btn" aria-label="Меню" id="menuBtn">☰</button>
+            <nav class="main-nav" id="mainNav">
+                <a href="/category/nastrojka-ekrana/" class="nav-link">⚙️ Настройка экрана</a>
+<a href="/category/podklyuchenie-ustrojstv/" class="nav-link">🔌 Подключение устройств</a>
+<a href="/category/mnozhestvennye-ekrany/" class="nav-link">🖥️🖥️ Множественные экраны</a>
+<a href="/category/zvuk-i-audio/" class="nav-link">🔊 Звук и аудио</a>
+<div class="nav-dropdown">
+            <button class="nav-link dropdown-toggle">📂 Все разделы ▾</button>
+            <div class="dropdown-menu"><a href="/category/nastrojka-ekrana/" class="dropdown-item">⚙️ Настройка экрана</a>
+<a href="/category/podklyuchenie-ustrojstv/" class="dropdown-item">🔌 Подключение устройств</a>
+<a href="/category/mnozhestvennye-ekrany/" class="dropdown-item">🖥️🖥️ Множественные экраны</a>
+<a href="/category/zvuk-i-audio/" class="dropdown-item">🔊 Звук и аудио</a>
+<a href="/category/remont-i-polomki/" class="dropdown-item">🔧 Ремонт и поломки</a>
+<a href="/category/ukhod-i-chistka/" class="dropdown-item">🧼 Уход и чистка</a>
+<a href="/category/vybor-i-kharakteristiki/" class="dropdown-item">📊 Выбор и характеристики</a>
+<a href="/category/drajvery-i-po/" class="dropdown-item">💿 Драйверы и ПО</a>
+<a href="/category/krepleniya-i-ustanovka/" class="dropdown-item">🔩 Крепления и установка</a>
+<a href="/category/utilizatsiya-i-prodazha/" class="dropdown-item">♻️ Утилизация и продажа</a>
+<a href="/category/spetsialnye-rezhimy/" class="dropdown-item">🎮 Специальные режимы</a>
+<a href="/category/drugoe/" class="dropdown-item">📁 Другое</a></div>
+        </div>
+            </nav>
+        </div>
+    </header>
+
+    <nav class="breadcrumbs" aria-label="Навигация">
+        <div class="container"><a href="/">Главная</a><span class="breadcrumb-sep">›</span><a href="/category/mnozhestvennye-ekrany/">Множественные экраны</a><span class="breadcrumb-sep">›</span><span class="breadcrumb-current">Как подключить 2 монитора в Linux: пошаговая настройка X11 и Wayland</span></div>
+    </nav>
+
+    <main class="site-main">
+        <div class="container">
+            <div class="article-layout">
+                <article class="article-main">
+                    
+                    <h1>Как настроить два монитора в Linux: от автоопределения до тонкой калибровки</h1>
+                    <nav class="mobile-toc"><details><summary>📋 Содержание</summary><ul><li><a href="#автоматическое-определение-и-графический-интерфейс">Автоматическое определение и графический интерфейс</a></li><li><a href="#управление-через-консольную-утилиту-xrandr">Управление через консольную утилиту xrandr</a></li><li><a href="#настройка-проприетарных-драйверов-nvidia">Настройка проприетарных драйверов NVIDIA</a></li><li><a href="#сравнение-серверов-x11-и-wayland">Сравнение серверов X11 и Wayland</a></li><li><a href="#решение-проблем-с-частотой-обновления-и-разрешением">Решение проблем с частотой обновления и разрешением</a></li><li><a href="#сохранение-конфигурации-при-загрузке-системы">Сохранение конфигурации при загрузке системы</a></li><li><a href="#частые-вопросы-и-проблемы">Частые вопросы и проблемы</a></li></ul></details></nav>
+                    <!--#include virtual="/ssi/article_before.html" -->
+                    <div class="article-body"><p>Подключение дополнительного дисплея к системе на базе Linux открывает перед пользователем широкие возможности для продуктивной работы. В отличие от закрытых операционных систем, здесь вы получаете полный контроль над тем, как именно распределяется видеосигнал между устройствами. Однако отсутствие единого графического стандарта для всех дистрибутивов может вызвать затруднения у новичков, привыкших к автоматической настройке в Windows.</p>
+
+<p>Современные дистрибутивы, такие как <em>Ubuntu</em>, <em>Fedora</em> или <em>Linux Mint</em>, в большинстве случаев определяют подключенные экраны мгновенно. Достаточно просто вставить кабель в разъем, и графическая оболочка предложит настроить режимы отображения. Но что делать, если автоматика не сработала, или вам требуется нестандартная конфигурация, например, каскадное расположение экранов с разным разрешением?</p>
+
+<p>В этой статье мы разберем все способы подключения второго монитора, от простого интерфейса настроек до продвинутого управления через терминал. Вы узнаете, как настроить <strong>расширенный рабочий стол</strong>, изменить приоритет дисплеев для вывода курсора и исправить частые проблемы с драйверами видеочипов. Это руководство актуально как для пользователей с интегрированной графикой, так и для обладателей мощных карточек <em>NVIDIA</em> или <em>AMD Radeon</em>.</p>
+
+<h2 id="автоматическое-определение-и-графический-интерфейс">Автоматическое определение и графический интерфейс</h2>
+
+<p>В большинстве случаев вам не нужно лезть в командную строку, чтобы заставить систему работать с двумя экранами. Современные окружения рабочего стола <strong>GNOME</strong>, <em>KDE Plasma</em> и <em>Xfce</em> имеют встроенные утилиты управления дисплеями, которые обычно находятся в системных настройках.</p>
+
+<p>Для начала подключите второй монитор кабелем <code>HDMI</code>, <code>DisplayPort</code> или <code>DVI</code> к соответствующему порту на видеочипе или материнской плате. После этого перезагрузите компьютер или просто отключите и подключите кабель заново, если система не отреагировала мгновенно. Откройте меню настроек системы и найдите раздел <code>Дисплей</code> или <code>Экраны</code>. Здесь вы увидите схему всех обнаруженных устройств.</p>
+
+<p>Если второй монитор отображается как <strong>неактивный</strong> или серый, попробуйте нажать кнопку «Обнаружить дисплеи». В графическом интерфейсе вы можете перетаскивать иконки экранов мышью, выстраивая их в реальном порядке на вашем столе. Это критически важно для правильного движения курсора мыши с одного монитора на другой. Не забудьте сохранить изменения, нажав кнопку <code>Применить</code>, иначе настройки сбросятся после перезагрузки.</p>
+
+<blockquote>⚠️ Внимание: При использовании драйверов NVIDIA в режиме proprietary (проприетарных) иногда требуется принудительное включение X-сервера для корректной работы настройки через GUI. Проверьте, активен ли режим <strong>PRIME</strong> или <em>Multimonitor</em> в утилите управления видеокартой.</blockquote>
+
+<p>Особое внимание уделите выбору режима отображения. Вам доступны варианты <strong>Мирroring</strong> (клонирование), где оба экрана показывают одно и то же, и <strong>Extension</strong> (расширение), который объединяет их в единое рабочее пространство. Для продуктивности почти всегда выбирается режим расширения.</p>
+
+<div class="poll-widget" id="poll-babc4059"><div class="poll-widget-question">📊 Какая у вас операционная система?</div><div class="poll-widget-option" data-poll="babc4059" data-idx="0" onclick="pbPollVote(this)"><span class="poll-widget-label">Ubuntu</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="babc4059" data-idx="1" onclick="pbPollVote(this)"><span class="poll-widget-label">Fedora</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="babc4059" data-idx="2" onclick="pbPollVote(this)"><span class="poll-widget-label">Linux Mint</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="babc4059" data-idx="3" onclick="pbPollVote(this)"><span class="poll-widget-label">Arch Linux</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="babc4059" data-idx="4" onclick="pbPollVote(this)"><span class="poll-widget-label">Другой</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div></div>
+
+<h2 id="управление-через-консольную-утилиту-xrandr">Управление через консольную утилиту xrandr</h2>
+
+<p>Если графический интерфейс не справляется или вы предпочитаете максимальный контроль, утилита <strong>xrandr</strong> (X Resize and Rotate) станет вашим главным инструментом. Она доступна практически в любом дистрибутиве с графической оболочкой на базе X11 и позволяет управлять видеовыходами на низком уровне.</p>
+
+<p>Первым делом необходимо запустить команду <code>xrandr</code> без параметров в терминале, чтобы увидеть список всех доступных подключений и текущее состояние. Вы увидите список подключений: <code>HDMI-1</code>, <code>eDP-1</code>, <code>VGA-1</code> и другие. Состояние <em>connected</em> означает, что монитор виден системой, а <em>disconnected</em> — что он не найден.</p>
+
+<p>Для подключения второго монитора нужно использовать флаг <code>--auto</code> для автоматического выбора лучшего разрешения и <code>--right-of</code> для задания его положения относительно основного экрана. Например, чтобы поставить экран <code>HDMI-1</code> справа от встроенного экрана ноутбука <code>eDP-1</code>, выполните следующую команду:</p>
+
+<pre><code>xrandr --output HDMI-1 --auto --right-of eDP-1</code></pre>
+
+<p>Этот метод особенно полезен, когда нужно быстро сменить конфигурацию без перезагрузки. Вы можете менять разрешение на лету, поворачивать экраны или даже отключать ненужные выходы. Однако помните, что изменения через <strong>xrandr</strong> не сохраняются автоматически после перезагрузки системы, их нужно прописывать в автостарт.</p>
+
+<details class="faq-item"><summary>Как узнать точные названия выходов?
+<p>Вывод команды xrandr может отличаться в зависимости от версии драйвера. Названия выходов часто зависят от производителя чипа</summary><div class="faq-answer"><p> для Intel это обычно eDP-1 (встроенный) и HDMI-1/A, для AMD это eDP-1 и DP-1/HDMI-A-0, а для NVIDIA часто используется более длинные обозначения вида VGA-0 или DVI-0. Всегда сверяйтесь с выводом команды перед вводом параметров.</p></div></details></p>
+
+<h2 id="настройка-проприетарных-драйверов-nvidia">Настройка проприетарных драйверов NVIDIA</h2>
+
+<p>Работа с видеокартами <em>NVIDIA</em> в среде Linux имеет свои особенности, особенно если вы используете закрытые проприетарные драйверы. Стандартные утилиты могут не видеть все возможности карты, поэтому лучше использовать специализированную утилиту <strong>nvidia-settings</strong>.</p>
+
+<p>После установки драйверов откройте терминал и введите команду <code>nvidia-settings</code>. В открывшемся окне перейдите в раздел <code>X Server Display Configuration</code>. Здесь вы увидите визуальную схему ваших мониторов. Вы можете выбрать активный монитор и установить для него режим <strong>Flat Panel</strong> или <em>Dual Link</em> в зависимости от возможностей вашего дисплея.</p>
+
+<p>Для применения настроек в постоянное хранилище конфигурации нажмите кнопку <code>Save to X Configuration File</code>. Это создаст файл <code>/etc/X11/xorg.conf</code>, который будет загружаться при каждом старте системы. Если файл уже существует, утилита предложит его перезаписать, согласившись, вы сохраните конфигурацию навсегда.</p>
+
+<blockquote>⚠️ Внимание: Неправильное редактирование файла <code>xorg.conf</code> может привести к тому, что графическая оболочка перестанет загружаться совсем. Перед сохранением всегда делайте резервную копию существующего конфига командой <code>sudo mv /etc/X11/xorg.conf /etc/X11/xorg.conf.bak</code>.</blockquote>
+
+<p>Иногда возникает проблема, когда система видит карту, но не может инициализировать монитор. В этом случае в конфигурацию X11 нужно добавить секцию <strong>Device</strong> с указанием правильного драйвера и опции <code>UseDisplayDevice</code>. Это требует глубокого понимания структуры файлов конфигурации X-сервера.</p>
+
+<div class="checklist-block"><h4>☑️ Проверка драйверов NVIDIA</h4><label class="check-item"><input type="checkbox"><span>Скачать и установить драйвер с сайта NVIDIA</span></label><label class="check-item"><input type="checkbox"><span>Перезагрузить ПК</span></label><label class="check-item"><input type="checkbox"><span>Запустить nvidia-settings</span></label><label class="check-item"><input type="checkbox"><span>Сохранить конфигурацию в файл xorg.conf</span></label><div class="check-progress">Выполнено: <span class="check-count">0</span> / 4</div></div>
+
+<h2 id="сравнение-серверов-x11-и-wayland">Сравнение серверов X11 и Wayland</h2>
+
+<p>Современный Linux все чаще переходит на использование дисплейного сервера <strong>Wayland</strong> вместо устаревшего X11. Это меняет подход к настройке мультимониторных конфигураций. Wayland предлагает более плавную работу, лучшую поддержку масштабирования и безопасность, но может вызывать проблемы с совместимостью старого оборудования.</p>
+
+<p>В окружении <em>GNOME</em> на базе Wayland управление экранами стало почти полностью автоматизированным. Вы можете просто подключить монитор, и он появится на рабочем столе без лишних настроек. Однако, если у вас видеокарта <em>NVIDIA</em> с драйверами старых версий, Wayland может работать нестабильно или не поддерживать расширение экрана корректно.</p>
+
+<p>Ниже приведена таблица, сравнивающая особенности работы с несколькими мониторами в разных протоколах:</p>
+
+<table>
+<thead>
+<tr>
+<th>Протокол</th>
+<th>Стабильность</th>
+<th>Поддержка NVIDIA</th>
+<th>Гибкость настройки</th>
+<th>Доступность</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>X11</td>
+<td>Высокая</td>
+<td>Отличная (через nvidia-settings)</td>
+<td>Максимальная (xrandr)</td>
+<td>Почти везде</td>
+</tr>
+<tr>
+<td>Wayland</td>
+<td>Средняя (зависит от дистрибутива)</td>
+<td>Хорошая (с драйверами 555+)</td>
+<td>Ограничена GUI</td>
+<td>По умолчанию в новых ОС</td>
+</tr>
+<tr>
+<td>X11+KDE</td>
+<td>Высокая</td>
+<td>Отличная</td>
+<td>Высокая</td>
+<td>Популярно</td>
+</tr>
+<tr>
+<td>Hyprland</td>
+<td>Низкая (для новичков)</td>
+<td>Нужна специфичная настройка</td>
+<td>Полная (скрипты)</td>
+<td>Для энтузиастов</td>
+</tr>
+</tbody>
+</table>
+
+<p>Если вы столкнулись с мерцанием или рассинхронизацией курсора между экранами с разным разрешением, попробуйте переключиться с Wayland на X11 при входе в систему. В меню логина обычно есть кнопка выбора сессии, где можно выбрать <strong>Xorg</strong> или <em>X11</em>.</p>
+
+<div class="attention-box attention-tip"><span class="attention-icon">💡</span><p>Если вы используете Wayland и видеокарту NVIDIA, убедитесь, что у вас установлены драйверы версии 555 или новее, так как именно они принесли полноценную поддержку режима Explicit Sync для мультимониторных конфигураций.</p></div>
+
+<h2 id="решение-проблем-с-частотой-обновления-и-разрешением">Решение проблем с частотой обновления и разрешением</h2>
+
+<p>Иногда система автоматически выбирает недостаточно частоту обновления, например, <code>30 Гц</code> вместо <code>60 Гц</code> или <code>144 Гц</code>. Это часто случается при использовании переходников или старых кабелей <code>HDMI</code>. Для исправления ситуации необходимо вручную задать параметры в <strong>xrandr</strong>.</p>
+
+<p>Сначала узнайте список доступных моделей и частот для вашего монитора, выполнив команду <code>xrandr --verbose</code>. Найдите в выводе строку под названием вашего разъема (например, <code>HDMI-1</code>) и посмотрите список поддерживаемых режимов (Modes).</p>
+
+<p>Если нужный режим, например <code>1920x1080 at 144Hz</code>, отсутствует в списке, его можно создать с помощью утилиты <code>cvt</code>. Команда <code>cvt 1920 1080 144</code> выдаст модельную строку, которую нужно скопировать и добавить в xrandr через флаг <code>--newmode</code> и <code>--addmode</code>. После этого можно активировать этот режим стандартной командой включения.</p>
+
+<p>Также стоит проверить настройки квантования цвета (RGB range). На некоторых телевизорах, подключенных как мониторы, картинка может быть «выцветшей» из-за использования диапазона <strong>YCbCr 4:2:0</strong> вместо полного RGB. В настройках NVIDIA или AMD это можно исправить, выбрав <em>Full RGB</em> вместо <em>Limited</em>.</p>
+
+<div class="attention-box attention-tip"><span class="attention-icon">💡</span><p>Правильный выбор частоты обновления критичен для комфорта глаз, особенно при работе с текстом. Всегда стремитесь к значению 60 Гц и выше для основного рабочего места.</p></div>
+
+<h2 id="сохранение-конфигурации-при-загрузке-системы">Сохранение конфигурации при загрузке системы</h2>
+
+<p>Одной из главных головных боль пользователей Linux является то, что настройки экранов, сделанные через <code>xrandr</code>, сбрасываются после перезагрузки. Чтобы сделать конфигурацию постоянной, ее нужно добавить в автозагрузку вашего окружения рабочего стола.</p>
+
+<p>Для окружения <em>GNOME</em> проще всего использовать утилиту <strong>gnome-control-center</strong> или установить расширение «Custom Monitor Settings». В <em>KDE Plasma</em> настройки сохраняются автоматически, если вы нажали «Применить» в настройках дисплея, но иногда требуется переназначить профиль.</p>
+
+<p>Для продвинутых пользователей, использующих оконные менеджеры (как <em>i3</em>, <em>bspwm</em>), лучше всего прописать скрипт инициализации в файл конфигурации менеджера. Пример скрипта для i3:</p>
+
+<pre><code>xrandr --output HDMI-1 --primary --mode 1920x1080 --pos 0x0 \
+<p>--output eDP-1 --mode 1920x1080 --right-of HDMI-1</code></pre></p>
+
+<p>Этот подход позволяет гарантировать, что при каждом запуске системы экраны будут располагаться именно так, как нужно вам, независимо от того, какой монитор был подключен первым. Это особенно удобно, если вы часто меняете местами мониторы или подключаете их к разным портам.</p>
+
+<blockquote>⚠️ Внимание: Если вы настраиваете автозагрузку через .xprofile или .bashrc, убедитесь, что переменная окружения <code>DISPLAY</code> корректно определена. Запуск графических команд до инициализации X-сервера приведет к ошибке «Cannot open display».</blockquote>
+
+<h2 id="частые-вопросы-и-проблемы">Частые вопросы и проблемы</h2>
+
+<p>При настройке двух мониторов пользователи часто сталкиваются с рядом специфических проблем, от которых сложно избавиться стандартными методами. Ниже мы рассмотрим ответы на самые распространенные вопросы, возникающие в процессе работы.</p>
+
+<details>
+<summary>Почему второй монитор не определяется в BIOS/UEFI, но виден в Linux?</summary>
+<p>Это нормальная ситуация для большинства современных ПК. BIOS/UEFI часто отображает только основной видеовыход, к которому подключен монитор, используемый для загрузки. В Linux видеодрайвер перехватывает управление и инициализирует все доступные порты независимо от того, что видит прошивка. Если монитор не виден в Linux, проблема скорее всего в кабеле, порте или драйвере.</p>
+</details>
+
+<details>
+<summary>Как сделать так, чтобы курсор мыши плавно переходил с одного экрана на другой?</summary>
+<p>Убедитесь, что в настройках дисплея экраны расположены физически так, как они стоят на вашем столе. Если вы поставили правый экран слева от левого в настройках, курсор будет «проваливаться» в никуда. Используйте инструмент перетаскивания в настройках <code>Дисплей</code> или команду <code>--left-of</code> / <code>--right-of</code> в <em>xrandr</em> для точного выравнивания границ.</p>
+</details>
+
+<details>
+<summary>Что делать, если картинка на втором мониторе размытая или нечеткая?</summary>
+<p>Чаще всего это проблема масштабирования (HiDPI). В Wayland и современных версиях GNOME можно включить масштабирование в процентах (например, 150% или 200%) отдельно для каждого экрана или глобально. Если у вас разные разрешения экранов, попробуйте включить масштабирование только для того, у которого плотность пикселей выше, либо отключить масштабирование в целом и настроить размер шрифтов вручную.</p>
+</details>
+
+<details>
+<summary>Можно ли подключить два монитора от одного порта через разветвитель?</summary>
+<p>Технически это возможно только с активными адаптерами (DisplayPort MST Hub). Пассивные разветвители HDMI обычно дублируют сигнал (клонирование), и система увидит только одно изображение. Для расширения рабочего стола через один порт вам нужен активный концентратор, поддерживающий технологию Multi-Stream Transport, и видеодрайвер, готовый работать с MST-топологиями.</p>
+</details>
+
+<details>
+<summary>Почему звук не переключается на второй монитор?</summary>
+<p>Мониторы с выходом HDMI или DisplayPort часто имеют встроенные динамики. В Linux звук управляется сервером <strong>PulseAudio</strong> или <em>PipeWire</em>. Вам нужно зайти в настройки звука, выбрать вкладку «Устройства вывода» и вручную переключить профиль с динамиков компьютера на HDMI-выход вашего монитора. Иногда драйвер GPU требует перезагрузки модуля ядра, чтобы добавить аудиопоток.</p>
+</details></div>
+                    <!--#include virtual="/ssi/article_after.html" -->
+
+                </article>
+                <aside class="article-sidebar"><!--#include virtual="/ssi/sidebar_top.html" --><nav class="sidebar-search"><div class="sidebar-search-box"><input type="text" id="globalSearchInput" placeholder="🔍 Поиск статей..." autocomplete="off"><div class="search-dropdown" id="globalSearchDropdown"></div></div></nav><!--#include virtual="/ssi/sidebar_before_toc.html" --><nav class="sidebar-toc" id="sidebarToc"><h3>Содержание</h3><ul><li><a href="#автоматическое-определение-и-графический-интерфейс">Автоматическое определение и графический интерфейс</a></li><li><a href="#управление-через-консольную-утилиту-xrandr">Управление через консольную утилиту xrandr</a></li><li><a href="#настройка-проприетарных-драйверов-nvidia">Настройка проприетарных драйверов NVIDIA</a></li><li><a href="#сравнение-серверов-x11-и-wayland">Сравнение серверов X11 и Wayland</a></li><li><a href="#решение-проблем-с-частотой-обновления-и-разрешением">Решение проблем с частотой обновления и разрешением</a></li><li><a href="#сохранение-конфигурации-при-загрузке-системы">Сохранение конфигурации при загрузке системы</a></li><li><a href="#частые-вопросы-и-проблемы">Частые вопросы и проблемы</a></li></ul></nav><!--#include virtual="/ssi/sidebar_before_related.html" --><nav class="sidebar-related"><h3>Похожие статьи</h3><ul><li><a href="/articles/k/ka/kak-vtoroj-monitor-sdelat-prodolzheniem-rabochego-stola.html" class="related-card">Как сделать второй монитор продолжением рабочего стола: полное руководство</a></li><li><a href="/articles/k/ka/kak-ustanovit-oboi-na-vtoroj-monitor.html" class="related-card">Как установить обои на второй монитор: пошаговая инструкция</a></li><li><a href="/articles/k/ka/kak-sdelat-skrinshot-esli-2-monitora.html" class="related-card">Как сделать скриншот на двух мониторах: полное руководство</a></li><li><a href="/articles/k/ka/kak-podklyuchit-tri-monitora-k-odnomu-noutbuku.html" class="related-card">Как подключить три монитора к одному ноутбуку: Полное руководство 2026</a></li><li><a href="/articles/k/ka/kak-vklyuchit-film-na-2-monitorakh.html" class="related-card">Как вывести фильм на 2 монитора: полнэкран и настройки Windows</a></li></ul></nav><!--#include virtual="/ssi/sidebar_after_related.html" --></aside>
+            </div>
+        </div>
+    </main>
+
+    <!--#include virtual="/ssi/before_related_bottom.html" -->
+    <section class="related-bottom">
+        <div class="container">
+            <h2 class="related-bottom-heading">📖 Читайте также</h2>
+            <div class="related-bottom-grid"><a href="/articles/k/ka/kak-vtoroj-monitor-sdelat-prodolzheniem-rabochego-stola.html" class="related-bottom-card"><span class="related-bottom-title">Как сделать второй монитор продолжением рабочего стола: полное руководство</span><span class="related-bottom-desc">Научитесь расширять пространство Windows и macOS. Инструкция по подключению, настройке режима расшир</span></a><a href="/articles/k/ka/kak-ustanovit-oboi-na-vtoroj-monitor.html" class="related-bottom-card"><span class="related-bottom-title">Как установить обои на второй монитор: пошаговая инструкция</span><span class="related-bottom-desc">Подробное руководство по настройке разных обоев на двух мониторах в Windows, macOS и Linux. Разбирае</span></a><a href="/articles/k/ka/kak-sdelat-skrinshot-esli-2-monitora.html" class="related-bottom-card"><span class="related-bottom-title">Как сделать скриншот на двух мониторах: полное руководство</span><span class="related-bottom-desc">Узнайте, как быстро сделать скриншот одного или двух мониторов в Windows. Инструкции для клавиатуры,</span></a><a href="/articles/k/ka/kak-podklyuchit-tri-monitora-k-odnomu-noutbuku.html" class="related-bottom-card"><span class="related-bottom-title">Как подключить три монитора к одному ноутбуку: Полное руководство 2026</span><span class="related-bottom-desc">Инструкция по подключению трех мониторов к ноутбуку через порты HDMI, USB-C и док-станции. Обзор дра</span></a><a href="/articles/k/ka/kak-vklyuchit-film-na-2-monitorakh.html" class="related-bottom-card"><span class="related-bottom-title">Как вывести фильм на 2 монитора: полнэкран и настройки Windows</span><span class="related-bottom-desc">Пошаговая инструкция по подключению двух мониторов для просмотра фильмов. Настройка режима Extend, в</span></a><a href="/articles/k/ka/kak-ispolzovat-monitor-v-kachestve.html" class="related-bottom-card"><span class="related-bottom-title">Как использовать монитор в 5 неожиданных ролях: от телевизора до планшета</span><span class="related-bottom-desc">Полное руководство по альтернативному использованию монитора: как подключить к приставке, сделать из</span></a></div>
+        </div>
+    </section>
+    <!--#include virtual="/ssi/after_related_bottom.html" -->
+
+    <footer class="site-footer-premium">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-col">
+                    <div class="footer-brand">🖥️ Мониторум</div>
+                    <p class="footer-about">Полный справочник по настройке, ремонту и выбору компьютерных мониторов для любых задач.</p>
+                </div>
+                <div class="footer-col">
+                    <h4>Разделы</h4>
+                    <ul><li><a href="/category/nastrojka-ekrana/">⚙️ Настройка экрана</a></li>
+<li><a href="/category/podklyuchenie-ustrojstv/">🔌 Подключение устройств</a></li>
+<li><a href="/category/mnozhestvennye-ekrany/">🖥️🖥️ Множественные экраны</a></li>
+<li><a href="/category/zvuk-i-audio/">🔊 Звук и аудио</a></li>
+<li><a href="/category/remont-i-polomki/">🔧 Ремонт и поломки</a></li>
+<li><a href="/category/ukhod-i-chistka/">🧼 Уход и чистка</a></li></ul>
+                </div>
+                <div class="footer-col">
+                    <h4>Информация</h4>
+                    <ul>
+                        <li><a href="/">Главная</a></li>
+                        <li><a href="/about.html">О проекте</a></li>
+                        <li><a href="/categories.html">Все разделы</a></li>
+                        <li><a href="/contact.html">Контакты</a></li>
+                        <li><a href="/privacy.html">Конфиденциальность</a></li>
+                        <li><a href="/sitemap.xml">Карта сайта</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>© Мониторум. Все права защищены.</p>
+                <!--LiveInternet counter--><div style="margin-top:10px;"><a href="https://www.liveinternet.ru/click"
+                target="_blank"><img id="licnt06C4" width="88" height="15" style="border:0" 
+                title="LiveInternet: показано число посетителей за сегодня"
+                src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAEALAAAAAABAAEAAAIBTAA7"
+                alt=""/></a><script>(function(d,s){d.getElementById("licnt06C4").src=
+                "https://counter.yadro.ru/hit?t26.5;r"+escape(d.referrer)+
+                ((typeof(s)=="undefined")?"":";s"+s.width+"*"+s.height+"*"+
+                (s.colorDepth?s.colorDepth:s.pixelDepth))+";u"+escape(d.URL)+
+                ";h"+escape(d.title.substring(0,150))+";"+Math.random()})(document,screen)</script></div><!--/LiveInternet-->
+            </div>
+        </div>
+    </footer>
+    <div id="cookie-consent" class="cookie-popup">
+        <div class="cookie-inner">
+            <span>🍪 Мы используем файлы cookie для улучшения работы сайта.</span>
+            <button id="cookie-accept" class="cookie-btn">Принять</button>
+        </div>
+    </div>
+    <script src="/static/js/main.js"></script>
+    <script>
+    (function() {
+        const popup = document.getElementById('cookie-consent');
+        const btn = document.getElementById('cookie-accept');
+        if (popup && btn && !localStorage.getItem('cookie-accepted')) {
+            popup.classList.add('visible');
+            btn.onclick = () => {
+                localStorage.setItem('cookie-accepted', 'true');
+                popup.classList.remove('visible');
+            };
+        }
+    })();
+    </script>
+    <script>
+    function pbPollVote(el) {
+        var poll = el.closest('.poll-widget');
+        if (poll.classList.contains('voted')) return;
+        poll.classList.add('voted');
+        el.classList.add('selected');
+        var opts = poll.querySelectorAll('.poll-widget-option');
+        var n = opts.length;
+        var raw = [];
+        var sum = 0;
+        for (var i = 0; i < n; i++) {
+            var v = Math.random() * 50 + 5;
+            if (opts[i] === el) v += 30;
+            raw.push(v);
+            sum += v;
+        }
+        var pcts = raw.map(function(v) { return Math.round(v / sum * 100); });
+        var diff = 100 - pcts.reduce(function(a,b){ return a+b; }, 0);
+        pcts[Array.from(opts).indexOf(el)] += diff;
+        setTimeout(function() {
+            opts.forEach(function(opt, i) {
+                opt.querySelector('.poll-widget-bar').style.width = pcts[i] + '%';
+                opt.querySelector('.poll-widget-pct').textContent = pcts[i] + '%';
+            });
+        }, 50);
+    }
+    </script>
+    <!--#include virtual="/ssi/body_bottom.html" -->
+    <script src="/static/js/inject.js" defer></script>
+</body>
+</html>

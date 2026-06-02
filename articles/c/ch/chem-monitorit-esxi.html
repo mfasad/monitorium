@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27><text y=%27.9em%27 font-size=%2790%27>🖥️</text></svg>">
+    <title>Чем мониторить ESXi: лучшие инструменты для виртуализации в 2026 — Мониторум</title>
+    <meta name="description" content="Полный обзор инструментов мониторинга для VMware ESXi. Сравнение встроенных средств, Prometheus, Zabbix и коммерческих решений. Практические советы по настройке.">
+    <link rel="canonical" href="https://monitorium.vercel.app/articles/c/ch/chem-monitorit-esxi.html">
+
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="Чем мониторить ESXi: лучшие инструменты для виртуализации в 2026">
+    <meta property="og:description" content="Полный обзор инструментов мониторинга для VMware ESXi. Сравнение встроенных средств, Prometheus, Zabbix и коммерческих решений. Практические советы по настройке.">
+    <meta property="og:locale" content="ru_RU">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css?v=1780420684">
+    <style>
+    .site-footer-premium {
+        margin-top: 60px; padding: 40px 0 0; background: #1e293b; color: #94a3b8;
+    }
+    .footer-grid {
+        display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 40px;
+        padding-bottom: 32px; border-bottom: 1px solid #334155;
+    }
+    .footer-brand { font-size: 1.2rem; font-weight: 700; color: #f1f5f9; margin-bottom: 12px; }
+    .footer-about { font-size: 0.9rem; line-height: 1.6; margin-bottom: 8px; }
+    .footer-updated { font-size: 0.8rem; color: #64748b; }
+    .footer-col h4 { color: #f1f5f9; font-size: 0.95rem; margin-bottom: 16px; }
+    .footer-col ul { list-style: none; }
+    .footer-col li { margin-bottom: 8px; }
+    .footer-col a { color: #94a3b8; font-size: 0.9rem; transition: color 0.2s; }
+    .footer-col a:hover { color: #60a5fa; }
+    .footer-bottom { padding: 20px 0; text-align: center; font-size: 0.85rem; }
+    @media (max-width: 640px) {
+        .footer-grid { grid-template-columns: 1fr; gap: 24px; }
+    }
+    .cookie-popup {
+        position: fixed; bottom: 0; left: 0; right: 0; background: #1e293b; color: #fff;
+        padding: 16px; transition: transform 0.5s ease; z-index: 9999; border-top: 2px solid #2563eb;
+        transform: translateY(100%);
+    }
+    .cookie-popup.visible { transform: translateY(0); }
+    .cookie-inner { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; gap: 16px; font-size: 0.9rem; }
+    .cookie-btn { background: #2563eb; color: #fff; border: none; padding: 8px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+    .cookie-btn:hover { background: #1d4ed8; }
+    @media (max-width: 640px) {
+        .cookie-inner { flex-direction: column; text-align: center; }
+    }
+</style>
+    
+    <!--#include virtual="/ssi/head.html" -->
+</head>
+<body>
+        <!--#include virtual="/ssi/body_top.html" -->
+    <style>
+    .nav-dropdown { position: relative; display: inline-block; }
+    .dropdown-toggle {
+        background: none; border: none; cursor: pointer;
+        font: inherit; color: inherit; padding: 8px 12px;
+        border-radius: 8px; transition: background 0.2s;
+    }
+    .dropdown-toggle:hover { background: rgba(0,0,0,0.05); }
+    .dropdown-menu {
+        display: none; position: absolute; right: 0; top: 100%;
+        min-width: 240px; max-height: 70vh; overflow-y: auto;
+        background: var(--card-bg, #fff); border: 1px solid var(--border, #e5e7eb);
+        border-radius: 12px; box-shadow: 0 12px 40px rgba(0,0,0,0.12);
+        padding: 8px 0; z-index: 1000;
+    }
+    .nav-dropdown::after {
+        content: ''; position: absolute; left: 0; right: 0;
+        top: 100%; height: 12px;
+    }
+    .nav-dropdown:hover .dropdown-menu,
+    .nav-dropdown:focus-within .dropdown-menu { display: block; }
+    .dropdown-item {
+        display: block; padding: 10px 20px; color: var(--text, #1f2937);
+        text-decoration: none; font-size: 0.95rem; transition: background 0.15s;
+        white-space: nowrap;
+    }
+    .dropdown-item:hover { background: rgba(37,99,235,0.06); color: var(--primary, #2563eb); }
+    @media (max-width: 768px) {
+        .main-nav > .nav-link { display: none; }
+        .dropdown-toggle { display: none; }
+        .dropdown-menu {
+            display: block !important; position: static;
+            box-shadow: none; border: none; border-radius: 0;
+            min-width: auto; max-height: none; padding: 0;
+            background: transparent;
+        }
+        .dropdown-item {
+            padding: 8px 0; font-size: 1rem;
+        }
+    }
+    </style>
+    <header class="site-header">
+        <div class="container header-inner">
+            <a href="/" class="logo">
+                <span class="logo-icon">🖥️</span>
+                <span>Мониторум</span>
+            </a>
+            <button class="mobile-menu-btn" aria-label="Меню" id="menuBtn">☰</button>
+            <nav class="main-nav" id="mainNav">
+                <a href="/category/nastrojka-ekrana/" class="nav-link">⚙️ Настройка экрана</a>
+<a href="/category/podklyuchenie-ustrojstv/" class="nav-link">🔌 Подключение устройств</a>
+<a href="/category/mnozhestvennye-ekrany/" class="nav-link">🖥️🖥️ Множественные экраны</a>
+<a href="/category/zvuk-i-audio/" class="nav-link">🔊 Звук и аудио</a>
+<div class="nav-dropdown">
+            <button class="nav-link dropdown-toggle">📂 Все разделы ▾</button>
+            <div class="dropdown-menu"><a href="/category/nastrojka-ekrana/" class="dropdown-item">⚙️ Настройка экрана</a>
+<a href="/category/podklyuchenie-ustrojstv/" class="dropdown-item">🔌 Подключение устройств</a>
+<a href="/category/mnozhestvennye-ekrany/" class="dropdown-item">🖥️🖥️ Множественные экраны</a>
+<a href="/category/zvuk-i-audio/" class="dropdown-item">🔊 Звук и аудио</a>
+<a href="/category/remont-i-polomki/" class="dropdown-item">🔧 Ремонт и поломки</a>
+<a href="/category/ukhod-i-chistka/" class="dropdown-item">🧼 Уход и чистка</a>
+<a href="/category/vybor-i-kharakteristiki/" class="dropdown-item">📊 Выбор и характеристики</a>
+<a href="/category/drajvery-i-po/" class="dropdown-item">💿 Драйверы и ПО</a>
+<a href="/category/krepleniya-i-ustanovka/" class="dropdown-item">🔩 Крепления и установка</a>
+<a href="/category/utilizatsiya-i-prodazha/" class="dropdown-item">♻️ Утилизация и продажа</a>
+<a href="/category/spetsialnye-rezhimy/" class="dropdown-item">🎮 Специальные режимы</a>
+<a href="/category/drugoe/" class="dropdown-item">📁 Другое</a></div>
+        </div>
+            </nav>
+        </div>
+    </header>
+
+    <nav class="breadcrumbs" aria-label="Навигация">
+        <div class="container"><a href="/">Главная</a><span class="breadcrumb-sep">›</span><a href="/category/drugoe/">Другое</a><span class="breadcrumb-sep">›</span><span class="breadcrumb-current">Чем мониторить ESXi: лучшие инструменты для виртуализации в 2026</span></div>
+    </nav>
+
+    <main class="site-main">
+        <div class="container">
+            <div class="article-layout">
+                <article class="article-main">
+                    
+                    <h1>Чем мониторить ESXi: полный гайд по инструментам и методам</h1>
+                    <nav class="mobile-toc"><details><summary>📋 Содержание</summary><ul><li><a href="#встроенные-возможности-vmware-и-их-ограничения">Встроенные возможности VMware и их ограничения</a></li><li><a href="#открытые-решения-prometheus-и-grafana-в-связке">Открытые решения: Prometheus и Grafana в связке</a></li><li><a href="#классические-системы-zabbix-и-его-интеграция-с-vmware">Классические системы: Zabbix и его интеграция с VMware</a></li><li><a href="#коммерческие-платформы-и-их-преимущества">Коммерческие платформы и их преимущества</a></li><li><a href="#критические-метрики-для-отслеживания">Критические метрики для отслеживания</a></li><li><a href="#настройка-оповещений-и-реагирование">Настройка оповещений и реагирование</a></li></ul></details></nav>
+                    <!--#include virtual="/ssi/article_before.html" -->
+                    <div class="article-body"><p>В современном дата-центре стабильность работы виртуальных машин напрямую зависит от качества мониторинга физической инфраструктуры. <strong>ESXi</strong> является фундаментом для множества корпоративных решений, и его состояние требует постоянного контроля. Без должного внимания к метрикам хостов вы рискуете столкнуться с простоями сервисов, потерей производительности и даже утратой данных.</p>
+
+<p>Выбор подходящего инструмента зависит от масштаба вашей инфраструктуры, бюджета и требуемой глубины анализа. Некоторые администраторы ограничиваются встроенными средствами, в то время как другим необходимы сложные системы с аналитикой на базе <em>искусственного интеллекта</em>. Важно понимать разницу между пассивным сбором логов и активным опросом метрик в реальном времени.</p>
+
+<h2 id="встроенные-возможности-vmware-и-их-ограничения">Встроенные возможности VMware и их ограничения</h2>
+<p>Начинать знакомство с мониторингом <strong>ESXi</strong> стоит со штатных инструментов, предоставляемых самой платформой. Веб-интерфейс <code>vSphere Client</code> позволяет видеть базовые показатели использования <em>CPU</em>, памяти, дискового ввода-вывода и сети. Этого достаточно для оперативного решения разовых задач и быстрого взгляда на состояние узла.</p>
+
+<p>Однако полагаться исключительно на графический интерфейс для долгосрочного анализа неразумно. Данные в <code>Performance Charts</code> хранятся с определенной периодичностью и имеют ограничения по глубине истории. Для глубокого расследования инцидентов, произошедших неделю или месяц назад, встроенных средств часто бывает недостаточно. <mark>Встроенные графики не позволяют экспортировать сырые данные для построения собственных графиков в сторонних системах без использования API.</mark></p>
+
+<p>Для более детального анализа необходимо использовать командную строку. Команда <pre><code>esxtop</code></pre> предоставляет мощные возможности для просмотра метрик в реальном времени, аналогично утилите <em>top</em> в Linux. Она показывает задержки (latency), очереди и утилизацию каждого ядра процессора. Это незаменимый инструмент для локализации узких мест в ресурсах.</p>
+
+<blockquote>⚠️ <strong>Внимание</strong>: Помните, что <code>esxtop</code> требует ручного ввода команд для фильтрации данных, что неудобно при постоянном мониторинге большого количества хостов.</blockquote>
+
+<p>Еще одним важным параметром является доступность данных через <strong>API</strong>. VMware предоставляет богатый набор <code>ESXCLI</code> команд и SDK, которые позволяют автоматизировать сбор информации. Это открывает двери для интеграции с внешними системами мониторинга, где вы можете настроить собственные алерты и дашборды.</p>
+
+<h2 id="открытые-решения-prometheus-и-grafana-в-связке">Открытые решения: Prometheus и Grafana в связке</h2>
+<p>Сегодня де-факто стандартом в индустрии является связка <em>Prometheus</em> и <em>Grafana</em>. Эта комбинация позволяет строить гибкие системы мониторинга с мощными возможностями визуализации. Для сбора метрик с <strong>ESXi</strong> используется специальный экспортер, который опрашивает <code>vCenter</code> или отдельные хосты и превращает их в формат, понятный прометеусу.</p>
+
+<p>Преимущество такого подхода заключается в открытости и огромном сообществе. Вы получаете доступ к тысячам готовых дашбордов, созданных другими администраторами. Настройка оповещений через <strong>Alertmanager</strong> позволяет мгновенно получать уведомления в <em>Telegram</em> или <em>Slack</em> при превышении пороговых значений.</p>
+
+<div class="poll-widget" id="poll-ae8423aa"><div class="poll-widget-question">📊 Какой инструмент мониторинга вы используете чаще всего?</div><div class="poll-widget-option" data-poll="ae8423aa" data-idx="0" onclick="pbPollVote(this)"><span class="poll-widget-label">Встроенный vCenter</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="ae8423aa" data-idx="1" onclick="pbPollVote(this)"><span class="poll-widget-label">Prometheus + Grafana</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="ae8423aa" data-idx="2" onclick="pbPollVote(this)"><span class="poll-widget-label">Zabbix</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="ae8423aa" data-idx="3" onclick="pbPollVote(this)"><span class="poll-widget-label">Nagios</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="ae8423aa" data-idx="4" onclick="pbPollVote(this)"><span class="poll-widget-label">Коммерческие решения</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div></div>
+
+<p>Однако настройка этой связки требует определенных навыков работы с конфигурационными файлами и базами данных временных рядов. Вам придется самостоятельно заниматься обновлением экспортеров и обеспечением доступности базы данных. Это решение идеально для технических специалистов, ценящих контроль над каждым аспектом системы.</p>
+
+<div class="attention-box attention-tip"><span class="attention-icon">💡</span><p>Перед развертыванием экспортера Prometheus убедитесь, что у него есть доступ по порту 443 к управляющему интерфейсу ESXi и настроены правильные права доступа для учетной записи мониторинга.</p></div>
+
+<p>Важно учитывать, что экспортер может создавать дополнительную нагрузку на контроллеры хостов при частом опросе. Рекомендуется настраивать интервалы сбора метрик (scrape interval) с умом, чтобы не перегружать сеть и CPU выделенного сервера мониторинга.</p>
+
+<h2 id="классические-системы-zabbix-и-его-интеграция-с-vmware">Классические системы: Zabbix и его интеграция с VMware</h2>
+<p><strong>Zabbix</strong> остается одним из самых популярных решений для мониторинга инфраструктуры благодаря своей гибкости и зрелости. Для работы с <em>VMware</em> существует готовый шаблон, который использует <code>VMware API</code> для сбора данных о хостах, кластерах и виртуальных машинах. Это позволяет автоматически обнаруживать новые сущности в вашей среде.</p>
+
+<p>Интеграция осуществляется через специальный модуль мониторинга, который опрашивает <code>vCenter Server</code>. Это снижает нагрузку на сами хосты ESXi, так как данные собираются централизованно. Вы можете отслеживать такие параметры, как состояние <em>datastore</em>, задержки сети и использование памяти в реальном времени.</p>
+
+<div class="checklist-block"><h4>☑️ Настройка Zabbix для VMware</h4><label class="check-item"><input type="checkbox"><span>Установить модуль VMware в Zabbix server</span></label><label class="check-item"><input type="checkbox"><span>Настроить пользователя vCenter с правами только для чтения</span></label><label class="check-item"><input type="checkbox"><span>Импортировать официальный шаблон</span></label><label class="check-item"><input type="checkbox"><span>Настроить автообнаружение хостов и ВМ</span></label><div class="check-progress">Выполнено: <span class="check-count">0</span> / 4</div></div>
+
+<p>К недостаткам можно отнести сложность первоначальной настройки и иногда запутанные графики при просмотре большого количества хостов. Однако возможность создания сложных зависимостей между хостами делает <strong>Zabbix</strong> незаменимым в крупных сетях со сложной топологией.</p>
+
+<blockquote>⚠️ <strong>Внимание</strong>: При использовании шаблонов Zabbix следите за версией подключаемого модуля, так как обновления VMware API могут приводить к ошибкам сбора данных.</blockquote>
+
+<p>Для успешной работы необходимо правильно настроить права доступа учетной записи, используемой для подключения. Обычно рекомендуется создавать отдельного пользователя с минимально необходимыми правами, чтобы обеспечить безопасность и соответствие принципам минимальных привилегий.</p>
+
+<h2 id="коммерческие-платформы-и-их-преимущества">Коммерческие платформы и их преимущества</h2>
+<p>Если бюджет компании позволяет, стоит рассмотреть специализированные коммерческие решения, такие как <em>VMware vRealize Operations</em> (vROps) или <em>SolarWinds Virtualization Manager</em>. Эти продукты предоставляют не просто график, а аналитику, прогнозирование и рекомендации по оптимизации ресурсов.</p>
+
+<p>Они умеют выявлять "шумных соседей" (noisy neighbors), предсказывать нехватку ресурсов через несколько месяцев и автоматически перебалансировать нагрузку. <strong>Аналитика</strong> на базе машинного обучения позволяет обнаруживать аномалии, которые человек может пропустить при обычном просмотре графиков.</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Решение</th>
+      <th>Тип</th>
+      <th>Сложность внедрения</th>
+      <th>Ключевая особенность</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>vRealize Operations</td>
+      <td>Коммерческое</td>
+      <td>Высокая</td>
+      <td>Углубленная аналитика и прогнозирование</td>
+    </tr>
+    <tr>
+      <td>Zabbix</td>
+      <td>Open Source</td>
+      <td>Средняя</td>
+      <td>Гибкость и широкие возможности кастомизации</td>
+    </tr>
+    <tr>
+      <td>Prometheus + Grafana</td>
+      <td>Open Source</td>
+      <td>Средняя/Высокая</td>
+      <td>Современная визуализация и экосистема</td>
+    </tr>
+    <tr>
+      <td>ESXCLI / esxtop</td>
+      <td>Встроенное</td>
+      <td>Низкая</td>
+      <td>Мгновенный доступ к метрикам без установки ПО</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>Стоимость таких решений может быть существенной, особенно если учитывать лицензии на все хосты и виртуальные машины. Однако они часто окупаются за счет предотвращения простоев и оптимизации использования оборудования, позволяя отложить закупку нового железа.</p>
+
+<details class="faq-item"><summary>Что такое "шумный сосед" в виртуализации?</summary><div class="faq-answer"><p>Это виртуальная машина, которая потребляет непропорционально много ресурсов (CPU, RAM, Disk I/O), негативно влияя на работу других ВМ, размещенных на том же физическом хосте.</p></div></details>
+
+<p>В некоторых случаях, особенно в небольших средах, может быть достаточно упрощенных коммерческих утилит, которые работают как агенты или веб-сервисы, предоставляя простые дашборды и алертинг без сложной инфраструктуры.</p>
+
+<h2 id="критические-метрики-для-отслеживания">Критические метрики для отслеживания</h2>
+<p>Независимо от выбранного инструмента, вам необходимо сосредоточиться на ключевых метриках, которые отражают реальное состояние системы. <strong>Утилизация CPU</strong> — это не только процент загрузки, но и время ожидания процессора (CPU Ready), которое показывает, сколько времени ВМ ждала, пока хост выделит ей ресурсы.</p>
+
+<p>Мониторинг памяти должен учитывать не только использование, но и свопинг (swapping) и ballooning. Если <em>ballooned memory</em> начинает расти, это верный признак нехватки физической памяти на хосте, что резко снижает производительность всех виртуальных машин.</p>
+
+<div class="attention-box attention-tip"><span class="attention-icon">💡</span><p>Время ожидания ввода-вывода (Disk Latency) является более важным показателем, чем общая скорость дисков, так как оно напрямую влияет на отклик приложений.</p></div>
+
+<p>Сетевая часть требует внимания к потерям пакетов (dropped packets) и ошибкам коллизий. Высокая задержка сети может быть вызвана перегрузкой виртуальных переключателей или физической сетевой карты. Также важно контролировать состояние <strong> datastore</strong>, так как переполнение хранилища может привести к остановке работоспособных виртуальных машин.</p>
+
+<p>Не забывайте отслеживать состояние аппаратных компонентов через <code>IPMI</code> или <code>SNMP</code>. Перегрев процессоров, отказ вентиляторов или сбои блоков питания часто не отражаются в логической части мониторинга vCenter, но критичны для физической сохранности сервера.</p>
+
+<h2 id="настройка-оповещений-и-реагирование">Настройка оповещений и реагирование</h2>
+<p>Сбор данных бесполезен без эффективной системы оповещений. Вы должны настроить алерты так, чтобы они срабатывали только при реальных проблемах, избегая "шторма уведомлений" (alert fatigue). Это достигается путем настройки пороговых значений и задержек перед отправкой уведомления.</p>
+
+<p>Используйте разные каналы связи для разных уровней критичности. Критические сбои, такие как потеря хоста или диска, требуют немедленного звонка или SMS. Предупреждения о высокой загрузке можно отправлять в общий чат команды для планового реагирования.</p>
+
+<p>Регулярный пересмотр правил оповещений помогает поддерживать их актуальность. При изменении архитектуры или добавлении нового оборудования старые пороги могут стать некорректными. <strong>Автоматизация</strong> сбора логов и их анализ помогают выявлять повторяющиеся инциденты.</p>
+
+<blockquote>⚠️ <strong>Внимание</strong>: Никогда не игнорируйте предупреждения о перегреве или сбоях дисков в RAID-массиве, даже если система продолжает работать — это может привести к катастрофическим последствиям.</blockquote>
+
+<p>Важно также иметь план реагирования на каждый тип алерта. Знание того, какие действия предпринять при получении уведомления, экономит драгоценное время во время инцидента и снижает стресс у администратора.</p>
+
+<details class="faq-item"><summary>Как настроить дедупликацию алертов?</summary><div class="faq-answer"><p>Используйте функцию группировки алертов по времени или признаку, чтобы несколько срабатываний одной и той же ошибки за короткий промежуток времени объединялись в одно понятное уведомление.</p></div></details>
+
+<p>Правильно настроенная система мониторинга становится вашим главным помощником в обеспечении отказоустойчивости инфраструктуры. Она позволяет переходить от реактивного устранения проблем к проактивному управлению ресурсами.</p>
+
+<details>
+<summary>Какой инструмент лучше всего подходит для домашнего лабораторного окружения?</summary>
+<p>Для домашних лабораторий часто выбирают Prometheus с Grafana или Zabbix, так как они бесплатны и позволяют получить опыт работы с профессиональными инструментами без лицензионных затрат.</p>
+</details>
+
+<details>
+<summary>Нужен ли vCenter для мониторинга ESXi?</summary>
+<p>Мониторинг возможен и напрямую с хостов ESXi, однако наличие vCenter упрощает задачу, позволяя собирать данные централизованно для всех хостов в кластере через один интерфейс.</p>
+</details>
+
+<details>
+<summary>Как часто нужно обновлять метрики мониторинга?</summary>
+<p>Частота зависит от типа метрики. Для критических показателей CPU и памяти достаточно интервала в 30-60 секунд. Для более стабильных параметров, таких как температура или утилизация сети, можно увеличить интервал до 5 минут.</p>
+</details>
+
+<details>
+<summary>Что делать, если мониторинг потребляет много ресурсов самого ESXi?</summary>
+<p>Снизьте частоту опроса (polling interval), оптимизируйте запросы к API или выделите отдельный физический сервер для узлов мониторинга, чтобы снизить нагрузку на виртуальную среду.</p>
+</details></div>
+                    <!--#include virtual="/ssi/article_after.html" -->
+
+                </article>
+                <aside class="article-sidebar"><!--#include virtual="/ssi/sidebar_top.html" --><nav class="sidebar-search"><div class="sidebar-search-box"><input type="text" id="globalSearchInput" placeholder="🔍 Поиск статей..." autocomplete="off"><div class="search-dropdown" id="globalSearchDropdown"></div></div></nav><!--#include virtual="/ssi/sidebar_before_toc.html" --><nav class="sidebar-toc" id="sidebarToc"><h3>Содержание</h3><ul><li><a href="#встроенные-возможности-vmware-и-их-ограничения">Встроенные возможности VMware и их ограничения</a></li><li><a href="#открытые-решения-prometheus-и-grafana-в-связке">Открытые решения: Prometheus и Grafana в связке</a></li><li><a href="#классические-системы-zabbix-и-его-интеграция-с-vmware">Классические системы: Zabbix и его интеграция с VMware</a></li><li><a href="#коммерческие-платформы-и-их-преимущества">Коммерческие платформы и их преимущества</a></li><li><a href="#критические-метрики-для-отслеживания">Критические метрики для отслеживания</a></li><li><a href="#настройка-оповещений-и-реагирование">Настройка оповещений и реагирование</a></li></ul></nav><!--#include virtual="/ssi/sidebar_before_related.html" --><nav class="sidebar-related"><h3>Похожие статьи</h3><ul><li><a href="/articles/i/is/ispolzovanie-telefona-kak-monitor-pk.html" class="related-card">Как использовать телефон как монитор для ПК: 5 способов + настройки</a></li><li><a href="/articles/t/tu/tusklyj-monitor-na-kompyutere-kak-ispravit.html" class="related-card">Тусклый монитор на компьютере: причины и способы восстановить яркость</a></li><li><a href="/articles/k/ka/kak-podobrat-monitor-po-razmeru.html" class="related-card">Как подобрать монитор по размеру: гайд по диагонали и разрешению</a></li><li><a href="/articles/p/pr/prostranstvennoe-razreshenie-monitora-opredelyaetsya-kak-kolichestvo.html" class="related-card">Пространственное разрешение монитора: что это и как определяется</a></li><li><a href="/articles/s/sk/skolko-tsvetov-otobrazhaetsya-na-monitore-esli-tsvetovaya-palitra-true-color-32-bita.html" class="related-card">Сколько цветов на мониторе: True Color 32 бита и нюансы</a></li></ul></nav><!--#include virtual="/ssi/sidebar_after_related.html" --></aside>
+            </div>
+        </div>
+    </main>
+
+    <!--#include virtual="/ssi/before_related_bottom.html" -->
+    <section class="related-bottom">
+        <div class="container">
+            <h2 class="related-bottom-heading">📖 Читайте также</h2>
+            <div class="related-bottom-grid"><a href="/articles/i/is/ispolzovanie-telefona-kak-monitor-pk.html" class="related-bottom-card"><span class="related-bottom-title">Как использовать телефон как монитор для ПК: 5 способов + настройки</span><span class="related-bottom-desc">Пошаговая инструкция по подключению смартфона как второго экрана для Windows/Mac. Сравнение приложен</span></a><a href="/articles/t/tu/tusklyj-monitor-na-kompyutere-kak-ispravit.html" class="related-bottom-card"><span class="related-bottom-title">Тусклый монитор на компьютере: причины и способы восстановить яркость</span><span class="related-bottom-desc">Узнайте, как исправить тусклый экран монитора. Полное руководство по настройке Windows, драйверов и </span></a><a href="/articles/k/ka/kak-podobrat-monitor-po-razmeru.html" class="related-bottom-card"><span class="related-bottom-title">Как подобрать монитор по размеру: гайд по диагонали и разрешению</span><span class="related-bottom-desc">Полное руководство по выбору размера монитора для работы и игр. Расчет расстояния, влияние разрешени</span></a><a href="/articles/p/pr/prostranstvennoe-razreshenie-monitora-opredelyaetsya-kak-kolichestvo.html" class="related-bottom-card"><span class="related-bottom-title">Пространственное разрешение монитора: что это и как определяется</span><span class="related-bottom-desc">Разбираемся, как количество пикселей влияет на качество изображения, какие стандарты разрешения суще</span></a><a href="/articles/s/sk/skolko-tsvetov-otobrazhaetsya-na-monitore-esli-tsvetovaya-palitra-true-color-32-bita.html" class="related-bottom-card"><span class="related-bottom-title">Сколько цветов на мониторе: True Color 32 бита и нюансы</span><span class="related-bottom-desc">Разбираем, сколько реально цветов отображает палитра True Color 32 бита. Выясняем разницу между 24-б</span></a><a href="/articles/s/sk/skolko-dyujmov-v-monitore-1366kh768.html" class="related-bottom-card"><span class="related-bottom-title">Диагональ монитора 1366x768: сколько дюймов и как измерить</span><span class="related-bottom-desc">Узнайте точный размер экрана с разрешением 1366x768 в дюймах. Расчет диагонали, таблица соотношений </span></a></div>
+        </div>
+    </section>
+    <!--#include virtual="/ssi/after_related_bottom.html" -->
+
+    <footer class="site-footer-premium">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-col">
+                    <div class="footer-brand">🖥️ Мониторум</div>
+                    <p class="footer-about">Полный справочник по настройке, ремонту и выбору компьютерных мониторов для любых задач.</p>
+                </div>
+                <div class="footer-col">
+                    <h4>Разделы</h4>
+                    <ul><li><a href="/category/nastrojka-ekrana/">⚙️ Настройка экрана</a></li>
+<li><a href="/category/podklyuchenie-ustrojstv/">🔌 Подключение устройств</a></li>
+<li><a href="/category/mnozhestvennye-ekrany/">🖥️🖥️ Множественные экраны</a></li>
+<li><a href="/category/zvuk-i-audio/">🔊 Звук и аудио</a></li>
+<li><a href="/category/remont-i-polomki/">🔧 Ремонт и поломки</a></li>
+<li><a href="/category/ukhod-i-chistka/">🧼 Уход и чистка</a></li></ul>
+                </div>
+                <div class="footer-col">
+                    <h4>Информация</h4>
+                    <ul>
+                        <li><a href="/">Главная</a></li>
+                        <li><a href="/about.html">О проекте</a></li>
+                        <li><a href="/categories.html">Все разделы</a></li>
+                        <li><a href="/contact.html">Контакты</a></li>
+                        <li><a href="/privacy.html">Конфиденциальность</a></li>
+                        <li><a href="/sitemap.xml">Карта сайта</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>© Мониторум. Все права защищены.</p>
+                <!--LiveInternet counter--><div style="margin-top:10px;"><a href="https://www.liveinternet.ru/click"
+                target="_blank"><img id="licnt06C4" width="88" height="15" style="border:0" 
+                title="LiveInternet: показано число посетителей за сегодня"
+                src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAEALAAAAAABAAEAAAIBTAA7"
+                alt=""/></a><script>(function(d,s){d.getElementById("licnt06C4").src=
+                "https://counter.yadro.ru/hit?t26.5;r"+escape(d.referrer)+
+                ((typeof(s)=="undefined")?"":";s"+s.width+"*"+s.height+"*"+
+                (s.colorDepth?s.colorDepth:s.pixelDepth))+";u"+escape(d.URL)+
+                ";h"+escape(d.title.substring(0,150))+";"+Math.random()})(document,screen)</script></div><!--/LiveInternet-->
+            </div>
+        </div>
+    </footer>
+    <div id="cookie-consent" class="cookie-popup">
+        <div class="cookie-inner">
+            <span>🍪 Мы используем файлы cookie для улучшения работы сайта.</span>
+            <button id="cookie-accept" class="cookie-btn">Принять</button>
+        </div>
+    </div>
+    <script src="/static/js/main.js"></script>
+    <script>
+    (function() {
+        const popup = document.getElementById('cookie-consent');
+        const btn = document.getElementById('cookie-accept');
+        if (popup && btn && !localStorage.getItem('cookie-accepted')) {
+            popup.classList.add('visible');
+            btn.onclick = () => {
+                localStorage.setItem('cookie-accepted', 'true');
+                popup.classList.remove('visible');
+            };
+        }
+    })();
+    </script>
+    <script>
+    function pbPollVote(el) {
+        var poll = el.closest('.poll-widget');
+        if (poll.classList.contains('voted')) return;
+        poll.classList.add('voted');
+        el.classList.add('selected');
+        var opts = poll.querySelectorAll('.poll-widget-option');
+        var n = opts.length;
+        var raw = [];
+        var sum = 0;
+        for (var i = 0; i < n; i++) {
+            var v = Math.random() * 50 + 5;
+            if (opts[i] === el) v += 30;
+            raw.push(v);
+            sum += v;
+        }
+        var pcts = raw.map(function(v) { return Math.round(v / sum * 100); });
+        var diff = 100 - pcts.reduce(function(a,b){ return a+b; }, 0);
+        pcts[Array.from(opts).indexOf(el)] += diff;
+        setTimeout(function() {
+            opts.forEach(function(opt, i) {
+                opt.querySelector('.poll-widget-bar').style.width = pcts[i] + '%';
+                opt.querySelector('.poll-widget-pct').textContent = pcts[i] + '%';
+            });
+        }, 50);
+    }
+    </script>
+    <!--#include virtual="/ssi/body_bottom.html" -->
+    <script src="/static/js/inject.js" defer></script>
+</body>
+</html>

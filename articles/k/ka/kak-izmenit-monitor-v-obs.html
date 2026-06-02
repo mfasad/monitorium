@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27><text y=%27.9em%27 font-size=%2790%27>🖥️</text></svg>">
+    <title>Как изменить монитор в OBS: настройка захвата и переключения экранов — Мониторум</title>
+    <meta name="description" content="Пошаговая инструкция: как сменить источник захвата экрана, настроить отдельный монитор и избежать черных экранов в OBS Studio.">
+    <link rel="canonical" href="https://monitorium.vercel.app/articles/k/ka/kak-izmenit-monitor-v-obs.html">
+
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="Как изменить монитор в OBS: настройка захвата и переключения экранов">
+    <meta property="og:description" content="Пошаговая инструкция: как сменить источник захвата экрана, настроить отдельный монитор и избежать черных экранов в OBS Studio.">
+    <meta property="og:locale" content="ru_RU">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css?v=1780420684">
+    <style>
+    .site-footer-premium {
+        margin-top: 60px; padding: 40px 0 0; background: #1e293b; color: #94a3b8;
+    }
+    .footer-grid {
+        display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 40px;
+        padding-bottom: 32px; border-bottom: 1px solid #334155;
+    }
+    .footer-brand { font-size: 1.2rem; font-weight: 700; color: #f1f5f9; margin-bottom: 12px; }
+    .footer-about { font-size: 0.9rem; line-height: 1.6; margin-bottom: 8px; }
+    .footer-updated { font-size: 0.8rem; color: #64748b; }
+    .footer-col h4 { color: #f1f5f9; font-size: 0.95rem; margin-bottom: 16px; }
+    .footer-col ul { list-style: none; }
+    .footer-col li { margin-bottom: 8px; }
+    .footer-col a { color: #94a3b8; font-size: 0.9rem; transition: color 0.2s; }
+    .footer-col a:hover { color: #60a5fa; }
+    .footer-bottom { padding: 20px 0; text-align: center; font-size: 0.85rem; }
+    @media (max-width: 640px) {
+        .footer-grid { grid-template-columns: 1fr; gap: 24px; }
+    }
+    .cookie-popup {
+        position: fixed; bottom: 0; left: 0; right: 0; background: #1e293b; color: #fff;
+        padding: 16px; transition: transform 0.5s ease; z-index: 9999; border-top: 2px solid #2563eb;
+        transform: translateY(100%);
+    }
+    .cookie-popup.visible { transform: translateY(0); }
+    .cookie-inner { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; gap: 16px; font-size: 0.9rem; }
+    .cookie-btn { background: #2563eb; color: #fff; border: none; padding: 8px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+    .cookie-btn:hover { background: #1d4ed8; }
+    @media (max-width: 640px) {
+        .cookie-inner { flex-direction: column; text-align: center; }
+    }
+</style>
+    
+    <!--#include virtual="/ssi/head.html" -->
+</head>
+<body>
+        <!--#include virtual="/ssi/body_top.html" -->
+    <style>
+    .nav-dropdown { position: relative; display: inline-block; }
+    .dropdown-toggle {
+        background: none; border: none; cursor: pointer;
+        font: inherit; color: inherit; padding: 8px 12px;
+        border-radius: 8px; transition: background 0.2s;
+    }
+    .dropdown-toggle:hover { background: rgba(0,0,0,0.05); }
+    .dropdown-menu {
+        display: none; position: absolute; right: 0; top: 100%;
+        min-width: 240px; max-height: 70vh; overflow-y: auto;
+        background: var(--card-bg, #fff); border: 1px solid var(--border, #e5e7eb);
+        border-radius: 12px; box-shadow: 0 12px 40px rgba(0,0,0,0.12);
+        padding: 8px 0; z-index: 1000;
+    }
+    .nav-dropdown::after {
+        content: ''; position: absolute; left: 0; right: 0;
+        top: 100%; height: 12px;
+    }
+    .nav-dropdown:hover .dropdown-menu,
+    .nav-dropdown:focus-within .dropdown-menu { display: block; }
+    .dropdown-item {
+        display: block; padding: 10px 20px; color: var(--text, #1f2937);
+        text-decoration: none; font-size: 0.95rem; transition: background 0.15s;
+        white-space: nowrap;
+    }
+    .dropdown-item:hover { background: rgba(37,99,235,0.06); color: var(--primary, #2563eb); }
+    @media (max-width: 768px) {
+        .main-nav > .nav-link { display: none; }
+        .dropdown-toggle { display: none; }
+        .dropdown-menu {
+            display: block !important; position: static;
+            box-shadow: none; border: none; border-radius: 0;
+            min-width: auto; max-height: none; padding: 0;
+            background: transparent;
+        }
+        .dropdown-item {
+            padding: 8px 0; font-size: 1rem;
+        }
+    }
+    </style>
+    <header class="site-header">
+        <div class="container header-inner">
+            <a href="/" class="logo">
+                <span class="logo-icon">🖥️</span>
+                <span>Мониторум</span>
+            </a>
+            <button class="mobile-menu-btn" aria-label="Меню" id="menuBtn">☰</button>
+            <nav class="main-nav" id="mainNav">
+                <a href="/category/nastrojka-ekrana/" class="nav-link">⚙️ Настройка экрана</a>
+<a href="/category/podklyuchenie-ustrojstv/" class="nav-link">🔌 Подключение устройств</a>
+<a href="/category/mnozhestvennye-ekrany/" class="nav-link">🖥️🖥️ Множественные экраны</a>
+<a href="/category/zvuk-i-audio/" class="nav-link">🔊 Звук и аудио</a>
+<div class="nav-dropdown">
+            <button class="nav-link dropdown-toggle">📂 Все разделы ▾</button>
+            <div class="dropdown-menu"><a href="/category/nastrojka-ekrana/" class="dropdown-item">⚙️ Настройка экрана</a>
+<a href="/category/podklyuchenie-ustrojstv/" class="dropdown-item">🔌 Подключение устройств</a>
+<a href="/category/mnozhestvennye-ekrany/" class="dropdown-item">🖥️🖥️ Множественные экраны</a>
+<a href="/category/zvuk-i-audio/" class="dropdown-item">🔊 Звук и аудио</a>
+<a href="/category/remont-i-polomki/" class="dropdown-item">🔧 Ремонт и поломки</a>
+<a href="/category/ukhod-i-chistka/" class="dropdown-item">🧼 Уход и чистка</a>
+<a href="/category/vybor-i-kharakteristiki/" class="dropdown-item">📊 Выбор и характеристики</a>
+<a href="/category/drajvery-i-po/" class="dropdown-item">💿 Драйверы и ПО</a>
+<a href="/category/krepleniya-i-ustanovka/" class="dropdown-item">🔩 Крепления и установка</a>
+<a href="/category/utilizatsiya-i-prodazha/" class="dropdown-item">♻️ Утилизация и продажа</a>
+<a href="/category/spetsialnye-rezhimy/" class="dropdown-item">🎮 Специальные режимы</a>
+<a href="/category/drugoe/" class="dropdown-item">📁 Другое</a></div>
+        </div>
+            </nav>
+        </div>
+    </header>
+
+    <nav class="breadcrumbs" aria-label="Навигация">
+        <div class="container"><a href="/">Главная</a><span class="breadcrumb-sep">›</span><a href="/category/nastrojka-ekrana/">Настройка экрана</a><span class="breadcrumb-sep">›</span><span class="breadcrumb-current">Как изменить монитор в OBS: настройка захвата и переключения экранов</span></div>
+    </nav>
+
+    <main class="site-main">
+        <div class="container">
+            <div class="article-layout">
+                <article class="article-main">
+                    
+                    <h1>Как изменить монитор в OBS Studio: полное руководство по настройке</h1>
+                    <nav class="mobile-toc"><details><summary>📋 Содержание</summary><ul><li><a href="#базовые-принципы-добавления-источника-захвата">Базовые принципы добавления источника захвата</a></li><li><a href="#выбор-конкретного-физического-дисплея-в-свойствах">Выбор конкретного физического дисплея в свойствах</a></li><li><a href="#настройка-разрешения-и-масштабирования-для-трансляции">Настройка разрешения и масштабирования для трансляции</a></li><li><a href="#решение-проблем-с-черным-экраном-и-отсутствием-сигнала">Решение проблем с черным экраном и отсутствием сигнала</a></li><li><a href="#использование-нескольких-дисплеев-в-одной-сцене">Использование нескольких дисплеев в одной сцене</a></li><li><a href="#проверка-стабильности-и-оптимизация-производительности">Проверка стабильности и оптимизация производительности</a></li><li><a href="#частые-ошибки-и-способы-их-устранения">Частые ошибки и способы их устранения</a></li><li><a href="#заключительные-рекомендации-перед-началом-трансляции">Заключительные рекомендации перед началом трансляции</a></li></ul></details></nav>
+                    <!--#include virtual="/ssi/article_before.html" -->
+                    <div class="article-body"><p>Многие стримеры и создатели контента сталкиваются с ситуацией, когда необходимо показать в эфире не весь рабочий стол, а конкретное разрешение или отдельный дисплей. Это особенно актуально для владельцев систем с несколькими мониторами, где на одном ведется игра, а на другом — рабочий процесс или чат. Программа <strong>OBS Studio</strong> предоставляет гибкие инструменты для управления этими процессами, но новички часто путают просто добавление нового источника с правильным выбором именно того экрана, который нужно транслировать.</p>
+
+<p>Ключ к успеху лежит в понимании того, как <strong>захват экрана</strong> работает внутри приложения. Вам не нужно перезагружать ПК или менять физические настройки видеокарты, чтобы переключить источник. Достаточно правильно настроить свойства источника и выбрать нужный физический дисплей из выпадающего списка. Ошибки в этом этапе часто приводят к появлению черного экрана или захвату не того окна, что мгновенно портит впечатление от стрима.</p>
+
+<h2 id="базовые-принципы-добавления-источника-захвата">Базовые принципы добавления источника захвата</h2>
+
+<p>Первым шагом к изменению монитора является правильное размещение источника в сцене. В нижней панели управления OBS найдите блок <strong>Источники</strong> и нажмите на значок плюса. В появившемся контекстном меню выберите вариант <code>Захват экрана (Display Capture)</code>. Именно этот тип источника позволяет видеть весь рабочий стол подключенного дисплея, в отличие от <strong>Захвата окна</strong>, который работает только с конкретным приложением.</p>
+
+<p>После создания источника вам будет предложено ввести имя, например, "Монитор 1" или "Игровой экран". Не пренебрегайте этим шагом, так как при наличии нескольких экранов названия помогут быстро ориентироваться в списке. Если вы не создадите новое имя, система может автоматически предложить использовать существующий шаблон, что иногда сбивает настройки.</p>
+
+<p>Важно отметить, что <strong>Захват экрана</strong> имеет приоритет над другими типами захвата, если они накладываются друг на друга в списке источников. Если вы хотите, чтобы на экране отображалась конкретная игра, но при этом вам нужно переключиться на рабочий стол, порядок слоев в панели источников будет играть решающую роль.</p>
+
+<blockquote>
+<p>⚠️ Внимание: Если вы используете ноутбук с встроенным дисплеем и внешним монитором, система может присвоить им номера по умолчанию, но порядок может меняться после отключения кабеля. Всегда проверяйте настройки перед началом эфира.</p>
+</blockquote>
+
+<h2 id="выбор-конкретного-физического-дисплея-в-свойствах">Выбор конкретного физического дисплея в свойствах</h2>
+
+<p>Самый важный этап — это непосредственно смена монитора. После создания источника дважды кликните по нему в списке или нажмите кнопку <strong>Свойства</strong>. Откроется окно, где первым пунктом будет строка <code>Дисплей</code>. По умолчанию здесь часто стоит значение "Дисплей 1", но это не всегда тот экран, который вы видите на переднем плане.</p>
+
+<p>Нажмите на выпадающий список и просмотрите доступные варианты. Обычно они маркируются как <strong>Дисплей 1</strong>, <strong>Дисплей 2</strong> и так далее. Чтобы понять, какой номер соответствует вашему монитору, можно воспользоваться стандартным способом: наведите курсор мыши на нужный экран и посмотрите, какой номер выделится в настройках Windows, или просто экспериментальным путем переключайте варианты в OBS, глядя на предпросмотр.</p>
+
+<p>Если вы видите черный экран в окне предпросмотра OBS, это означает, что выбран не тот дисплей или на нем нет активного сигнала. <strong>Разрешение</strong> и <strong>Частота обновления</strong> в настройках также должны совпадать с характеристиками выбранного монитора, чтобы избежать искажений или мерцания.</p>
+
+<p>Иногда система не определяет второй экран корректно, особенно если видеокарта была перегружена или драйверы работают нестабильно. В таком случае попробуйте нажать кнопку <strong>Обновить</strong> рядом со списком дисплеев, чтобы принудительно пересканировать подключенные устройства.</p>
+
+<div class="poll-widget" id="poll-c8ddc2fc"><div class="poll-widget-question">📊 Какой у вас тип конфигурации мониторов?</div><div class="poll-widget-option" data-poll="c8ddc2fc" data-idx="0" onclick="pbPollVote(this)"><span class="poll-widget-label">Один экран (ноутбук)</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="c8ddc2fc" data-idx="1" onclick="pbPollVote(this)"><span class="poll-widget-label">Два одинаковых монитора</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="c8ddc2fc" data-idx="2" onclick="pbPollVote(this)"><span class="poll-widget-label">Разные диагонали и разрешения</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="c8ddc2fc" data-idx="3" onclick="pbPollVote(this)"><span class="poll-widget-label">Три и более экрана</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div></div>
+
+<h2 id="настройка-разрешения-и-масштабирования-для-трансляции">Настройка разрешения и масштабирования для трансляции</h2>
+
+<p>После того как вы выбрали нужный <strong>Дисплей</strong>, обязательно проверьте настройки базового (холста) и выходного разрешения. Если ваш монитор имеет высокое разрешение, например <code>4K</code>, а стрим идет в <code>1080p</code>, OBS автоматически предложит масштабировать изображение. Это необходимо для корректного отображения контента на экранах зрителей.</p>
+
+<p>Для точной настройки перейдите в главное меню <code>Файл → Настройки → Видео</code>. Здесь вы увидите два главных параметра: <strong>Базовое разрешение</strong> и <strong>Выходное разрешение</strong>. Базовое разрешение должно соответствовать физическому размеру вашего монитора, а выходное — тем стандартам, которые поддерживает платформа стриминга (обычно это <code>1920x1080</code> или <code>1280x720</code>).</p>
+
+<p>Если вы смешиваете мониторы с разным разрешением, например, один <code>1920x1080</code>, а другой <code>2560x1440</code>, вам придется вручную подгонять размер источника в сцене. Просто потяните за углы превью, чтобы изображение заполнило холст, но учтите, что это может привести к потере качества или нечеткости текста.</p>
+
+<blockquote>
+<p>⚠️ Внимание: При изменении разрешения в настройках OBS приложение может потребовать перезапуска для применения новых параметров. Не игнорируйте это предупреждение, иначе эфир может идти в некорректном формате.</p>
+</blockquote>
+
+<div class="checklist-block"><h4>☑️ Проверка настроек дисплея</h4><label class="check-item"><input type="checkbox"><span>Выбор правильного номера монитора</span></label><label class="check-item"><input type="checkbox"><span>Проверка базового разрешения</span></label><label class="check-item"><input type="checkbox"><span>Настройка частоты обновления</span></label><label class="check-item"><input type="checkbox"><span>Тестирование звука с микрофона</span></label><div class="check-progress">Выполнено: <span class="check-count">0</span> / 4</div></div>
+
+<h2 id="решение-проблем-с-черным-экраном-и-отсутствием-сигнала">Решение проблем с черным экраном и отсутствием сигнала</h2>
+
+<p>Одной из самых распространенных проблем является черный экран при выборе правильного монитора. Это часто случается, если OBS не имеет достаточных прав для перехвата видео-потока, особенно на Windows 10 и 11. В этом случае <strong>Захват экрана</strong> не может получить доступ к буферу видеоконтроллера.</p>
+
+<p>Для решения этой проблемы необходимо запустить OBS от имени администратора. Закройте программу полностью, кликните правой кнопкой мыши по ярлыку и выберите <strong>Запуск от имени администратора</strong>. Это действие дает приложению приоритет для захвата изображений с видеокарты NVIDIA, AMD или Intel, игнорируя ограничения системы.</p>
+
+<p>Если проблема сохраняется, проверьте, не отключен ли ваш монитор в системе. Иногда спящий режим или энергосбережение отключают сигнал на втором дисплее, из-за чего OBS не может его захватить. <strong>Настройки электропитания</strong> должны быть настроены так, чтобы экраны не отключались в течение времени, необходимого для стрима.</p>
+
+<p>В редких случаях помогает изменение типа захвата. Вместо <strong>Захвата экрана</strong> попробуйте использовать <strong>Захват игры</strong> или <strong>Захват окна</strong>, если вам нужно показать только конкретное приложение. Это часто работает стабильнее, если основной монитор занят системными процессами.</p>
+
+<details class="faq-item"><summary>Альтернативный метод захвата</summary><div class="faq-answer"><p>Если стандартный захват экрана не работает, попробуйте добавить источник 'Захват окна' и выбрать 'OBS Studio' или 'Браузер' с параметром 'Захват внешнего окна'. Это иногда обходит блокировки драйверов видеокарты.</p></div></details>
+
+<h2 id="использование-нескольких-дисплеев-в-одной-сцене">Использование нескольких дисплеев в одной сцене</h2>
+
+<p>Продвинутые пользователи часто хотят транслировать сразу два экрана, например, чтобы показать и игру, и рабочий стол с чатом. Для этого в OBS можно добавить несколько источников типа <strong>Захват экрана</strong>. Каждый источник будет привязан к своему физическому дисплею через настройки свойств.</p>
+
+<p>После добавления второго источника, измените его размер и положение в окне предпросмотра. Вы можете использовать режимы наложения, такие как <strong>Нормальный</strong>, <strong>Умножить</strong> или <strong>Перекрытие</strong>, чтобы контролировать, как изображения будут взаимодействовать друг с другом. Например, вы можете сделать рабочий стол полупрозрачным, чтобы он не перекрывал игровой процесс полностью.</p>
+
+<p>Управление звуком в такой конфигурации также требует внимания. Если вы захватываете два монитора, звук может дублироваться или смещаться. Используйте микшер аудио в OBS, чтобы отключить звук от ненужного источника, оставив активным только тот, с которого идет игра или видео.</p>
+
+<p>Для удобства переключения между экранами во время эфира можно настроить <strong>Сцены</strong>. Создайте одну сцену для игры с полным экраном и вторую для рабочего стола. Переключение между ними осуществляется одной кнопкой или горячей клавишей, что позволяет гибко управлять контентом без сложной настройки в реальном времени.</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Тип источника</th>
+      <th>Идеальный сценарий</th>
+      <th>Плюсы</th>
+      <th>Минусы</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Захват экрана</td>
+      <td>Показ всего рабочего стола</td>
+      <td>Простота настройки</td>
+      <td>Захватывает всё, включая уведомления</td>
+    </tr>
+    <tr>
+      <td>Захват окна</td>
+      <td>Только конкретное приложение</td>
+      <td>Чистый кадр без лишних элементов</td>
+      <td>Может теряться при сворачивании</td>
+    </tr>
+    <tr>
+      <td>Захват игры</td>
+      <td>Для полноэкранных игр</td>
+      <td>Максимальная производительность</td>
+      <td>Не работает с играми в окне</td>
+    </tr>
+    <tr>
+      <td>Захват браузера</td>
+      <td>Веб-страницы и виджеты</td>
+      <td>Интерактивность элементов</td>
+      <td>Высокая нагрузка на CPU</td>
+    </tr>
+  </tbody>
+</table>
+
+<blockquote>
+<p>⚠️ Внимание: При использовании нескольких мониторов с разной частотой обновления (например, 60 Гц и 144 Гц) OBS может работать нестабильно. Рекомендуется синхронизировать частоты через настройки драйвера видеокарты перед началом работы.</p>
+</blockquote>
+
+<div class="attention-box attention-tip"><span class="attention-icon">💡</span><p>Если вы часто меняете мониторы местами, сохраните настройки сцены в отдельный файл через меню 'Файл -> Сохранить сцену в файл', чтобы быстро восстановить конфигурацию при сбоях.</p></div>
+
+<h2 id="проверка-стабильности-и-оптимизация-производительности">Проверка стабильности и оптимизация производительности</h2>
+
+<p>После того как вы изменили монитор и настроили все параметры, важно убедиться, что стрим не будет тормозить. Запустите режим <strong>Статистика</strong> в OBS (Меню -> Вид -> Статистика) и наблюдайте за показателями пропущенных кадров. Если значение превышает 1-2%, это сигнал о том, что выбранное разрешение или битрейт слишком высоки для вашей системы.</p>
+
+<p>Для оптимизации работы с несколькими мониторами убедитесь, что OBS использует правильную видеокарту. В настройках <code>Вывод</code> выберите режим <strong>Стандартный</strong> или <strong>Продвинутый</strong> и в разделе <strong>Видеокарта</strong> укажите вашу дискретную GPU, а не встроенную графику процессора.</p>
+
+<p>Также стоит проверить настройки <strong>Геймпад</strong> и <strong>Драйверов</strong>. Иногда обновление драйверов видеопроцессора решает проблемы с захватом изображения с новых или редких мониторов, которые система определяет некорректно.</p>
+
+<div class="attention-box attention-tip"><span class="attention-icon">💡</span><p>Главная задача при смене монитора — не просто выбрать экран в списке, а убедиться, что разрешение, частота обновления и права доступа к видеопамяти настроены корректно для стабильной работы.</p></div>
+
+<h2 id="частые-ошибки-и-способы-их-устранения">Частые ошибки и способы их устранения</h2>
+
+<p>Одной из частых ошибок является попытка изменить монитор, не перезапустив OBS после подключения нового дисплея. Программа может не увидеть новое устройство, если оно было подключено уже после запуска приложения. В таких случаях <strong>перезапуск</strong> программы является самым быстрым решением.</p>
+
+<p>Иногда пользователи путают <strong>Дисплей 1</strong> и <strong>Дисплей 2</strong>, так как система Windows может менять их нумерацию после отключения кабеля или перезагрузки. Всегда сверяйте номер дисплея в настройках Windows (Параметры -> Система -> Дисплей) с тем, что выбрано в OBS.</p>
+
+<p>Еще одна проблема — это захват звуковой дорожки с неправильного устройства. Если вы меняете монитор, убедитесь, что в настройках звука в OBS выбран правильный выходной канал, чтобы звук стрима соответствовал тому, что вы видите на экране.</p>
+
+<details class="faq-item"><summary>Секретный трюк</summary><div class="faq-answer"><p> Если вы хотите показать только часть экрана, используйте фильтр 'Область обрезки'. Нажмите правой кнопкой мыши на источник -> Фильтры -> Эффекты -> Обрезка, и укажите нужные координаты.</p></div></details>
+
+<h2 id="заключительные-рекомендации-перед-началом-трансляции">Заключительные рекомендации перед началом трансляции</h2>
+
+<p>Перед тем как начать стрим, обязательно проведите тестовую запись. Запишите пару минут видео и посмотрите его в плеере. Это позволит выявить проблемы с звуком, качеством картинки и правильностью выбранного монитора, которые могли остаться незамеченными в реальном времени.</p>
+
+<p>Не забывайте про <strong>безопасность</strong>: если вы используете захват экрана, убедитесь, что на рабочем столе не открыты конфиденциальные окна, такие как банковские приложения или личные переписки. Лучше заранее свернуть все лишнее и оставить только то, что нужно зрителям.</p>
+
+<p>Следите за обновлениями OBS Studio, так как разработчики регулярно добавляют новые функции и исправляют ошибки захвата. Актуальная версия программы гарантирует лучшую совместимость с современными мониторами и видеокартами.</p>
+
+<details>
+  <summary>Как узнать, какой монитор является Дисплеем 1, а какой Дисплеем 2?</summary>
+  <p>В Windows перейдите в <code>Параметры → Система → Дисплей</code>. Там вы увидите схему с цифрами на каждом экране. Нажмите кнопку <strong>Определить</strong>, и на экранах появятся большие цифры, показывающие их номера.</p>
+</details>
+
+<details>
+  <summary>Почему при смене монитора в OBS пропадает звук?</summary>
+  <p>Звук в OBS часто привязан к конкретному устройству вывода. Если вы переключились на другой монитор, звук может уходить в его динамики. Проверьте настройки <strong>Аудио</strong> в OBS и убедитесь, что выбран правильный <strong>Устройство захвата звука</strong> для нужного монитора.</p>
+</details>
+
+<details>
+  <summary>Можно ли изменить монитор без перезапуска OBS?</summary>
+  <p>Да, это можно сделать через свойства источника. Просто выберите новый дисплей из выпадающего списка в окне <strong>Свойства</strong> и нажмите <strong>ОК</strong>. Однако, если система не видит новый дисплей, перезапуск программы может потребоваться.</p>
+</details>
+
+<details>
+  <summary>Что делать, если OBS видит дисплей, но картинка черная?</summary>
+  <p>Это часто связано с правами доступа. Запустите OBS от имени администратора. Также проверьте, не включен ли режим <strong>Энергосбережения</strong> на видеокарте, который может блокировать захват изображения.</p>
+</details>
+
+<details>
+  <summary>Как убрать черную рамку вокруг монитора в OBS?</summary>
+  <p>Используйте фильтр <strong>Кадрирование/Отсечение</strong>. Нажмите правой кнопкой мыши на источник, выберите <strong>Фильтры</strong>, добавьте <strong>Кадрирование</strong> и подстройте значения, чтобы убрать черные поля.</p>
+</details></div>
+                    <!--#include virtual="/ssi/article_after.html" -->
+
+                </article>
+                <aside class="article-sidebar"><!--#include virtual="/ssi/sidebar_top.html" --><nav class="sidebar-search"><div class="sidebar-search-box"><input type="text" id="globalSearchInput" placeholder="🔍 Поиск статей..." autocomplete="off"><div class="search-dropdown" id="globalSearchDropdown"></div></div></nav><!--#include virtual="/ssi/sidebar_before_toc.html" --><nav class="sidebar-toc" id="sidebarToc"><h3>Содержание</h3><ul><li><a href="#базовые-принципы-добавления-источника-захвата">Базовые принципы добавления источника захвата</a></li><li><a href="#выбор-конкретного-физического-дисплея-в-свойствах">Выбор конкретного физического дисплея в свойствах</a></li><li><a href="#настройка-разрешения-и-масштабирования-для-трансляции">Настройка разрешения и масштабирования для трансляции</a></li><li><a href="#решение-проблем-с-черным-экраном-и-отсутствием-сигнала">Решение проблем с черным экраном и отсутствием сигнала</a></li><li><a href="#использование-нескольких-дисплеев-в-одной-сцене">Использование нескольких дисплеев в одной сцене</a></li><li><a href="#проверка-стабильности-и-оптимизация-производительности">Проверка стабильности и оптимизация производительности</a></li><li><a href="#частые-ошибки-и-способы-их-устранения">Частые ошибки и способы их устранения</a></li><li><a href="#заключительные-рекомендации-перед-началом-трансляции">Заключительные рекомендации перед началом трансляции</a></li></ul></nav><!--#include virtual="/ssi/sidebar_before_related.html" --><nav class="sidebar-related"><h3>Похожие статьи</h3><ul><li><a href="/articles/k/ka/kak-uznat-koordinaty-na-ekrane-monitora.html" class="related-card">Как узнать координаты на экране монитора: точные методы и инструменты</a></li><li><a href="/articles/k/ka/kak-ubrat-sinevu-s-monitora-kompyutera.html" class="related-card">Как убрать синеву с монитора: 7 способов настройки цвета</a></li><li><a href="/articles/k/ka/kak-povysit-chastotu-obnovlenij-monitora.html" class="related-card">Как повысить частоту обновления монитора: полное руководство</a></li><li><a href="/articles/k/ka/kak-izmenit-gertsovku-monitora-windows-10-nvidia.html" class="related-card">Как изменить герцовку монитора в Windows 10 через NVIDIA: Полная инструкция</a></li><li><a href="/articles/k/kv/kvadratnyj-ekran-monitora-kak-ispravit-vindovs-10.html" class="related-card">Квадратный экран монитора: как исправить в Windows 10 за 5 минут</a></li></ul></nav><!--#include virtual="/ssi/sidebar_after_related.html" --></aside>
+            </div>
+        </div>
+    </main>
+
+    <!--#include virtual="/ssi/before_related_bottom.html" -->
+    <section class="related-bottom">
+        <div class="container">
+            <h2 class="related-bottom-heading">📖 Читайте также</h2>
+            <div class="related-bottom-grid"><a href="/articles/k/ka/kak-uznat-koordinaty-na-ekrane-monitora.html" class="related-bottom-card"><span class="related-bottom-title">Как узнать координаты на экране монитора: точные методы и инструменты</span><span class="related-bottom-desc">Узнайте, как определить точные координаты курсора на экране монитора. Обзор встроенных средств Windo</span></a><a href="/articles/k/ka/kak-ubrat-sinevu-s-monitora-kompyutera.html" class="related-bottom-card"><span class="related-bottom-title">Как убрать синеву с монитора: 7 способов настройки цвета</span><span class="related-bottom-desc">Устраняем синий оттенок экрана: калибровка цветов, настройка BIOS, проверка кабелей и драйверов. Пош</span></a><a href="/articles/k/ka/kak-povysit-chastotu-obnovlenij-monitora.html" class="related-bottom-card"><span class="related-bottom-title">Как повысить частоту обновления монитора: полное руководство</span><span class="related-bottom-desc">Узнайте, как разогнать герцовку экрана: настройки Windows, драйверы, кабели и BIOS. Пошаговая инстру</span></a><a href="/articles/k/ka/kak-izmenit-gertsovku-monitora-windows-10-nvidia.html" class="related-bottom-card"><span class="related-bottom-title">Как изменить герцовку монитора в Windows 10 через NVIDIA: Полная инструкция</span><span class="related-bottom-desc">Пошаговое руководство по настройке частоты обновления экрана в Windows 10. Настройка через панель уп</span></a><a href="/articles/k/kv/kvadratnyj-ekran-monitora-kak-ispravit-vindovs-10.html" class="related-bottom-card"><span class="related-bottom-title">Квадратный экран монитора: как исправить в Windows 10 за 5 минут</span><span class="related-bottom-desc">Устраняем проблему квадратного изображения на экране в Windows 10. Полный гайд по настройке драйверо</span></a><a href="/articles/k/ka/kak-ustanovit-gertsy-na-monitore.html" class="related-bottom-card"><span class="related-bottom-title">Как увеличить герцы на мониторе: полное руководство по настройке</span><span class="related-bottom-desc">Пошаговая инструкция: как изменить частоту обновления экрана в Windows и macOS. Проверка кабеля, дра</span></a></div>
+        </div>
+    </section>
+    <!--#include virtual="/ssi/after_related_bottom.html" -->
+
+    <footer class="site-footer-premium">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-col">
+                    <div class="footer-brand">🖥️ Мониторум</div>
+                    <p class="footer-about">Полный справочник по настройке, ремонту и выбору компьютерных мониторов для любых задач.</p>
+                </div>
+                <div class="footer-col">
+                    <h4>Разделы</h4>
+                    <ul><li><a href="/category/nastrojka-ekrana/">⚙️ Настройка экрана</a></li>
+<li><a href="/category/podklyuchenie-ustrojstv/">🔌 Подключение устройств</a></li>
+<li><a href="/category/mnozhestvennye-ekrany/">🖥️🖥️ Множественные экраны</a></li>
+<li><a href="/category/zvuk-i-audio/">🔊 Звук и аудио</a></li>
+<li><a href="/category/remont-i-polomki/">🔧 Ремонт и поломки</a></li>
+<li><a href="/category/ukhod-i-chistka/">🧼 Уход и чистка</a></li></ul>
+                </div>
+                <div class="footer-col">
+                    <h4>Информация</h4>
+                    <ul>
+                        <li><a href="/">Главная</a></li>
+                        <li><a href="/about.html">О проекте</a></li>
+                        <li><a href="/categories.html">Все разделы</a></li>
+                        <li><a href="/contact.html">Контакты</a></li>
+                        <li><a href="/privacy.html">Конфиденциальность</a></li>
+                        <li><a href="/sitemap.xml">Карта сайта</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>© Мониторум. Все права защищены.</p>
+                <!--LiveInternet counter--><div style="margin-top:10px;"><a href="https://www.liveinternet.ru/click"
+                target="_blank"><img id="licnt06C4" width="88" height="15" style="border:0" 
+                title="LiveInternet: показано число посетителей за сегодня"
+                src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAEALAAAAAABAAEAAAIBTAA7"
+                alt=""/></a><script>(function(d,s){d.getElementById("licnt06C4").src=
+                "https://counter.yadro.ru/hit?t26.5;r"+escape(d.referrer)+
+                ((typeof(s)=="undefined")?"":";s"+s.width+"*"+s.height+"*"+
+                (s.colorDepth?s.colorDepth:s.pixelDepth))+";u"+escape(d.URL)+
+                ";h"+escape(d.title.substring(0,150))+";"+Math.random()})(document,screen)</script></div><!--/LiveInternet-->
+            </div>
+        </div>
+    </footer>
+    <div id="cookie-consent" class="cookie-popup">
+        <div class="cookie-inner">
+            <span>🍪 Мы используем файлы cookie для улучшения работы сайта.</span>
+            <button id="cookie-accept" class="cookie-btn">Принять</button>
+        </div>
+    </div>
+    <script src="/static/js/main.js"></script>
+    <script>
+    (function() {
+        const popup = document.getElementById('cookie-consent');
+        const btn = document.getElementById('cookie-accept');
+        if (popup && btn && !localStorage.getItem('cookie-accepted')) {
+            popup.classList.add('visible');
+            btn.onclick = () => {
+                localStorage.setItem('cookie-accepted', 'true');
+                popup.classList.remove('visible');
+            };
+        }
+    })();
+    </script>
+    <script>
+    function pbPollVote(el) {
+        var poll = el.closest('.poll-widget');
+        if (poll.classList.contains('voted')) return;
+        poll.classList.add('voted');
+        el.classList.add('selected');
+        var opts = poll.querySelectorAll('.poll-widget-option');
+        var n = opts.length;
+        var raw = [];
+        var sum = 0;
+        for (var i = 0; i < n; i++) {
+            var v = Math.random() * 50 + 5;
+            if (opts[i] === el) v += 30;
+            raw.push(v);
+            sum += v;
+        }
+        var pcts = raw.map(function(v) { return Math.round(v / sum * 100); });
+        var diff = 100 - pcts.reduce(function(a,b){ return a+b; }, 0);
+        pcts[Array.from(opts).indexOf(el)] += diff;
+        setTimeout(function() {
+            opts.forEach(function(opt, i) {
+                opt.querySelector('.poll-widget-bar').style.width = pcts[i] + '%';
+                opt.querySelector('.poll-widget-pct').textContent = pcts[i] + '%';
+            });
+        }, 50);
+    }
+    </script>
+    <!--#include virtual="/ssi/body_bottom.html" -->
+    <script src="/static/js/inject.js" defer></script>
+</body>
+</html>

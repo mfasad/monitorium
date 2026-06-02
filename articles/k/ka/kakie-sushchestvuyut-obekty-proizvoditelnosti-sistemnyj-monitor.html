@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27><text y=%27.9em%27 font-size=%2790%27>🖥️</text></svg>">
+    <title>Объекты производительности в системном мониторе: Полный гид по counters — Мониторум</title>
+    <meta name="description" content="Разбираем, что такое объекты производительности в Windows. Список основных счетчиков CPU, RAM, GPU и диска для точной диагностики системы.">
+    <link rel="canonical" href="https://monitorium.vercel.app/articles/k/ka/kakie-sushchestvuyut-obekty-proizvoditelnosti-sistemnyj-monitor.html">
+
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="Объекты производительности в системном мониторе: Полный гид по counters">
+    <meta property="og:description" content="Разбираем, что такое объекты производительности в Windows. Список основных счетчиков CPU, RAM, GPU и диска для точной диагностики системы.">
+    <meta property="og:locale" content="ru_RU">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css?v=1780420684">
+    <style>
+    .site-footer-premium {
+        margin-top: 60px; padding: 40px 0 0; background: #1e293b; color: #94a3b8;
+    }
+    .footer-grid {
+        display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 40px;
+        padding-bottom: 32px; border-bottom: 1px solid #334155;
+    }
+    .footer-brand { font-size: 1.2rem; font-weight: 700; color: #f1f5f9; margin-bottom: 12px; }
+    .footer-about { font-size: 0.9rem; line-height: 1.6; margin-bottom: 8px; }
+    .footer-updated { font-size: 0.8rem; color: #64748b; }
+    .footer-col h4 { color: #f1f5f9; font-size: 0.95rem; margin-bottom: 16px; }
+    .footer-col ul { list-style: none; }
+    .footer-col li { margin-bottom: 8px; }
+    .footer-col a { color: #94a3b8; font-size: 0.9rem; transition: color 0.2s; }
+    .footer-col a:hover { color: #60a5fa; }
+    .footer-bottom { padding: 20px 0; text-align: center; font-size: 0.85rem; }
+    @media (max-width: 640px) {
+        .footer-grid { grid-template-columns: 1fr; gap: 24px; }
+    }
+    .cookie-popup {
+        position: fixed; bottom: 0; left: 0; right: 0; background: #1e293b; color: #fff;
+        padding: 16px; transition: transform 0.5s ease; z-index: 9999; border-top: 2px solid #2563eb;
+        transform: translateY(100%);
+    }
+    .cookie-popup.visible { transform: translateY(0); }
+    .cookie-inner { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; gap: 16px; font-size: 0.9rem; }
+    .cookie-btn { background: #2563eb; color: #fff; border: none; padding: 8px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+    .cookie-btn:hover { background: #1d4ed8; }
+    @media (max-width: 640px) {
+        .cookie-inner { flex-direction: column; text-align: center; }
+    }
+</style>
+    
+    <!--#include virtual="/ssi/head.html" -->
+</head>
+<body>
+        <!--#include virtual="/ssi/body_top.html" -->
+    <style>
+    .nav-dropdown { position: relative; display: inline-block; }
+    .dropdown-toggle {
+        background: none; border: none; cursor: pointer;
+        font: inherit; color: inherit; padding: 8px 12px;
+        border-radius: 8px; transition: background 0.2s;
+    }
+    .dropdown-toggle:hover { background: rgba(0,0,0,0.05); }
+    .dropdown-menu {
+        display: none; position: absolute; right: 0; top: 100%;
+        min-width: 240px; max-height: 70vh; overflow-y: auto;
+        background: var(--card-bg, #fff); border: 1px solid var(--border, #e5e7eb);
+        border-radius: 12px; box-shadow: 0 12px 40px rgba(0,0,0,0.12);
+        padding: 8px 0; z-index: 1000;
+    }
+    .nav-dropdown::after {
+        content: ''; position: absolute; left: 0; right: 0;
+        top: 100%; height: 12px;
+    }
+    .nav-dropdown:hover .dropdown-menu,
+    .nav-dropdown:focus-within .dropdown-menu { display: block; }
+    .dropdown-item {
+        display: block; padding: 10px 20px; color: var(--text, #1f2937);
+        text-decoration: none; font-size: 0.95rem; transition: background 0.15s;
+        white-space: nowrap;
+    }
+    .dropdown-item:hover { background: rgba(37,99,235,0.06); color: var(--primary, #2563eb); }
+    @media (max-width: 768px) {
+        .main-nav > .nav-link { display: none; }
+        .dropdown-toggle { display: none; }
+        .dropdown-menu {
+            display: block !important; position: static;
+            box-shadow: none; border: none; border-radius: 0;
+            min-width: auto; max-height: none; padding: 0;
+            background: transparent;
+        }
+        .dropdown-item {
+            padding: 8px 0; font-size: 1rem;
+        }
+    }
+    </style>
+    <header class="site-header">
+        <div class="container header-inner">
+            <a href="/" class="logo">
+                <span class="logo-icon">🖥️</span>
+                <span>Мониторум</span>
+            </a>
+            <button class="mobile-menu-btn" aria-label="Меню" id="menuBtn">☰</button>
+            <nav class="main-nav" id="mainNav">
+                <a href="/category/nastrojka-ekrana/" class="nav-link">⚙️ Настройка экрана</a>
+<a href="/category/podklyuchenie-ustrojstv/" class="nav-link">🔌 Подключение устройств</a>
+<a href="/category/mnozhestvennye-ekrany/" class="nav-link">🖥️🖥️ Множественные экраны</a>
+<a href="/category/zvuk-i-audio/" class="nav-link">🔊 Звук и аудио</a>
+<div class="nav-dropdown">
+            <button class="nav-link dropdown-toggle">📂 Все разделы ▾</button>
+            <div class="dropdown-menu"><a href="/category/nastrojka-ekrana/" class="dropdown-item">⚙️ Настройка экрана</a>
+<a href="/category/podklyuchenie-ustrojstv/" class="dropdown-item">🔌 Подключение устройств</a>
+<a href="/category/mnozhestvennye-ekrany/" class="dropdown-item">🖥️🖥️ Множественные экраны</a>
+<a href="/category/zvuk-i-audio/" class="dropdown-item">🔊 Звук и аудио</a>
+<a href="/category/remont-i-polomki/" class="dropdown-item">🔧 Ремонт и поломки</a>
+<a href="/category/ukhod-i-chistka/" class="dropdown-item">🧼 Уход и чистка</a>
+<a href="/category/vybor-i-kharakteristiki/" class="dropdown-item">📊 Выбор и характеристики</a>
+<a href="/category/drajvery-i-po/" class="dropdown-item">💿 Драйверы и ПО</a>
+<a href="/category/krepleniya-i-ustanovka/" class="dropdown-item">🔩 Крепления и установка</a>
+<a href="/category/utilizatsiya-i-prodazha/" class="dropdown-item">♻️ Утилизация и продажа</a>
+<a href="/category/spetsialnye-rezhimy/" class="dropdown-item">🎮 Специальные режимы</a>
+<a href="/category/drugoe/" class="dropdown-item">📁 Другое</a></div>
+        </div>
+            </nav>
+        </div>
+    </header>
+
+    <nav class="breadcrumbs" aria-label="Навигация">
+        <div class="container"><a href="/">Главная</a><span class="breadcrumb-sep">›</span><a href="/category/drajvery-i-po/">Драйверы и ПО</a><span class="breadcrumb-sep">›</span><span class="breadcrumb-current">Объекты производительности в системном мониторе: Полный гид по counters</span></div>
+    </nav>
+
+    <main class="site-main">
+        <div class="container">
+            <div class="article-layout">
+                <article class="article-main">
+                    
+                    <h1>Объекты производительности системного монитора: Полный разбор</h1>
+                    <nav class="mobile-toc"><details><summary>📋 Содержание</summary><ul><li><a href="#фундаментальные-понятия-и-структура-объектов">Фундаментальные понятия и структура объектов</a></li><li><a href="#ключевые-объекты-для-анализа-процессора-и-памяти">Ключевые объекты для анализа процессора и памяти</a></li><li><a href="#диагностика-подсистемы-диск-и-сети">Диагностика подсистемы диск и сети</a></li><li><a href="#специфика-мониторинга-графической-подсистемы">Специфика мониторинга графической подсистемы</a></li><li><a href="#таблица-основных-объектов-и-их-назначение">Таблица основных объектов и их назначение</a></li><li><a href="#чек-лист-по-настройке-мониторинга">Чек-лист по настройке мониторинга</a></li><li><a href="#частые-вопросы-faq">Частые вопросы (FAQ)</a></li></ul></details></nav>
+                    <!--#include virtual="/ssi/article_before.html" -->
+                    <div class="article-body"><p>
+<p>Системный монитор Windows, часто называемый <em>PerfMon</em>, представляет собой мощный инструмент диагностики, который скрывает за простым интерфейсом огромный массив технических данных. Основой его работы являются <strong>объекты производительности</strong> — логические группы, объединяющие конкретные метрики работы железа и программного обеспечения операционной системы. Понимание того, какие именно объекты доступны вам в системе, позволяет не просто видеть, "много ли занято памяти", а анализировать глубину процессов, происходящих "под капотом" вашего компьютера.</p>
+</p>
+<p>
+<p>Многие пользователи ограничиваются стандартными графиками в Диспетчере задач, однако для глубокого анализа, например, при поиске причин <strong>лаггов в играх</strong> или <strong>зависаний сервера</strong>, недостаточно общих показателей. Вам необходимо уметь вызывать специфические счетчики из списка объектов, чтобы увидеть задержки ввод-вывода, процент времени простоя процессора или использование буферов кэша. Именно эти данные дают экспертную картину состояния вашего оборудования.</p>
+</p>
+<p>
+<p>Существует четкая иерархия объектов, каждый из которых отвечает за свой сегмент системы: от базовых процессорных ядер до сложных сетевых интерфейсов. Зная, как правильно выбрать и настроить отображение нужных параметров, вы сможете точно определить узкое место (bottleneck) вашей конфигурации.</p>
+</p>
+
+<h2 id="фундаментальные-понятия-и-структура-объектов">Фундаментальные понятия и структура объектов</h2>
+<p>
+<p>В основе архитектуры мониторинга Windows лежит понятие <strong>объекта производительности</strong>, который представляет собой сущность, управляемую ядром системы или драйверами устройств. Каждый такой объект имеет набор <em>счетчиков</em>, которые собирают статистические данные в реальном времени. Например, объект <code>Processor</code> не является одним числом, а содержит множество счетчиков, таких как % User Time или % Interrupt Time.</p>
+</p>
+<p>
+<p>При запуске <code>perfmon.msc</code> вы видите список всех доступных объектов, которые могут быть зарегистрированы в системе. Это не только стандартные компоненты Windows, но и драйверы стороннего оборудования, установленного на ваш ПК. Если у вас установлена видеокарта от NVIDIA или AMD, с ними автоматически регистрируются соответствующие объекты для мониторинга ускорения графики и памяти.</p>
+</p>
+<p>
+<p>Важно понимать разницу между <strong>глобальными объектами</strong> (например, <code>Memory</code>), которые описывают работу всей системы целиком, и <strong>экземплярами объектов</strong> (например, <code>Processor</code> с инстансами 0, 1, 2..), которые показывают нагрузку на конкретное ядро. Без понимания этой структуры вы рискуете получить усредненные данные, которые могут скрыть проблему на одном конкретном ядре, пока остальные простаивают.</p>
+</p>
+
+<h2 id="ключевые-объекты-для-анализа-процессора-и-памяти">Ключевые объекты для анализа процессора и памяти</h2>
+<p>
+<p>Самым критичным объектом традиционно является <code>Processor</code> (Процессор). Однако в современных многоядерных системах важно смотреть не только на общую загрузку, но и на <em>индивидуальные показатели каждого ядра</em>. Основные счетчики этого объекта включают <strong>% Processor Time</strong>, который показывает время, затраченное на выполнение потока, и <strong>Interrupts/sec</strong>, отражающий частоту аппаратных прерываний.</p>
+</p>
+<p>
+<p>Объект <code>Memory</code> работает иначе: он агрегирует данные обо всей оперативной памяти. Здесь ключевыми являются <strong>Available MBytes</strong> (доступная память) и <strong>Pages/sec</strong> (количество страниц, компенсированных из файла подкачки). Если значение Pages/sec стабильно выше 20-30, это верный признак того, что <strong>RAM недостаточно</strong> для текущей нагрузки, и система активно использует жесткий диск как оперативную память, что резко снижает производительность.</p>
+</p>
+<p>
+<p>Особое внимание стоит уделить объекту <code>Process</code>, который позволяет мониторить каждое отдельное приложение. Вы можете выбрать конкретный <em>экземпляр</em> процесса (например, <code>chrome</code> или <code>game.exe</code>) и посмотреть его потребление ресурсов изолированно от всей системы. Это незаменимо, когда "тормозит" конкретная программа, но общая загрузка системы кажется нормальной.</p>
+</p>
+<blockquote>
+<p>⚠️ <strong>Внимание:</strong> При анализе счетчика <code>% Privileged Time</code> в объекте процессора, высокие значения могут указывать на проблемы с драйверами или фоновыми системными службами, а не на нехватку мощности самого CPU.</p>
+</blockquote>
+<div class="attention-box attention-tip"><span class="attention-icon">💡</span><p>Основная задача мониторинга процессора и памяти — выявление дисбаланса: когда одно ядро загружено на 100%, а остальные простаивают, или когда физическая память пуста, но файл подкачки переполнен.</p></div>
+
+<h2 id="диагностика-подсистемы-диск-и-сети">Диагностика подсистемы диск и сети</h2>
+<p>
+<p>Скорость работы жесткого диска или SSD часто становится узким местом, особенно при загрузке тяжелых приложений. Объект <code>PhysicalDisk</code> предоставляет детальные данные о работе накопителей. Здесь критически важны показатели <strong>Avg. Disk Queue Length</strong> (средняя длина очереди дисковых операций) и <strong>Avg. Disk sec/Transfer</strong> (среднее время передачи).</p>
+</p>
+<p>
+<p>Если очередь операций превышает 2 на один физический диск при высокой загрузке, это означает, что накопитель не справляется с потоком запросов. Для современных <em>NVMe SSD</em> эти показатели должны быть близки к нулю. Объект <code>LogicalDisk</code> работает аналогично, но позволяет мониторить конкретные разделы (например, <code>C:</code> или <code>D:</code>), что удобно при анализе проблем с местом на диске.</p>
+</p>
+<p>
+<p>Сетевая подсистема также имеет свои объекты мониторинга. Объект <code>Network Interface</code> позволяет отслеживать <strong>Bytes Total/sec</strong> и <strong>Packets Outbound Errors</strong>. Высокое количество ошибок пакетов часто свидетельствует о проблемах с кабелем, перегрузкой роутера или устаревшими драйверами сетевой карты, а не о медленном интернете как таковом.</p>
+</p>
+<div class="poll-widget" id="poll-53edb911"><div class="poll-widget-question">📊 Какой компонент чаще всего вызывает у вас проблемы с производительностью?</div><div class="poll-widget-option" data-poll="53edb911" data-idx="0" onclick="pbPollVote(this)"><span class="poll-widget-label">Процессор (CPU)</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="53edb911" data-idx="1" onclick="pbPollVote(this)"><span class="poll-widget-label">Оперативная память (RAM)</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="53edb911" data-idx="2" onclick="pbPollVote(this)"><span class="poll-widget-label">Жесткий диск/SSD (Disk)</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="53edb911" data-idx="3" onclick="pbPollVote(this)"><span class="poll-widget-label">Сетевая карта (Network)</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div></div>
+<p>
+<p>При работе с сетевыми объектами важно различать <em>физические интерфейсы</em> (сетевая карта, Wi-Fi адаптер) и <em>виртуальные</em> (адаптеры Hyper-V, VMware, WSL). Счетчики могут быть перегружены данными от виртуальных устройств, поэтому при диагностике реального интернета фильтруйте список, выбирая только активный физический адаптер.</p>
+</p>
+<blockquote>
+<p>⚠️ <strong>Внимание:</strong> Счетчик <code>Current Bandwidth</code> в сетевом объекте может показывать теоретическую скорость интерфейса, а не реальную пропускную способность канала, поэтому для оценки скорости Wien используйте <strong>Bytes Total/sec</strong>.</p>
+</blockquote>
+
+<h2 id="специфика-мониторинга-графической-подсистемы">Специфика мониторинга графической подсистемы</h2>
+<p>
+<p>Современные игры и задачи рендеринга требуют глубокого анализа видеокарты, и здесь объекты производительности играют решающую роль. Для карт <em>NVIDIA</em> и <em>AMD</em> существуют специальные драйверные объекты, которые не видны в базовой установке Windows без соответствующих драйверов.</p>
+</p>
+<p>
+<p>Объект <code>GPU Engine</code> позволяет отслеживать использование каждого отдельного движка видеокарты: <strong>3D</strong> (для игр), <strong>Video Decode</strong> (для просмотра видео) и <strong>Copy</strong> (для копирования данных). Это помогает понять, почему система "тормозит" при стриминге: возможно, нагрузка ложится не на графический движок, а на движок кодирования видео, который не справляется.</p>
+</p>
+<p>
+<p>Также стоит обратить внимание на объект <code>Memory</code> в контексте видеокарты (часто доступен через WMI или специальные утилиты), который показывает использование <strong>VRAM</strong>. Переполнение видеопамяти приводит к резкому падению FPS и зависаниям, даже если общая загрузка GPU составляет 100%.</p>
+</p>
+<details class="faq-item"><summary>Как добавить счетчики видеокарты в PerfMon?</summary><div class="faq-answer"><p>Введите perfmon.msc, перейдите в "Добавить счетчики", в поле выбора найдите имя вашего GPU (например, "NVIDIA GPU" или "AMD GPU"), выберите нужные метрики (Utilization, Temperature) и нажмите "Добавить".</p></div></details>
+<p>
+<p>Для корректного отображения данных о видеокарте в стандартном мониторе Windows необходимо, чтобы драйвер видеокарты поддерживал интерфейс WMI (Windows Management Instrumentation). Если вы видите пустой список или отсутствие GPU-счетчиков, проблема может быть в версии драйвера или его повреждении.</p>
+</p>
+<div class="attention-box attention-tip"><span class="attention-icon">💡</span><p>Для более детального мониторинга GPU в реальном времени лучше использовать специализированную утилиту MSI Afterburner, так как встроенный PerfMon обновляет данные с задержкой в несколько секунд.</p></div>
+
+<h2 id="таблица-основных-объектов-и-их-назначение">Таблица основных объектов и их назначение</h2>
+<p>
+<p>Для быстрого ориентирования в многообразии доступных счетчиков удобно использовать следующую сводную таблицу, которая поможет выбрать правильный объект для вашей задачи диагностики.</p>
+</p>
+<table>
+<thead>
+<tr>
+<th>Объект</th>
+<th>Категория</th>
+<th>Ключевой счетчик</th>
+<th>Что измерять</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Processor</code></td>
+<td>ЦП</td>
+<td><strong>% Processor Time</strong></td>
+<td>Общая нагрузка на ядра процессора</td>
+</tr>
+<tr>
+<td><code>Memory</code></td>
+<td>ОЗУ</td>
+<td><strong>Available MBytes</strong></td>
+<td>Свободный объем оперативной памяти</td>
+</tr>
+<tr>
+<td><code>PhysicalDisk</code></td>
+<td>Диск</td>
+<td><strong>Avg. Disk Queue Length</strong></td>
+<td>Очередь операций ввода-вывода</td>
+</tr>
+<tr>
+<td><code>Network Interface</code></td>
+<td>Сеть</td>
+<td><strong>Bytes Total/sec</strong></td>
+<td>Пропускная способность канала</td>
+</tr>
+<tr>
+<td><code>Process</code></td>
+<td>Приложения</td>
+<td><strong>IO Data Bytes/sec</strong></td>
+<td>Активность конкретного процесса в диске</td>
+</tr>
+</tbody>
+</table>
+<p>
+<p>Эта таблица охватывает только базовые объекты. В системе могут присутствовать десятки других, специфичных для установленного программного обеспечения, таких как базы данных, веб-серверы или почтовые шлюзы.</p>
+</p>
+<blockquote>
+<p>⚠️ <strong>Внимание:</strong> При выборе объекта <code>Process</code> </p>
+</blockquote>
+
+<h2 id="чек-лист-по-настройке-мониторинга">Чек-лист по настройке мониторинга</h2>
+<p>
+<p>Чтобы правильно настроить сбор данных производительности, следуйте этому алгоритму действий. Это поможет избежать ошибок конфигурации и получения некорректных результатов.</p>
+</p>
+<div class="checklist-block"><h4>☑️ Настройка счетчиков производительности</h4><label class="check-item"><input type="checkbox"><span>Открыть PerfMon (win + R -> perfmon.msc)</span></label><label class="check-item"><input type="checkbox"><span>Выбрать "Добавить счетчики" в меню слева</span></label><label class="check-item"><input type="checkbox"><span>Отобрать нужный объект из списка (например, Processor)</span></label><label class="check-item"><input type="checkbox"><span>Настроить интервал сбора данных (рекомендуется 1-2 сек)</span></label><label class="check-item"><input type="checkbox"><span>Сохранить конфигурацию в набор данных</span></label><div class="check-progress">Выполнено: <span class="check-count">0</span> / 5</div></div>
+<p>
+<p>Если вы планируете проводить долгосрочный мониторинг, используйте <strong>наборы сбора данных</strong> (Data Collector Sets). Это позволит записывать показатели в файл и анализировать их постфактум, создавая отчеты о пиковых нагрузках, которые могли произойти ночью или когда вас не было за компьютером.</p>
+</p>
+<p>
+<p>Помните, что сбор большого количества счетчиков одновременно может сам по себе нагружать систему. Не выбирайте более 20-30 счетчиков для постоянного мониторинга, если у вас не выделенный сервер с запасом ресурсов.</p>
+</p>
+<div class="attention-box attention-tip"><span class="attention-icon">💡</span><p>Оптимальная стратегия мониторинга — собирать минимально необходимый набор счетчиков для конкретной проблемы, а не пытаться отслеживать всё подряд в реальном времени.</p></div>
+
+<h2 id="частые-вопросы-faq">Частые вопросы (FAQ)</h2>
+<details>
+<summary>Почему в списке объектов нет моей видеокарты?</summary>
+<p>
+<p>Это часто случается, если драйвер видеокарты не зарегистрировал свои счетчики в WMI. Попробуйте обновить драйвер до последней версии или переустановить его, выбрав опцию "Чистая установка". Также проверьте, не отключена ли служба "Windows Management Instrumentation".</p>
+</p>
+</details>
+<details>
+<summary>Что делать, если счетчик показывает отрицательные значения?</summary>
+<p>
+<p>Отрицательные значения в счетчиках производительности обычно указывают на ошибку в драйвере или переполнение буфера данных. В этом случае следует перезагрузить систему и обновить драйверы соответствующего оборудования.</p>
+</p>
+</details>
+<details>
+<summary>Как отследить нагрузку на конкретное ядро процессора?</summary>
+<p>
+<p>В окне добавления счетчиков выберите объект <code>Processor</code>, а в списке экземпляров выберите конкретное ядро (0, 1, 2 и т.д.) вместо <code>_Total</code>. Это позволит увидеть, как нагрузка распределена по ядрам, и выявить дисбаланс.</p>
+</p>
+</details>
+<details>
+<summary>Можно ли экспортировать данные из PerfMon?</summary>
+<p>
+<p>Да, вы можете сохранить данные как отчет в формате CSV или HTML. Для этого создайте набор сбора данных, запустите его, остановите и перейдите в настройки отчета, выбрав нужный формат экспорта.</p>
+</p>
+</details>
+<details>
+<summary>Влияет ли мониторинг на производительность системы?</summary>
+<p>
+<p>Да, сбор данных потребляет ресурсы. При активном мониторинге большого количества счетчиков (особенно с коротким интервалом обновления) может наблюдаться легкое снижение FPS в играх или замедление отклика системы.</p>
+</p>
+</details>
+<blockquote>
+<p>⚠️ <strong>Внимание:</strong> Интерфейс и названия счетчиков могут незначительно отличаться в зависимости от версии Windows (10, 11, Server 2019, 2022), поэтому при работе на серверных ОС сверяйтесь с официальной документацией Microsoft.</p>
+</blockquote></div>
+                    <!--#include virtual="/ssi/article_after.html" -->
+
+                </article>
+                <aside class="article-sidebar"><!--#include virtual="/ssi/sidebar_top.html" --><nav class="sidebar-search"><div class="sidebar-search-box"><input type="text" id="globalSearchInput" placeholder="🔍 Поиск статей..." autocomplete="off"><div class="search-dropdown" id="globalSearchDropdown"></div></div></nav><!--#include virtual="/ssi/sidebar_before_toc.html" --><nav class="sidebar-toc" id="sidebarToc"><h3>Содержание</h3><ul><li><a href="#фундаментальные-понятия-и-структура-объектов">Фундаментальные понятия и структура объектов</a></li><li><a href="#ключевые-объекты-для-анализа-процессора-и-памяти">Ключевые объекты для анализа процессора и памяти</a></li><li><a href="#диагностика-подсистемы-диск-и-сети">Диагностика подсистемы диск и сети</a></li><li><a href="#специфика-мониторинга-графической-подсистемы">Специфика мониторинга графической подсистемы</a></li><li><a href="#таблица-основных-объектов-и-их-назначение">Таблица основных объектов и их назначение</a></li><li><a href="#чек-лист-по-настройке-мониторинга">Чек-лист по настройке мониторинга</a></li><li><a href="#частые-вопросы-faq">Частые вопросы (FAQ)</a></li></ul></nav><!--#include virtual="/ssi/sidebar_before_related.html" --><nav class="sidebar-related"><h3>Похожие статьи</h3><ul><li><a href="/articles/k/ka/kak-podklyuchit-novyj-monitor-k-kompyuteru-bez-diska.html" class="related-card">Как подключить новый монитор к компьютеру без диска: Полное руководство</a></li><li><a href="/articles/p/po/pochemu-dergaetsya-izobrazhenie-na-monitore-kompyutera.html" class="related-card">Почему дергается изображение на мониторе: причины и решение</a></li><li><a href="/articles/k/ka/kak-vklyuchit-monitor-na-kompe-s-pomoshchyu-klaviatury.html" class="related-card">Как включить монитор с клавиатуры: горячие клавиши и настройки</a></li><li><a href="/articles/k/ka/kak-uznat-proizvoditelya-matritsy-monitora-noutbuka.html" class="related-card">Как узнать производителя матрицы ноутбука: 4 рабочих способа</a></li><li><a href="/articles/k/ka/kak-obnovit-proshivku-monitora-hp.html" class="related-card">Как обновить прошивку монитора HP: пошаговая инструкция 2026</a></li></ul></nav><!--#include virtual="/ssi/sidebar_after_related.html" --></aside>
+            </div>
+        </div>
+    </main>
+
+    <!--#include virtual="/ssi/before_related_bottom.html" -->
+    <section class="related-bottom">
+        <div class="container">
+            <h2 class="related-bottom-heading">📖 Читайте также</h2>
+            <div class="related-bottom-grid"><a href="/articles/k/ka/kak-podklyuchit-novyj-monitor-k-kompyuteru-bez-diska.html" class="related-bottom-card"><span class="related-bottom-title">Как подключить новый монитор к компьютеру без диска: Полное руководство</span><span class="related-bottom-desc">Пошаговая инструкция по подключению монитора без драйверов на диске. Узнайте, как найти ПО в сети, н</span></a><a href="/articles/p/po/pochemu-dergaetsya-izobrazhenie-na-monitore-kompyutera.html" class="related-bottom-card"><span class="related-bottom-title">Почему дергается изображение на мониторе: причины и решение</span><span class="related-bottom-desc">Изображение мерцает или прыгает? Узнайте основные причины мерцания экрана, от неисправного кабеля до</span></a><a href="/articles/k/ka/kak-vklyuchit-monitor-na-kompe-s-pomoshchyu-klaviatury.html" class="related-bottom-card"><span class="related-bottom-title">Как включить монитор с клавиатуры: горячие клавиши и настройки</span><span class="related-bottom-desc">Полное руководство по пробуждению монитора без кнопки питания. Узнайте про горячие клавиши Windows, </span></a><a href="/articles/k/ka/kak-uznat-proizvoditelya-matritsy-monitora-noutbuka.html" class="related-bottom-card"><span class="related-bottom-title">Как узнать производителя матрицы ноутбука: 4 рабочих способа</span><span class="related-bottom-desc">Узнайте точного производителя экрана ноутбука через HWInfo, AIDA64 или разобрав корпус. Сравните хар</span></a><a href="/articles/k/ka/kak-obnovit-proshivku-monitora-hp.html" class="related-bottom-card"><span class="related-bottom-title">Как обновить прошивку монитора HP: пошаговая инструкция 2026</span><span class="related-bottom-desc">Полное руководство по обновлению прошивки мониторов HP. Узнайте, как скачать драйверы, использовать </span></a><a href="/articles/k/ka/kak-zajti-v-sistemnyj-monitor-ot-imeni-administratora.html" class="related-bottom-card"><span class="related-bottom-title">Как запустить монитор от имени администратора: инструкции и нюансы</span><span class="related-bottom-desc">Подробное руководство по запуску системного мониторинга оборудования с правами администратора. Решен</span></a></div>
+        </div>
+    </section>
+    <!--#include virtual="/ssi/after_related_bottom.html" -->
+
+    <footer class="site-footer-premium">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-col">
+                    <div class="footer-brand">🖥️ Мониторум</div>
+                    <p class="footer-about">Полный справочник по настройке, ремонту и выбору компьютерных мониторов для любых задач.</p>
+                </div>
+                <div class="footer-col">
+                    <h4>Разделы</h4>
+                    <ul><li><a href="/category/nastrojka-ekrana/">⚙️ Настройка экрана</a></li>
+<li><a href="/category/podklyuchenie-ustrojstv/">🔌 Подключение устройств</a></li>
+<li><a href="/category/mnozhestvennye-ekrany/">🖥️🖥️ Множественные экраны</a></li>
+<li><a href="/category/zvuk-i-audio/">🔊 Звук и аудио</a></li>
+<li><a href="/category/remont-i-polomki/">🔧 Ремонт и поломки</a></li>
+<li><a href="/category/ukhod-i-chistka/">🧼 Уход и чистка</a></li></ul>
+                </div>
+                <div class="footer-col">
+                    <h4>Информация</h4>
+                    <ul>
+                        <li><a href="/">Главная</a></li>
+                        <li><a href="/about.html">О проекте</a></li>
+                        <li><a href="/categories.html">Все разделы</a></li>
+                        <li><a href="/contact.html">Контакты</a></li>
+                        <li><a href="/privacy.html">Конфиденциальность</a></li>
+                        <li><a href="/sitemap.xml">Карта сайта</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>© Мониторум. Все права защищены.</p>
+                <!--LiveInternet counter--><div style="margin-top:10px;"><a href="https://www.liveinternet.ru/click"
+                target="_blank"><img id="licnt06C4" width="88" height="15" style="border:0" 
+                title="LiveInternet: показано число посетителей за сегодня"
+                src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAEALAAAAAABAAEAAAIBTAA7"
+                alt=""/></a><script>(function(d,s){d.getElementById("licnt06C4").src=
+                "https://counter.yadro.ru/hit?t26.5;r"+escape(d.referrer)+
+                ((typeof(s)=="undefined")?"":";s"+s.width+"*"+s.height+"*"+
+                (s.colorDepth?s.colorDepth:s.pixelDepth))+";u"+escape(d.URL)+
+                ";h"+escape(d.title.substring(0,150))+";"+Math.random()})(document,screen)</script></div><!--/LiveInternet-->
+            </div>
+        </div>
+    </footer>
+    <div id="cookie-consent" class="cookie-popup">
+        <div class="cookie-inner">
+            <span>🍪 Мы используем файлы cookie для улучшения работы сайта.</span>
+            <button id="cookie-accept" class="cookie-btn">Принять</button>
+        </div>
+    </div>
+    <script src="/static/js/main.js"></script>
+    <script>
+    (function() {
+        const popup = document.getElementById('cookie-consent');
+        const btn = document.getElementById('cookie-accept');
+        if (popup && btn && !localStorage.getItem('cookie-accepted')) {
+            popup.classList.add('visible');
+            btn.onclick = () => {
+                localStorage.setItem('cookie-accepted', 'true');
+                popup.classList.remove('visible');
+            };
+        }
+    })();
+    </script>
+    <script>
+    function pbPollVote(el) {
+        var poll = el.closest('.poll-widget');
+        if (poll.classList.contains('voted')) return;
+        poll.classList.add('voted');
+        el.classList.add('selected');
+        var opts = poll.querySelectorAll('.poll-widget-option');
+        var n = opts.length;
+        var raw = [];
+        var sum = 0;
+        for (var i = 0; i < n; i++) {
+            var v = Math.random() * 50 + 5;
+            if (opts[i] === el) v += 30;
+            raw.push(v);
+            sum += v;
+        }
+        var pcts = raw.map(function(v) { return Math.round(v / sum * 100); });
+        var diff = 100 - pcts.reduce(function(a,b){ return a+b; }, 0);
+        pcts[Array.from(opts).indexOf(el)] += diff;
+        setTimeout(function() {
+            opts.forEach(function(opt, i) {
+                opt.querySelector('.poll-widget-bar').style.width = pcts[i] + '%';
+                opt.querySelector('.poll-widget-pct').textContent = pcts[i] + '%';
+            });
+        }, 50);
+    }
+    </script>
+    <!--#include virtual="/ssi/body_bottom.html" -->
+    <script src="/static/js/inject.js" defer></script>
+</body>
+</html>

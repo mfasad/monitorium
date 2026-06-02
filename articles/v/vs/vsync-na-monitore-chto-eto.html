@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27><text y=%27.9em%27 font-size=%2790%27>🖥️</text></svg>">
+    <title>VSync на мониторе: что это, как работает и когда включать — Мониторум</title>
+    <meta name="description" content="Полный разбор технологии VSync: устранение разрывов изображения, влияние на задержку ввода и FPS. Инструкция по настройке для игр и работы.">
+    <link rel="canonical" href="https://monitorium.vercel.app/articles/v/vs/vsync-na-monitore-chto-eto.html">
+
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="VSync на мониторе: что это, как работает и когда включать">
+    <meta property="og:description" content="Полный разбор технологии VSync: устранение разрывов изображения, влияние на задержку ввода и FPS. Инструкция по настройке для игр и работы.">
+    <meta property="og:locale" content="ru_RU">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css?v=1780420684">
+    <style>
+    .site-footer-premium {
+        margin-top: 60px; padding: 40px 0 0; background: #1e293b; color: #94a3b8;
+    }
+    .footer-grid {
+        display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 40px;
+        padding-bottom: 32px; border-bottom: 1px solid #334155;
+    }
+    .footer-brand { font-size: 1.2rem; font-weight: 700; color: #f1f5f9; margin-bottom: 12px; }
+    .footer-about { font-size: 0.9rem; line-height: 1.6; margin-bottom: 8px; }
+    .footer-updated { font-size: 0.8rem; color: #64748b; }
+    .footer-col h4 { color: #f1f5f9; font-size: 0.95rem; margin-bottom: 16px; }
+    .footer-col ul { list-style: none; }
+    .footer-col li { margin-bottom: 8px; }
+    .footer-col a { color: #94a3b8; font-size: 0.9rem; transition: color 0.2s; }
+    .footer-col a:hover { color: #60a5fa; }
+    .footer-bottom { padding: 20px 0; text-align: center; font-size: 0.85rem; }
+    @media (max-width: 640px) {
+        .footer-grid { grid-template-columns: 1fr; gap: 24px; }
+    }
+    .cookie-popup {
+        position: fixed; bottom: 0; left: 0; right: 0; background: #1e293b; color: #fff;
+        padding: 16px; transition: transform 0.5s ease; z-index: 9999; border-top: 2px solid #2563eb;
+        transform: translateY(100%);
+    }
+    .cookie-popup.visible { transform: translateY(0); }
+    .cookie-inner { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; gap: 16px; font-size: 0.9rem; }
+    .cookie-btn { background: #2563eb; color: #fff; border: none; padding: 8px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+    .cookie-btn:hover { background: #1d4ed8; }
+    @media (max-width: 640px) {
+        .cookie-inner { flex-direction: column; text-align: center; }
+    }
+</style>
+    
+    <!--#include virtual="/ssi/head.html" -->
+</head>
+<body>
+        <!--#include virtual="/ssi/body_top.html" -->
+    <style>
+    .nav-dropdown { position: relative; display: inline-block; }
+    .dropdown-toggle {
+        background: none; border: none; cursor: pointer;
+        font: inherit; color: inherit; padding: 8px 12px;
+        border-radius: 8px; transition: background 0.2s;
+    }
+    .dropdown-toggle:hover { background: rgba(0,0,0,0.05); }
+    .dropdown-menu {
+        display: none; position: absolute; right: 0; top: 100%;
+        min-width: 240px; max-height: 70vh; overflow-y: auto;
+        background: var(--card-bg, #fff); border: 1px solid var(--border, #e5e7eb);
+        border-radius: 12px; box-shadow: 0 12px 40px rgba(0,0,0,0.12);
+        padding: 8px 0; z-index: 1000;
+    }
+    .nav-dropdown::after {
+        content: ''; position: absolute; left: 0; right: 0;
+        top: 100%; height: 12px;
+    }
+    .nav-dropdown:hover .dropdown-menu,
+    .nav-dropdown:focus-within .dropdown-menu { display: block; }
+    .dropdown-item {
+        display: block; padding: 10px 20px; color: var(--text, #1f2937);
+        text-decoration: none; font-size: 0.95rem; transition: background 0.15s;
+        white-space: nowrap;
+    }
+    .dropdown-item:hover { background: rgba(37,99,235,0.06); color: var(--primary, #2563eb); }
+    @media (max-width: 768px) {
+        .main-nav > .nav-link { display: none; }
+        .dropdown-toggle { display: none; }
+        .dropdown-menu {
+            display: block !important; position: static;
+            box-shadow: none; border: none; border-radius: 0;
+            min-width: auto; max-height: none; padding: 0;
+            background: transparent;
+        }
+        .dropdown-item {
+            padding: 8px 0; font-size: 1rem;
+        }
+    }
+    </style>
+    <header class="site-header">
+        <div class="container header-inner">
+            <a href="/" class="logo">
+                <span class="logo-icon">🖥️</span>
+                <span>Мониторум</span>
+            </a>
+            <button class="mobile-menu-btn" aria-label="Меню" id="menuBtn">☰</button>
+            <nav class="main-nav" id="mainNav">
+                <a href="/category/nastrojka-ekrana/" class="nav-link">⚙️ Настройка экрана</a>
+<a href="/category/podklyuchenie-ustrojstv/" class="nav-link">🔌 Подключение устройств</a>
+<a href="/category/mnozhestvennye-ekrany/" class="nav-link">🖥️🖥️ Множественные экраны</a>
+<a href="/category/zvuk-i-audio/" class="nav-link">🔊 Звук и аудио</a>
+<div class="nav-dropdown">
+            <button class="nav-link dropdown-toggle">📂 Все разделы ▾</button>
+            <div class="dropdown-menu"><a href="/category/nastrojka-ekrana/" class="dropdown-item">⚙️ Настройка экрана</a>
+<a href="/category/podklyuchenie-ustrojstv/" class="dropdown-item">🔌 Подключение устройств</a>
+<a href="/category/mnozhestvennye-ekrany/" class="dropdown-item">🖥️🖥️ Множественные экраны</a>
+<a href="/category/zvuk-i-audio/" class="dropdown-item">🔊 Звук и аудио</a>
+<a href="/category/remont-i-polomki/" class="dropdown-item">🔧 Ремонт и поломки</a>
+<a href="/category/ukhod-i-chistka/" class="dropdown-item">🧼 Уход и чистка</a>
+<a href="/category/vybor-i-kharakteristiki/" class="dropdown-item">📊 Выбор и характеристики</a>
+<a href="/category/drajvery-i-po/" class="dropdown-item">💿 Драйверы и ПО</a>
+<a href="/category/krepleniya-i-ustanovka/" class="dropdown-item">🔩 Крепления и установка</a>
+<a href="/category/utilizatsiya-i-prodazha/" class="dropdown-item">♻️ Утилизация и продажа</a>
+<a href="/category/spetsialnye-rezhimy/" class="dropdown-item">🎮 Специальные режимы</a>
+<a href="/category/drugoe/" class="dropdown-item">📁 Другое</a></div>
+        </div>
+            </nav>
+        </div>
+    </header>
+
+    <nav class="breadcrumbs" aria-label="Навигация">
+        <div class="container"><a href="/">Главная</a><span class="breadcrumb-sep">›</span><a href="/category/nastrojka-ekrana/">Настройка экрана</a><span class="breadcrumb-sep">›</span><span class="breadcrumb-current">VSync на мониторе: что это, как работает и когда включать</span></div>
+    </nav>
+
+    <main class="site-main">
+        <div class="container">
+            <div class="article-layout">
+                <article class="article-main">
+                    
+                    <h1>VSync на мониторе: полное руководство по технологии синхронизации</h1>
+                    <nav class="mobile-toc"><details><summary>📋 Содержание</summary><ul><li><a href="#физика-процесса-как-работает-вертикальная-синхронизация">Физика процесса: как работает вертикальная синхронизация</a></li><li><a href="#проблемы-vsync-разрывы-задержки-и-просадки">Проблемы VSync: разрывы, задержки и просадки</a></li><li><a href="#альтернативные-технологии-g-sync-и-freesync">Альтернативные технологии: G-Sync и FreeSync</a></li><li><a href="#технологии-nvidia-fast-sync-и-amd-enhanced-sync">Технологии NVIDIA Fast Sync и AMD Enhanced Sync</a></li><li><a href="#как-включить-или-отключить-vsync-в-настройках">Как включить или отключить VSync в настройках</a></li><li><a href="#когда-стоит-включать-а-когда-отключать">Когда стоит включать, а когда отключать</a></li></ul></details></nav>
+                    <!--#include virtual="/ssi/article_before.html" -->
+                    <div class="article-body"><p>Вы когда-нибудь замечали, как картинка в игре резко «разрывается» по горизонтали, будто её разорвали на две части? Это явление называется разрывом кадра, и именно для борьбы с ним разработчики внедрили технологию <strong>VSync</strong>. Аббревиатура расшифровывается как Vertical Synchronization, или вертикальная синхронизация, и она является фундаментальным механизмом согласования работы видеокарты и монитора.</p>
+<p>Без этой синхронизации видеокарта может выдать новые кадры быстрее, чем монитор успевает их отобразить, что приводит к визуальным артефактам. С другой стороны, включение функции может вызвать задержку управления, что критично для динамичных шутеров. Понимание принципов работы <em>VSync</em> поможет вам найти идеальный баланс между плавностью картинки и отзывчивостью управления.</p>
+
+<h2 id="физика-процесса-как-работает-вертикальная-синхронизация">Физика процесса: как работает вертикальная синхронизация</h2>
+<p>Чтобы понять суть <strong>VSync</strong>, нужно разобраться в том, как именно монитор обновляет изображение. Экран не показывает картинку как единое статичное фото, а рисует её построчно, сверху вниз. Этот процесс называется сканированием. Частота, с которой монитор полностью перерисовывает экран, измеряется в герцах (Гц). Например, стандартный монитор с частотой <code>60 Гц</code> обновляет изображение 60 раз в секунду.</p>
+<p>Видеокарта, в свою очередь, генерирует кадры (FPS — frames per second) независимо от монитора. Если видеокарта мощная, она может выдать 120 кадров в секунду, а монитор с частотой <code>60 Гц</code> физически не сможет показать их все. <strong>VSync</strong> выступает в роли диспетчера, заставляя видеокарту ждать, пока монитор закончит отрисовку текущего кадра, прежде чем отправить следующий. Это гарантирует, что на экране всегда будет отображаться только целый, готовый кадр.</p>
+<p>Когда функция отключена, видеокарта отправляет новые данные немедленно. Если в момент отрисовки половины экрана видеокарта прислала новый кадр, верхняя часть экрана покажет старый кадр, а нижняя — новый. Так образуется <em>разрыв кадра</em>. Технология синхронизации устраняет этот дефект, но цена за это — потенциальное снижение производительности.</p>
+
+<blockquote>⚠️ Внимание: Включение VSync на мониторах с низкой частотой обновления может сделать игру неиграбельной, если FPS упадет ниже частоты экрана, вызывая сильные микро-фризы.</blockquote>
+
+<h2 id="проблемы-vsync-разрывы-задержки-и-просадки">Проблемы VSync: разрывы, задержки и просадки</h2>
+<p>Главная проблема вертикальной синхронизации — это вводная задержка (input lag). Поскольку игра вынуждена ждать цикла обновления экрана, ваши действия мышью или клавиатурой отображаются на экране с небольшой, но ощутимой задержкой. В медленных стратегиях это не заметно, но в соревновательных шутерах, таких как Counter-Strike или Valorant, этот лаг может стоить вам победы.</p>
+<p>Дополнительная сложность возникает, когда частота кадров в игре падает ниже частоты обновления монитора. Если у вас монитор <code>60 Гц</code>, а игра выдает 55 FPS, стандартный <strong>VSync</strong> начинает работать некорректно. Вместо того чтобы просто ограничить частоту, он может принудительно снизить FPS до следующей ступени — 30 кадров в секунду (половина от 60), чтобы удержаться в синхронизации. Это вызывает резкие «дергания» и разрывы.</p>
+<p>Некоторые современные игры имеют встроенные настройки, позволяющие управлять этим поведением. Однако, если вы используете настройки драйвера видеокарты, эффект может быть менее предсказуемым. </p>
+
+<div class="poll-widget" id="poll-3ab55188"><div class="poll-widget-question">📊 Какая основная проблема вас беспокоит в играх?</div><div class="poll-widget-option" data-poll="3ab55188" data-idx="0" onclick="pbPollVote(this)"><span class="poll-widget-label">Разрывы изображения (Tearing)</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="3ab55188" data-idx="1" onclick="pbPollVote(this)"><span class="poll-widget-label">Задержка управления (Input Lag)</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="3ab55188" data-idx="2" onclick="pbPollVote(this)"><span class="poll-widget-label">Падение FPS</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="3ab55188" data-idx="3" onclick="pbPollVote(this)"><span class="poll-widget-label">Все устраивает</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div></div>
+
+<h2 id="альтернативные-технологии-g-sync-и-freesync">Альтернативные технологии: G-Sync и FreeSync</h2>
+<p>Поскольку классический <strong>VSync</strong> имеет серьезные недостатки, производители видеокарт и мониторов разработали более продвинутые решения. Технология <em>NVIDIA G-Sync</em> и <em>AMD FreeSync</em> работают по принципу адаптивной частоты обновления. Вместо того чтобы заставлять видеокарту ждать монитора, они заставляют монитор менять свою частоту обновления под текущий FPS видеокарты.</p>
+<p>Это устраняет разрывы изображения без увеличения задержки ввода и без просадки FPS при падении производительности. Если ваш монитор поддерживает одну из этих технологий, использование классического <strong>VSync</strong> часто становится не только ненужным, но и вредным. В таких случаях рекомендуется включать G-Sync или FreeSync в настройках драйвера, а VSync отключать.</p>
+<p>Тем не менее, эти технологии требуют специального оборудования. Если у вас обычный монитор без адаптивной синхронизации, вы возвращаетесь к выбору: терпеть разрывы или мучиться от лагов. В таблице ниже показано сравнение основных технологий:</p>
+
+<table>
+<thead>
+<tr>
+<th>Технология</th>
+<th>Устраняет разрывы?</th>
+<th>Влияние на задержку</th>
+<th>Требования</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>VSync</td>
+<td>Да</td>
+<td>Значительное увеличение</td>
+<td>Любой монитор</td>
+</tr>
+<tr>
+<td>G-Sync / FreeSync</td>
+<td>Да</td>
+<td>Минимальное</td>
+<td>Совместимый монитор и видеокарта</td>
+</tr>
+<tr>
+<td>NVIDIA Fast Sync</td>
+<td>Да</td>
+<td>Среднее</td>
+<td>Видеокарты NVIDIA (серии GTX 900 и выше)</td>
+</tr>
+<tr>
+<td>Off (Выключено)</td>
+<td>Нет</td>
+<td>Отсутствует</td>
+<td>Любое оборудование</td>
+</tr>
+</tbody>
+</table>
+
+<h2 id="технологии-nvidia-fast-sync-и-amd-enhanced-sync">Технологии NVIDIA Fast Sync и AMD Enhanced Sync</h2>
+<p>Если у вас мощный компьютер, где FPS значительно превышает частоту обновления монитора, классический <strong>VSync</strong> будет избыточен. Для этих случаев NVIDIA разработала технологию <em>Fast Sync</em>, а AMD — <em>Enhanced Sync</em>. Эти режимы работают иначе: видеокарта генерирует кадры максимально быстро, не ожидая монитора, но отправляет на экран только последний полностью готовый кадр, отбрасывая промежуточные.</p>
+<p>Это позволяет избежать разрывов изображения, так как на экран попадает только цельный кадр, и при этом минимизирует задержку ввода, так как видеокарта не ждет цикла обновления. Однако эти функции эффективны только тогда, когда FPS существенно выше герцовки монитора. Если FPS падает ниже частоты экрана, эти технологии могут вести себя непредсказуемо или автоматически переключаться на стандартный VSync.</p>
+<p>Для активации этих функций необходимо зайти в <code>Панель управления NVIDIA</code> или <code>AMD Radeon Settings</code>. В разделе «Управление параметрами 3D» найдите пункт «Вертикальный синхроимпульс» и выберите соответствующий режим. Обратите внимание, что <mark>Fast Sync и Enhanced Sync не требуют поддержки монитора, они реализуются на уровне драйвера видеокарты</mark>.</p>
+
+<div class="checklist-block"><h4>☑️ Проверка совместимости технологий</h4><label class="check-item"><input type="checkbox"><span>Совместим ли монитор с G-Sync/FreeSync?</span></label><label class="check-item"><input type="checkbox"><span>Поддерживает ли видеокарта Fast Sync/Enhanced Sync?</span></label><label class="check-item"><input type="checkbox"><span>Какова частота обновления вашего монитора?</span></label><label class="check-item"><input type="checkbox"><span>Какая средняя производительность (FPS) в играх?></span></label><div class="check-progress">Выполнено: <span class="check-count">0</span> / 4</div></div>
+
+<h2 id="как-включить-или-отключить-vsync-в-настройках">Как включить или отключить VSync в настройках</h2>
+<p>Включить вертикальную синхронизацию можно двумя основными способами: через настройки самой игры или через панель управления драйвером видеокарты. Настройка внутри игры обычно приоритетна, но не во всех проектах есть этот переключатель. Если вы хотите принудительно включить функцию для всех игр, используйте драйвер.</p>
+<p>Для пользователей видеокарт NVIDIA путь к настройкам выглядит так: откройте <code>Панель управления NVIDIA</code> → выберите «Управление параметрами 3D» → найдите пункт «Вертикальный синхроимпульс». В выпадающем списке нужно выбрать «Вкл», «Выкл» или «Быстро». Для владельцев карт AMD интерфейс находится в разделе <code>Игры</code> → <code>Глобальные настройки</code> → <code>Ожидание вертикального обновления</code>.</p>
+<p>Иногда бывает необходимо включение функции только для конкретного приложения. В таком случае в том же окне настроек драйвера перейдите во вкладку «Программные настройки» и выберите нужную игру из списка. Ниже вы сможете задать индивидуальные параметры для неё, не затрагивая остальные приложения.</p>
+
+<blockquote>⚠️ Внимание: Если вы используете современные технологии вроде NVIDIA Reflex или AMD Anti-Lag, они часто автоматически отключают VSync. Насильное включение синхронизации может сделать работу этих технологий неэффективной.</blockquote>
+
+<details class="faq-item"><summary>Что происходит при включении VSync в играх с VRR?|Если ваш монитор поддерживает переменную частоту обновления (VRR), а вы включите VSync в игре, это может привести к конфликту режимов. Рекомендуется использовать VRR в связке с G-Sync/FreeSync и отключать классический VSync в настройках игры, если производительность позволяет.-->
+
+<h2 id="когда-стоит-включать-а-когда-отключать">Когда стоит включать, а когда отключать</h2>
+<p>Решение о включении <strong>VSync</strong> зависит от типа игры и ваших приоритетов. Если вы играете в одиночные приключенческие игры, симуляторы или стратегии, где важна красивая картинка без мельканий, включение вертикальной синхронизации — правильный выбор. В этих жанрах задержка управления на 30-50 миллисекунд практически незаметна.</p>
+<p>Для киберспортивных дисциплин (шутеры, MOBA, файтинги) ситуация обратная. Здесь решающую роль имеет мгновенная реакция. В таких случаях <em>VSync</em> следует выключать, чтобы получить максимальное преимущество в скорости отклика. Лучше мириться с легкими разрывами изображения, чем с задержкой прицеливания. Если разрывы слишком сильные, попробуйте снизить настройки графики, чтобы FPS был стабильно выше частоты монитора.</p>
+<p>Если у вас нет адаптивной синхронизации (G-Sync/FreeSync), но FPS нестабилен, можно использовать <code>двойной буфер</code> или ограничитель кадров. Это даст плавность без критических провалов частоты. Однако, если ваш компьютер тянет игру с запасом, а монитор старый, <strong>VSync</strong> станет единственным способом добиться картинки без артефактов.</p>
+
+<!--WIDGET</summary><div class="faq-answer"><p>tip:Если вы сомневаетесь, попробуйте запустить игру с включенным VSync и отключенным. Переключение между режимами во время игры (если драйвер позволяет) поможет вам на практике оценить разницу в задержке и плавности.</p></div></details>
+
+<div class="attention-box attention-tip"><span class="attention-icon">💡</span><p>Итоговый совет: Используйте VSync только если FPS стабильно выше герцовки монитора или если разрывы изображения мешают восприятию; для соревновательных игр всегда отключайте синхронизацию.</p></div>
+
+<details>
+<summary>Что лучше: VSync или G-Sync?</summary>
+<p>G-Sync (и его аналог FreeSync) является значительно более продвинутой технологией, чем классический VSync. Она обеспечивает плавность без разрывов и без задержек ввода, но требует совместимого оборудования. VSync доступен на любом мониторе, но вносит задержку.</p>
+</details>
+
+<details>
+<summary>Почему при включении VSync FPS падает вдвое?</summary>
+<p>Это происходит из-за механизма "двойного буфера" и синхронизации. Если частота кадров падает ниже частоты обновления монитора (например, ниже 60 FPS на мониторе 60 Гц), стандартный VSync принудительно снижает FPS до следующего порога (30 FPS), чтобы сохранить синхронизацию обновлений экрана, что вызывает сильный рывок.</p>
+</details>
+
+<details>
+<summary>Можно ли использовать VSync в Windows?</summary>
+<p>В Windows 10 и 11 есть системная функция "Полноэкранный режим оптимизации", которая может автоматически применять VSync даже если вы отключили его в игре. В настройках графики Windows ("Настройки системы" → "Дисплей" → "Графика") можно управлять этим поведением для конкретных приложений.</p>
+</details>
+
+<details>
+<summary>Как проверить, что VSync работает?</summary>
+<p>Простейший способ — запустить игру и быстро двигать мышью влево-вправо. Если вы видите четкие горизонтальные полосы на движущихся объектах, синхронизация не работает. Если картинка цельная, но есть ощущение "вязкости" управления, VSync включен. Также многие игры отображают текущий FPS и статус синхронизации в углу экрана.</p>
+</details></div>
+                    <!--#include virtual="/ssi/article_after.html" -->
+
+                </article>
+                <aside class="article-sidebar"><!--#include virtual="/ssi/sidebar_top.html" --><nav class="sidebar-search"><div class="sidebar-search-box"><input type="text" id="globalSearchInput" placeholder="🔍 Поиск статей..." autocomplete="off"><div class="search-dropdown" id="globalSearchDropdown"></div></div></nav><!--#include virtual="/ssi/sidebar_before_toc.html" --><nav class="sidebar-toc" id="sidebarToc"><h3>Содержание</h3><ul><li><a href="#физика-процесса-как-работает-вертикальная-синхронизация">Физика процесса: как работает вертикальная синхронизация</a></li><li><a href="#проблемы-vsync-разрывы-задержки-и-просадки">Проблемы VSync: разрывы, задержки и просадки</a></li><li><a href="#альтернативные-технологии-g-sync-и-freesync">Альтернативные технологии: G-Sync и FreeSync</a></li><li><a href="#технологии-nvidia-fast-sync-и-amd-enhanced-sync">Технологии NVIDIA Fast Sync и AMD Enhanced Sync</a></li><li><a href="#как-включить-или-отключить-vsync-в-настройках">Как включить или отключить VSync в настройках</a></li><li><a href="#когда-стоит-включать-а-когда-отключать">Когда стоит включать, а когда отключать</a></li></ul></nav><!--#include virtual="/ssi/sidebar_before_related.html" --><nav class="sidebar-related"><h3>Похожие статьи</h3><ul><li><a href="/articles/k/ka/kak-nastroit-kachestvo-monitora-msi.html" class="related-card">Настройка качества монитора MSI: пошаговое руководство 2026</a></li><li><a href="/articles/k/ka/kak-vosstanovit-tsveta-na-monitore.html" class="related-card">Как восстановить цвета на мониторе: полная инструкция по настройке</a></li><li><a href="/articles/k/ka/kak-umenshit-ekran-monitora-kompyutera.html" class="related-card">Как уменьшить экран монитора на ПК: 7 способов (Windows, Mac, Linux)</a></li><li><a href="/articles/k/ka/kak-rasshirit-monitor-po-gorizontali.html" class="related-card">Как расширить монитор по горизонтали: полное руководство</a></li><li><a href="/articles/k/ka/kak-na-monitore-ubrat-spyashchij-rezhim.html" class="related-card">Как отключить спящий режим монитора: полное руководство</a></li></ul></nav><!--#include virtual="/ssi/sidebar_after_related.html" --></aside>
+            </div>
+        </div>
+    </main>
+
+    <!--#include virtual="/ssi/before_related_bottom.html" -->
+    <section class="related-bottom">
+        <div class="container">
+            <h2 class="related-bottom-heading">📖 Читайте также</h2>
+            <div class="related-bottom-grid"><a href="/articles/k/ka/kak-nastroit-kachestvo-monitora-msi.html" class="related-bottom-card"><span class="related-bottom-title">Настройка качества монитора MSI: пошаговое руководство 2026</span><span class="related-bottom-desc">Как оптимизировать цвет, яркость и четкость на мониторах MSI: от калибровки до заводских режимов. По</span></a><a href="/articles/k/ka/kak-vosstanovit-tsveta-na-monitore.html" class="related-bottom-card"><span class="related-bottom-title">Как восстановить цвета на мониторе: полная инструкция по настройке</span><span class="related-bottom-desc">Узнайте, как исправить искажение цветов на мониторе. Пошаговая настройка профиля, драйверов и меню O</span></a><a href="/articles/k/ka/kak-umenshit-ekran-monitora-kompyutera.html" class="related-bottom-card"><span class="related-bottom-title">Как уменьшить экран монитора на ПК: 7 способов (Windows, Mac, Linux)</span><span class="related-bottom-desc">Пошаговые инструкции по изменению масштаба экрана, разрешению и области отображения на любом монитор</span></a><a href="/articles/k/ka/kak-rasshirit-monitor-po-gorizontali.html" class="related-bottom-card"><span class="related-bottom-title">Как расширить монитор по горизонтали: полное руководство</span><span class="related-bottom-desc">Узнайте, как увеличить рабочую область монитора по горизонтали. Настройка разрешения, масштабировани</span></a><a href="/articles/k/ka/kak-na-monitore-ubrat-spyashchij-rezhim.html" class="related-bottom-card"><span class="related-bottom-title">Как отключить спящий режим монитора: полное руководство</span><span class="related-bottom-desc">Пошаговая инструкция, как убрать спящий режим на мониторе через настройки Windows, драйверы и кнопки</span></a><a href="/articles/k/ka/kak-ubrat-tsvetokorrektsiyu-na-monitore.html" class="related-bottom-card"><span class="related-bottom-title">Как отключить цветокоррекцию на мониторе: пошаговая инструкция</span><span class="related-bottom-desc">Узнайте, как убрать цветокоррекцию на мониторе в Windows, macOS и через настройки самого экрана. Пош</span></a></div>
+        </div>
+    </section>
+    <!--#include virtual="/ssi/after_related_bottom.html" -->
+
+    <footer class="site-footer-premium">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-col">
+                    <div class="footer-brand">🖥️ Мониторум</div>
+                    <p class="footer-about">Полный справочник по настройке, ремонту и выбору компьютерных мониторов для любых задач.</p>
+                </div>
+                <div class="footer-col">
+                    <h4>Разделы</h4>
+                    <ul><li><a href="/category/nastrojka-ekrana/">⚙️ Настройка экрана</a></li>
+<li><a href="/category/podklyuchenie-ustrojstv/">🔌 Подключение устройств</a></li>
+<li><a href="/category/mnozhestvennye-ekrany/">🖥️🖥️ Множественные экраны</a></li>
+<li><a href="/category/zvuk-i-audio/">🔊 Звук и аудио</a></li>
+<li><a href="/category/remont-i-polomki/">🔧 Ремонт и поломки</a></li>
+<li><a href="/category/ukhod-i-chistka/">🧼 Уход и чистка</a></li></ul>
+                </div>
+                <div class="footer-col">
+                    <h4>Информация</h4>
+                    <ul>
+                        <li><a href="/">Главная</a></li>
+                        <li><a href="/about.html">О проекте</a></li>
+                        <li><a href="/categories.html">Все разделы</a></li>
+                        <li><a href="/contact.html">Контакты</a></li>
+                        <li><a href="/privacy.html">Конфиденциальность</a></li>
+                        <li><a href="/sitemap.xml">Карта сайта</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>© Мониторум. Все права защищены.</p>
+                <!--LiveInternet counter--><div style="margin-top:10px;"><a href="https://www.liveinternet.ru/click"
+                target="_blank"><img id="licnt06C4" width="88" height="15" style="border:0" 
+                title="LiveInternet: показано число посетителей за сегодня"
+                src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAEALAAAAAABAAEAAAIBTAA7"
+                alt=""/></a><script>(function(d,s){d.getElementById("licnt06C4").src=
+                "https://counter.yadro.ru/hit?t26.5;r"+escape(d.referrer)+
+                ((typeof(s)=="undefined")?"":";s"+s.width+"*"+s.height+"*"+
+                (s.colorDepth?s.colorDepth:s.pixelDepth))+";u"+escape(d.URL)+
+                ";h"+escape(d.title.substring(0,150))+";"+Math.random()})(document,screen)</script></div><!--/LiveInternet-->
+            </div>
+        </div>
+    </footer>
+    <div id="cookie-consent" class="cookie-popup">
+        <div class="cookie-inner">
+            <span>🍪 Мы используем файлы cookie для улучшения работы сайта.</span>
+            <button id="cookie-accept" class="cookie-btn">Принять</button>
+        </div>
+    </div>
+    <script src="/static/js/main.js"></script>
+    <script>
+    (function() {
+        const popup = document.getElementById('cookie-consent');
+        const btn = document.getElementById('cookie-accept');
+        if (popup && btn && !localStorage.getItem('cookie-accepted')) {
+            popup.classList.add('visible');
+            btn.onclick = () => {
+                localStorage.setItem('cookie-accepted', 'true');
+                popup.classList.remove('visible');
+            };
+        }
+    })();
+    </script>
+    <script>
+    function pbPollVote(el) {
+        var poll = el.closest('.poll-widget');
+        if (poll.classList.contains('voted')) return;
+        poll.classList.add('voted');
+        el.classList.add('selected');
+        var opts = poll.querySelectorAll('.poll-widget-option');
+        var n = opts.length;
+        var raw = [];
+        var sum = 0;
+        for (var i = 0; i < n; i++) {
+            var v = Math.random() * 50 + 5;
+            if (opts[i] === el) v += 30;
+            raw.push(v);
+            sum += v;
+        }
+        var pcts = raw.map(function(v) { return Math.round(v / sum * 100); });
+        var diff = 100 - pcts.reduce(function(a,b){ return a+b; }, 0);
+        pcts[Array.from(opts).indexOf(el)] += diff;
+        setTimeout(function() {
+            opts.forEach(function(opt, i) {
+                opt.querySelector('.poll-widget-bar').style.width = pcts[i] + '%';
+                opt.querySelector('.poll-widget-pct').textContent = pcts[i] + '%';
+            });
+        }, 50);
+    }
+    </script>
+    <!--#include virtual="/ssi/body_bottom.html" -->
+    <script src="/static/js/inject.js" defer></script>
+</body>
+</html>

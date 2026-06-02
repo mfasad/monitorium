@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27><text y=%27.9em%27 font-size=%2790%27>🖥️</text></svg>">
+    <title>Мониторинг серверов: как отслеживать работу и предотвращать сбои — Мониторум</title>
+    <meta name="description" content="Полное руководство по мониторингу серверов: инструменты, метрики, настройки и советы для стабильной работы. Узнайте, как избежать простоев и потерь данных.">
+    <link rel="canonical" href="https://monitorium.vercel.app/articles/k/ka/kak-monitorit-servera.html">
+
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="Мониторинг серверов: как отслеживать работу и предотвращать сбои">
+    <meta property="og:description" content="Полное руководство по мониторингу серверов: инструменты, метрики, настройки и советы для стабильной работы. Узнайте, как избежать простоев и потерь данных.">
+    <meta property="og:locale" content="ru_RU">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css?v=1780420684">
+    <style>
+    .site-footer-premium {
+        margin-top: 60px; padding: 40px 0 0; background: #1e293b; color: #94a3b8;
+    }
+    .footer-grid {
+        display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 40px;
+        padding-bottom: 32px; border-bottom: 1px solid #334155;
+    }
+    .footer-brand { font-size: 1.2rem; font-weight: 700; color: #f1f5f9; margin-bottom: 12px; }
+    .footer-about { font-size: 0.9rem; line-height: 1.6; margin-bottom: 8px; }
+    .footer-updated { font-size: 0.8rem; color: #64748b; }
+    .footer-col h4 { color: #f1f5f9; font-size: 0.95rem; margin-bottom: 16px; }
+    .footer-col ul { list-style: none; }
+    .footer-col li { margin-bottom: 8px; }
+    .footer-col a { color: #94a3b8; font-size: 0.9rem; transition: color 0.2s; }
+    .footer-col a:hover { color: #60a5fa; }
+    .footer-bottom { padding: 20px 0; text-align: center; font-size: 0.85rem; }
+    @media (max-width: 640px) {
+        .footer-grid { grid-template-columns: 1fr; gap: 24px; }
+    }
+    .cookie-popup {
+        position: fixed; bottom: 0; left: 0; right: 0; background: #1e293b; color: #fff;
+        padding: 16px; transition: transform 0.5s ease; z-index: 9999; border-top: 2px solid #2563eb;
+        transform: translateY(100%);
+    }
+    .cookie-popup.visible { transform: translateY(0); }
+    .cookie-inner { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; gap: 16px; font-size: 0.9rem; }
+    .cookie-btn { background: #2563eb; color: #fff; border: none; padding: 8px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+    .cookie-btn:hover { background: #1d4ed8; }
+    @media (max-width: 640px) {
+        .cookie-inner { flex-direction: column; text-align: center; }
+    }
+</style>
+    
+    <!--#include virtual="/ssi/head.html" -->
+</head>
+<body>
+        <!--#include virtual="/ssi/body_top.html" -->
+    <style>
+    .nav-dropdown { position: relative; display: inline-block; }
+    .dropdown-toggle {
+        background: none; border: none; cursor: pointer;
+        font: inherit; color: inherit; padding: 8px 12px;
+        border-radius: 8px; transition: background 0.2s;
+    }
+    .dropdown-toggle:hover { background: rgba(0,0,0,0.05); }
+    .dropdown-menu {
+        display: none; position: absolute; right: 0; top: 100%;
+        min-width: 240px; max-height: 70vh; overflow-y: auto;
+        background: var(--card-bg, #fff); border: 1px solid var(--border, #e5e7eb);
+        border-radius: 12px; box-shadow: 0 12px 40px rgba(0,0,0,0.12);
+        padding: 8px 0; z-index: 1000;
+    }
+    .nav-dropdown::after {
+        content: ''; position: absolute; left: 0; right: 0;
+        top: 100%; height: 12px;
+    }
+    .nav-dropdown:hover .dropdown-menu,
+    .nav-dropdown:focus-within .dropdown-menu { display: block; }
+    .dropdown-item {
+        display: block; padding: 10px 20px; color: var(--text, #1f2937);
+        text-decoration: none; font-size: 0.95rem; transition: background 0.15s;
+        white-space: nowrap;
+    }
+    .dropdown-item:hover { background: rgba(37,99,235,0.06); color: var(--primary, #2563eb); }
+    @media (max-width: 768px) {
+        .main-nav > .nav-link { display: none; }
+        .dropdown-toggle { display: none; }
+        .dropdown-menu {
+            display: block !important; position: static;
+            box-shadow: none; border: none; border-radius: 0;
+            min-width: auto; max-height: none; padding: 0;
+            background: transparent;
+        }
+        .dropdown-item {
+            padding: 8px 0; font-size: 1rem;
+        }
+    }
+    </style>
+    <header class="site-header">
+        <div class="container header-inner">
+            <a href="/" class="logo">
+                <span class="logo-icon">🖥️</span>
+                <span>Мониторум</span>
+            </a>
+            <button class="mobile-menu-btn" aria-label="Меню" id="menuBtn">☰</button>
+            <nav class="main-nav" id="mainNav">
+                <a href="/category/nastrojka-ekrana/" class="nav-link">⚙️ Настройка экрана</a>
+<a href="/category/podklyuchenie-ustrojstv/" class="nav-link">🔌 Подключение устройств</a>
+<a href="/category/mnozhestvennye-ekrany/" class="nav-link">🖥️🖥️ Множественные экраны</a>
+<a href="/category/zvuk-i-audio/" class="nav-link">🔊 Звук и аудио</a>
+<div class="nav-dropdown">
+            <button class="nav-link dropdown-toggle">📂 Все разделы ▾</button>
+            <div class="dropdown-menu"><a href="/category/nastrojka-ekrana/" class="dropdown-item">⚙️ Настройка экрана</a>
+<a href="/category/podklyuchenie-ustrojstv/" class="dropdown-item">🔌 Подключение устройств</a>
+<a href="/category/mnozhestvennye-ekrany/" class="dropdown-item">🖥️🖥️ Множественные экраны</a>
+<a href="/category/zvuk-i-audio/" class="dropdown-item">🔊 Звук и аудио</a>
+<a href="/category/remont-i-polomki/" class="dropdown-item">🔧 Ремонт и поломки</a>
+<a href="/category/ukhod-i-chistka/" class="dropdown-item">🧼 Уход и чистка</a>
+<a href="/category/vybor-i-kharakteristiki/" class="dropdown-item">📊 Выбор и характеристики</a>
+<a href="/category/drajvery-i-po/" class="dropdown-item">💿 Драйверы и ПО</a>
+<a href="/category/krepleniya-i-ustanovka/" class="dropdown-item">🔩 Крепления и установка</a>
+<a href="/category/utilizatsiya-i-prodazha/" class="dropdown-item">♻️ Утилизация и продажа</a>
+<a href="/category/spetsialnye-rezhimy/" class="dropdown-item">🎮 Специальные режимы</a>
+<a href="/category/drugoe/" class="dropdown-item">📁 Другое</a></div>
+        </div>
+            </nav>
+        </div>
+    </header>
+
+    <nav class="breadcrumbs" aria-label="Навигация">
+        <div class="container"><a href="/">Главная</a><span class="breadcrumb-sep">›</span><a href="/category/drajvery-i-po/">Драйверы и ПО</a><span class="breadcrumb-sep">›</span><span class="breadcrumb-current">Мониторинг серверов: как отслеживать работу и предотвращать сбои</span></div>
+    </nav>
+
+    <main class="site-main">
+        <div class="container">
+            <div class="article-layout">
+                <article class="article-main">
+                    
+                    <h1>Как эффективно мониторить сервера: инструменты и практические советы</h1>
+                    <nav class="mobile-toc"><details><summary>📋 Содержание</summary><ul><li><a href="#1-какие-параметры-сервера-нужно-мониторить-в-первую-очередь">1. Какие параметры сервера нужно мониторить в первую очередь</a></li><li><a href="#2-инструменты-для-мониторинга-от-встроенных-утилит-до-облачных-сервисов">2. Инструменты для мониторинга: от встроенных утилит до облачных сервисов</a></li><li><a href="#3-настройка-оповещений-как-не-пропустить-критические-события">3. Настройка оповещений: как не пропустить критические события</a></li><li><a href="#4-мониторинг-веб-серверов-nginx-apache-iis">4. Мониторинг веб-серверов: Nginx, Apache, IIS</a></li><li><a href="#5-мониторинг-баз-данных-mysql-postgresql-mongodb">5. Мониторинг баз данных: MySQL, PostgreSQL, MongoDB</a></li><li><a href="#6-обнаружение-и-диагностика-сбоев-что-делать-если-сервер-упал">6. Обнаружение и диагностика сбоев: что делать, если сервер «упал»</a></li><li><a href="#7-автоматизация-и-масштабирование-мониторинга">7. Автоматизация и масштабирование мониторинга</a></li><li><a href="#8-безопасность-мониторинга-как-не-открыть-лазейку-для-хакеров">8. Безопасность мониторинга: как не открыть лазейку для хакеров</a></li><li><a href="#faq-частые-вопросы-по-мониторингу-серверов">FAQ: Частые вопросы по мониторингу серверов</a></li></ul></details></nav>
+                    <!--#include virtual="/ssi/article_before.html" -->
+                    <div class="article-body"><p>От стабильности работы серверов зависит всё: от доступности корпоративных приложений до скорости загрузки сайтов и безопасности пользовательских данных. Даже минутный простой может обернуться финансовыми потерями, утечкой клиентов или повреждением репутации. Но как понять, что с сервером что-то не так, <strong>прежде чем проблема станет критичной</strong>?</p>
+
+<p>Мониторинг серверов — это не просто наблюдение за «зелёными лампочками» в панели управления. Это комплексный процесс, включающий отслеживание <em>аппаратных метрик</em> (CPU, RAM, диски), <em>сетевой активности</em>, <em>логических ошибок</em> и даже <em>внешних угроз</em>. В этой статье разберём, какие параметры нужно контролировать, какие инструменты для этого использовать (от бесплатных до enterprise-решений), и как настроить оповещения, чтобы реагировать на инциденты быстрее, чем их заметят пользователи.</p>
+
+<p>Особое внимание уделим <strong>практическим сценариям</strong>: что делать, если сервер «подвис», как отличить настоящую DDoS-атаку от пиковой нагрузки, и почему иногда лучше мониторить не сам сервер, а его <em>внешние зависимости</em> (базы данных, API, CDN). Также разберём типичные ошибки новичков — например, почему слежение только за загрузкой CPU может скрывать реальные проблемы.</p>
+
+<h2 id="1-какие-параметры-сервера-нужно-мониторить-в-первую-очередь">1. Какие параметры сервера нужно мониторить в первую очередь</h2>
+
+<p>Начинающие администраторы часто ограничиваются базовыми метриками вроде загрузки процессора или свободного места на диске. Но для полноценного контроля этого недостаточно. Вот <strong>ключевые группы параметров</strong>, которые нужно отслеживать <em>параллельно</em>:</p>
+
+<ul>
+  <li>🖥️ <strong>Аппаратные ресурсы</strong>: CPU (включая загрузку по ядрам), RAM (с учётом swap), диски (I/O, свободное место, время отклика), температура компонентов.</li>
+  <li>🌐 <strong>Сеть</strong>: пропускная способность, количество активных соединений, ошибки пакетов (<code>rx_errors</code>, <code>tx_errors</code>), задержки (<code>ping</code>).</li>
+  <li>📊 <strong>Производительность приложений</strong>: время отклика веб-сервера (например, <code>TTFB</code> — Time To First Byte), количество ошибок HTTP (4xx, 5xx), скорость выполнения запросов к базе данных.</li>
+  <li>🔒 <strong>Безопасность</strong>: неудачные попытки авторизации, подозрительные процессы, изменения конфигурационных файлов, активность на нестандартных портах.</li>
+  <li>📈 <strong>Бизнес-метрики</strong>: количество одновременно активных пользователей, конверсии (если сервер обрабатывает транзакции), время простоя (<em>uptime</em>).</li>
+</ul>
+
+<p>Ошибка многих — игнорировать <strong>корреляцию метрик</strong>. Например, высокая загрузка CPU может быть нормой, если она сопровождается ростом трафика. Но если при этом падает количество успешных запросов к базе данных, это сигнал о проблеме с <em>блокировками</em> или <em>неоптимизированными запросами</em>.</p>
+
+<div class="attention-box attention-tip"><span class="attention-icon">💡</span><p>Если вы используете виртуальные сервера (VPS/VDS), обратите внимание на метрику <code>steal time</code> — она показывает, сколько времени ваш сервер тратит на ожидание ресурсов хост-машины. Значения выше 5% могут указывать на перегрузку физического сервера провайдера.</p></div>
+
+<p>Для физических серверов критично отслеживать <em>температуру</em> и <em>состояние RAID-массивов</em> (если они используются). Например, в <code>Linux</code> температуру процессора можно проверить командой:</p>
+<pre><code>cat /sys/class/thermal/thermal_zone*/temp</code></pre>
+<p>А состояние RAID — через <code>mdadm --detail /dev/mdX</code> или <code>megacli</code> для контроллеров <em>LSI MegaRAID</em>.</p>
+
+<h2 id="2-инструменты-для-мониторинга-от-встроенных-утилит-до-облачных-сервисов">2. Инструменты для мониторинга: от встроенных утилит до облачных сервисов</h2>
+
+<p>Выбор инструмента зависит от масштаба инфраструктуры, бюджета и требований к детализации. Рассмотрим основные категории:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Категория</th>
+      <th>Примеры инструментов</th>
+      <th>Плюсы</th>
+      <th>Минусы</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Встроенные утилиты ОС</strong></td>
+      <td><code>top</code>, <code>htop</code>, <code>vmstat</code>, <code>netstat</code>, <code>iostat</code>, <code>Journalctl</code></td>
+      <td>Бесплатны, не требуют установки, работают на «голом» сервере</td>
+      <td>Нет истории данных, сложно анализировать тренды, нет оповещений</td>
+    </tr>
+    <tr>
+      <td><strong>Локальные агенты</strong></td>
+      <td><em>Zabbix</em>, <em>Nagios</em>, <em>Prometheus</em> + <em>Grafana</em></td>
+      <td>Глубокая кастомизация, поддержка плагинов, хранение истории</td>
+      <td>Сложность настройки, требуют выделенных ресурсов для сбора данных</td>
+    </tr>
+    <tr>
+      <td><strong>Облачные сервисы</strong></td>
+      <td><em>AWS CloudWatch</em>, <em>Google Cloud Monitoring</em>, <em>Azure Monitor</em>, <em>Datadog</em></td>
+      <td>Интеграция с облачной инфраструктурой, масштабируемость, готовые дашборды</td>
+      <td>Платные, могут быть избыточны для небольших проектов</td>
+    </tr>
+    <tr>
+      <td><strong>SaaS-решения</strong></td>
+      <td><em>New Relic</em>, <em>Sentry</em> (для ошибок), <em>UptimeRobot</em> (для uptime)</td>
+      <td>Простота развёртывания, кросс-платформенность, аналитика в реальном времени</td>
+      <td>Ограничения в бесплатных тарифах, зависимость от третьих сторон</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>Для небольших проектов часто хватает связки <em>Prometheus</em> (для сбора метрик) + <em>Grafana</em> (для визуализации). Например, чтобы мониторить <code>Nginx</code>, можно использовать экспортёр <code>nginx-prometheus-exporter</code>, который преобразует логи веб-сервера в метрики для <em>Prometheus</em>.</p>
+
+<p>Если вам нужно <strong>отслеживать внешнюю доступность</strong> (например, проверять, отвечает ли сайт из разных регионов), подойдут сервисы вроде <em>UptimeRobot</em> или <em>Pingdom</em>. Они имитируют запросы пользователей и оповещают, если сервер не отвечает или отвечает слишком долго.</p>
+
+<div class="poll-widget" id="poll-ae8423aa"><div class="poll-widget-question">📊 Какой инструмент мониторинга вы используете чаще всего?</div><div class="poll-widget-option" data-poll="ae8423aa" data-idx="0" onclick="pbPollVote(this)"><span class="poll-widget-label">Встроенные утилиты (top, htop и т.д.)</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="ae8423aa" data-idx="1" onclick="pbPollVote(this)"><span class="poll-widget-label">Zabbix/Nagios</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="ae8423aa" data-idx="2" onclick="pbPollVote(this)"><span class="poll-widget-label">Prometheus + Grafana</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="ae8423aa" data-idx="3" onclick="pbPollVote(this)"><span class="poll-widget-label">Облачные сервисы (AWS, Google Cloud)</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="ae8423aa" data-idx="4" onclick="pbPollVote(this)"><span class="poll-widget-label">Другой</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div></div>
+
+<h2 id="3-настройка-оповещений-как-не-пропустить-критические-события">3. Настройка оповещений: как не пропустить критические события</h2>
+
+<p>Собирать метрики бесполезно, если вы не узнаете о проблемах вовремя. Правильные оповещения должны:</p>
+<ul>
+  <li>⚡ Быть <strong>мгновенными</strong> для критических событий (например, падение сервера).</li>
+  <li>📉 Игнорировать кратковременные скачки (например, пиковую нагрузку в чёрную пятницу).</li>
+  <li>🔕 Не спамить — иначе вы начнёте игнорировать все уведомления.</li>
+  <li>📱 Поддерживать несколько каналов (email, SMS, <em>Telegram</em>, <em>Slack</em>).</li>
+</ul>
+
+<p>Пример настройки оповещений в <em>Zabbix</em>:</p>
+<ol>
+  <li>Создайте <strong>триггер</strong> (например, «Загрузка CPU > 90% в течение 5 минут»).</li>
+  <li>Настройте <strong>действие</strong> (action) с эскалацией: сначала уведомление в <em>Slack</em>, через 10 минут — SMS, через 30 минут — звонок.</li>
+  <li>Используйте <strong>периоды технического обслуживания</strong> (maintenance), чтобы оповещения не срабатывали во время плановых работ.</li>
+</ol>
+
+<p>В <em>Prometheus</em> оповещения настраиваются через <code>Alertmanager</code>. Пример правила для оповещения о нехватке места на диске:</p>
+<pre><code>groups:
+<p>- name: disk-alerts</p>
+<p>rules:</p>
+<p>- alert: HighDiskUsage</p>
+<p>expr: 100 - (node_filesystem_free_bytes{mountpoint="/"} * 100 / node_filesystem_size_bytes{mountpoint="/"}) > 90</p>
+<p>for: 10m</p>
+<p>labels:</p>
+<p>severity: warning</p>
+<p>annotations:</p>
+<p>summary: "High disk usage on {{ $labels.instance }}"</p>
+<p>description: "Disk usage is {{ $value }}% (threshold: 90%)"</code></pre></p>
+
+<div class="attention-box attention-tip"><span class="attention-icon">💡</span><p>Оповещения должны быть <strong>контекстными</strong>. Вместо «Проблема с сервером» укажите: «Сервер DB-01: загрузка CPU 98%, возможная причина — долгий запрос SELECT к таблице orders».</p></div>
+
+<p>Важно настроить <strong>подавление шума</strong>. Например, если сервер перезагружается для обновления, не нужно получать 20 уведомлений о его недоступности. В <em>Zabbix</em> это решается через <code>Event correlation</code>, в <em>Prometheus</em> — через <code>inhibition rules</code>.</p>
+
+<details class="faq-item"><summary>Как проверить, работают ли оповещения?</summary><div class="faq-answer"><p>Создайте тестовый триггер с условием, которое гарантированно сработает (например, «CPU > 0%»). Убедитесь, что уведомление пришло по всем настроенным каналам. После проверки удалите тестовое правило.</p></div></details>
+
+<h2 id="4-мониторинг-веб-серверов-nginx-apache-iis">4. Мониторинг веб-серверов: Nginx, Apache, IIS</h2>
+
+<p>Веб-сервера требуют особого внимания, так как их сбои сразу заметны пользователям. Основные метрики для мониторинга:</p>
+
+<ul>
+  <li>📡 <strong>Запросы в секунду</strong> (RPS) и время отклика (<code>response time</code>).</li>
+  <li>🔄 <strong>Ошибки HTTP</strong>: количество 4xx (ошибки клиента) и 5xx (ошибки сервера).</li>
+  <li>🔌 <strong>Активные соединения</strong> и состояние воркеров (для <em>Nginx</em> — <code>worker_connections</code>).</li>
+  <li>📦 <strong>Трафик</strong>: объём отправленных/полученных данных (полезно для обнаружения DDoS).</li>
+</ul>
+
+<p>Для <em>Nginx</em> можно включить модуль <code>ngx_http_stub_status_module</code>, который предоставляет базовую статистику по запросам. Пример конфигурации:</p>
+<pre><code>location /server-status {
+<p>stub_status;</p>
+<p>allow 192.168.1.0/24;  # Разрешить доступ только с локальной сети</p>
+<p>deny all;</p>
+<p>}</code></pre></p>
+
+<p>После этого данные будут доступны по адресу <code>http://ваш-сервер/server-status</code>. Для глубокого анализа логи <em>Nginx</em> или <em>Apache</em> можно парсить с помощью <em>GoAccess</em> или <em>Awstats</em>.</p>
+
+<p>Если используете <em>Apache</em>, включите модуль <code>mod_status</code>:</p>
+<pre><code>&lt;Location /server-status&gt;
+<p>SetHandler server-status</p>
+<p>Require ip 192.168.1</p>
+<p>&lt;/Location&gt;</code></pre></p>
+
+<div class="attention-box attention-tip"><span class="attention-icon">💡</span><p>Для мониторинга <em>IIS</em> под Windows используйте встроенный <em>Performance Monitor</em> (perfmon) или PowerShell-скрипты. Например, команда <code>Get-Counter '\Web Service(_Total)\*'</code> покажет ключевые метрики веб-сервера.</p></div>
+
+<h2 id="5-мониторинг-баз-данных-mysql-postgresql-mongodb">5. Мониторинг баз данных: MySQL, PostgreSQL, MongoDB</h2>
+
+<p>Базы данных — одно из самых уязвимых мест инфраструктуры. Их сбои или замедления сразу отражаются на работе приложений. Основные параметры для контроля:</p>
+
+<ul>
+  <li>🗃️ <strong>Запросы</strong>: количество медленных запросов (<code>slow_query_log</code> в <em>MySQL</em>), время выполнения, блокировки.</li>
+  <li>🔄 <strong>Репликация</strong>: задержка между мастером и репликами (<code>Seconds_Behind_Master</code> в <em>MySQL</em>).</li>
+  <li>💾 <strong>Дисковое I/O</strong>: нагрузка на хранилище, особенно если БД работает на <em>HDD</em>.</li>
+  <li>🔒 <strong>Соединения</strong>: количество активных подключений и ошибки типа «Too many connections».</li>
+</ul>
+
+<p>В <em>MySQL</em> включите <code>slow_query_log</code>, чтобы фиксировать запрос, выполняющийся дольше заданного порога (например, 2 секунды):</p>
+<pre><code>SET GLOBAL slow_query_log = 'ON';
+<p>SET GLOBAL long_query_time = 2;</p>
+<p>SET GLOBAL slow_query_log_file = '/var/log/mysql/mysql-slow.log';</code></pre></p>
+
+<p>Для <em>PostgreSQL</em> полезно отслеживать:</p>
+<ul>
+  <li>📈 <code>pg_stat_activity</code> — активные соединения и блокировки.</li>
+  <li>🗄️ <code>pg_stat_bgwriter</code> — активность фонового писателя (показывает нагрузку на диск).</li>
+  <li>🔍 <code>pg_stat_statements</code> — статистика по SQL-запросам (требует установки расширения).</li>
+</ul>
+
+<p>Для <em>MongoDB</em> критично мониторить:</p>
+<ul>
+  <li>📊 <code>db.serverStatus()</code> — общее состояние сервера.</li>
+  <li>🔄 <code>db.currentOp()</code> — текущие операции (полезно для поиска «зависших» запросов).</li>
+  <li>💾 <code>db.stats()</code> — использование дискового пространства.</li>
+</ul>
+
+
+<p>Включен ли slow_query_log (для MySQL) или pg_stat_statements (для PostgreSQL)?|Есть ли мониторинг репликации (если используется)?|Проверены ли права доступа к логам БД?|Настроены ли оповещения о долгих транзакциях?</p>
+<p>--></p>
+
+<h2 id="6-обнаружение-и-диагностика-сбоев-что-делать-если-сервер-упал">6. Обнаружение и диагностика сбоев: что делать, если сервер «упал»</h2>
+
+<p>Даже с идеальным мониторингом сбои случаются. Главное — быстро диагностировать причину. Алгоритм действий:</p>
+
+<ol>
+  <li><strong>Проверьте доступность</strong>:
+     <ul>
+       <li>🔌 Можно ли подключиться к серверу по <code>SSH</code>?</li>
+       <li>🌐 Отвечает ли он на <code>ping</code>?</li>
+       <li>🔒 Нет ли блокировки на уровне фаервола (<code>iptables</code>/<code>ufw</code>)?</li>
+     </ol>
+  </li>
+  <li><strong>Анализируйте логи</strong>:
+     <ul>
+       <li>📜 <code>/var/log/syslog</code> или <code>journalctl -xe</code> (для <em>systemd</em>).</li>
+       <li>📄 Логи веб-сервера (<code>/var/log/nginx/error.log</code>).</li>
+       <li>🗃️ Логи БД (например, <code>/var/log/mysql/error.log</code>).</li>
+     </ol>
+  </li>
+  <li><strong>Проверьте ресурсы</strong>:
+     <ul>
+       <li>🖥️ <code>top</code> или <code>htop</code> — нет ли процессов, съедающих 100% CPU?</li>
+       <li>💾 <code>df -h</code> — не закончилось ли место на диске?</li>
+       <li>🔌 <code>dmesg</code> — нет ли ошибок ядра или проблем с железом?</li>
+     </ul>
+  </li>
+</ul>
+
+<p>Типичные причины падений:</p>
+<ul>
+  <li>🔥 <strong>OOM Killer</strong>: Linux убивает процессы при нехватке памяти. Проверьте логи на сообщения вроде «Out of memory: Kill process».</li>
+  <li>💥 <strong>Поломка диска</strong>: ошибки вроде «I/O error» в <code>dmesg</code>.</li>
+  <li>🔌 <strong>Сетевые проблемы</strong>: обрыв кабеля, блокировка портов, DDoS.</li>
+  <li>🐞 <strong>Ошибки в коде</strong>: бесконечные циклы, утечки памяти в приложениях.</li>
+</ul>
+
+<p>Если сервер полностью недоступен, но <code>ping</code> отвечает, проблема может быть в:</p>
+<ul>
+  <li>🔌 Сетевых настройках (например, сбился <code>default gateway</code>).</li>
+  <li>🔒 Фаерволе (<code>iptables -L</code> или <code>ufw status</code>).</li>
+  <li>🖥️ Сбое службы (например, не запущен <code>sshd</code> или веб-сервер).</li>
+</ul>
+
+<details class="faq-item"><summary>Как восстановить доступ, если SSH не работает?</summary><div class="faq-answer"><p>
+<p>1. Подключитесь через <em>IPMI</em>/<em>iDRAC</em> (для физических серверов).</p>
+<p>2. Используйте <em>VNC-консоль</em> (для VPS/VDS).</p>
+<p>3. Перезагрузите сервер в <em>rescue mode</em> (если предоставляет хостер).</p>
+<p>4. Проверьте, не блокирует ли доступ <code>fail2ban</code> или <code>DenyHosts</code>.</p>
+<p></p></div></details></p>
+
+<h2 id="7-автоматизация-и-масштабирование-мониторинга">7. Автоматизация и масштабирование мониторинга</h2>
+
+<p>Ручной мониторинг не масштабируется. Для крупных инфраструктур (десятки и сотни серверов) нужны:</p>
+
+<ul>
+  <li>🤖 <strong>Автоматическое обнаружение</strong>: инструменты вроде <em>Ansible</em> или <em>Terraform</em> могут динамически добавлять новые сервера в систему мониторинга.</li>
+  <li>📊 <strong>Централизованные логи</strong>: <em>ELK Stack</em> (<em>Elasticsearch</em> + <em>Logstash</em> + <em>Kibana</em>) или <em>Loki</em> + <em>Grafana</em>.</li>
+  <li>🔄 <strong>Автовосстановление</strong>: скрипты, которые перезапускают упавшие службы или перенаправляют трафик на резервные узлы.</li>
+  <li>📈 <strong>Аналитика трендов</strong>: прогнозирование роста нагрузки (например, с помощью <em>Grafana</em> + <em>Prometheus</em>).</li>
+</ul>
+
+<p>Пример автоматизации с <em>Ansible</em>: игра (<em>playbook</em>) для установки <em>Node Exporter</em> (агента <em>Prometheus</em>) на все сервера:</p>
+<pre><code>- hosts: all
+<p>become: yes</p>
+<p>tasks:</p>
+<p>- name: Download Node Exporter</p>
+<p>get_url:</p>
+<p>url: https://github.com/prometheus/node_exporter/releases/download/v1.3.1/node_exporter-1.3.1.linux-amd64.tar.gz</p>
+<p>dest: /tmp/node_exporter.tar.gz</p>
+<p>- name: Install Node Exporter</p>
+<p>unarchive:</p>
+<p>src: /tmp/node_exporter.tar.gz</p>
+<p>dest: /usr/local/bin/</p>
+<p>remote_src: yes</p>
+<p>- name: Start Node Exporter as a service</p>
+<p>systemd:</p>
+<p>name: node_exporter</p>
+<p>state: started</p>
+<p>enabled: yes</code></pre></p>
+
+<p>Для централизованного сбора логов настройте <em>Logstash</em> (из <em>ELK</em>):</p>
+<pre><code>input {
+<p>file {</p>
+<p>path => "/var/log/nginx/access.log"</p>
+<p>start_position => "beginning"</p>
+<p>sincedb_path => "/dev/null"</p>
+<p>}</p>
+<p>}</p>
+<p>filter {</p>
+<p>grok {</p>
+<p>match => { "message" => "%{COMBINEDAPACHELOG}" }</p>
+<p>}</p>
+<p>}</p>
+<p>output {</p>
+<p>elasticsearch {</p>
+<p>hosts => ["elasticsearch:9200"]</p>
+<p>index => "nginx-access-%{+YYYY.MM.dd}"</p>
+<p>}</p>
+<p>}</code></pre></p>
+
+<div class="attention-box attention-tip"><span class="attention-icon">💡</span><p>Автоматизация не заменяет ручной анализ. Например, скрипт может перезапустить упавший сервис, но не найдёт причину падения. Всегда настраивайте <strong>логирование причин инцидентов</strong>.</p></div>
+
+<h2 id="8-безопасность-мониторинга-как-не-открыть-лазейку-для-хакеров">8. Безопасность мониторинга: как не открыть лазейку для хакеров</h2>
+
+<p>Системы мониторинга часто становятся целью атак, потому что:</p>
+<ul>
+  <li>🔑 Они имеют доступ ко всем серверам (через агенты или API).</li>
+  <li>📊 Содержат чувствительную информацию (логи, конфигурации).</li>
+  <li>🚪 Часто настраиваются с дефолтными паролями.</li>
+</ul>
+
+<p>Минимальные меры безопасности:</p>
+<ul>
+  <li>🔒 <strong>Изолируйте систему мониторинга</strong>: размещайте её в отдельной сети или VLAN.</li>
+  <li>🔑 <strong>Используйте авторизацию</strong>:
+     <ul>
+       <li>Для <em>Grafana</em> настройте <em>OAuth</em> или <em>LDAP</em>.</li>
+       <li>Для <em>Prometheus</em> и <em>Alertmanager</em> включите <code>basic_auth</code>.</li>
+     </ul>
+  </li>
+  <li>🔄 <strong>Обновляйте ПО</strong>: уязвимости в <em>Grafana</em> или <em>Elasticsearch</em> регулярно эксплуатируются (например, <a href="https://cve.mitre.org/" target="_blank">CVE-2021-44228</a> в <em>Log4j</em>).</li>
+  <li>📡 <strong>Шифруйте трафик</strong>: используйте <code>TLS</code> для всех соединений (включая передачу метрик).</li>
+  <li>🚫 <strong>Ограничивайте доступ</strong>:
+     <ul>
+       <li>Закрывайте порты мониторинга (например, <code>9090</code> для <em>Prometheus</em>) от внешнего мира.</li>
+       <li>Используйте <code>firewall-cmd</code> или <code>ufw</code> для разрешения доступа только с доверенных IP.</li>
+     </ul>
+  </li>
+</ul>
+
+<p>Пример настройки <code>basic_auth</code> для <em>Prometheus</em> (в файле конфигурации <code>prometheus.yml</code>):</p>
+<pre><code>web:
+<p>basic_auth_users:</p>
+<p>admin: $2y$10$examplehash</code></pre></p>
+<p>Хеш пароля можно сгенерировать с помощью <code>htpasswd</code>:</p>
+<pre><code>htpasswd -nb admin ваш_пароль</code></pre>
+
+<div class="attention-box attention-tip"><span class="attention-icon">💡</span><p>Для дополнительной защиты мониторинга в облаке используйте <em>PrivateLink</em> (в <em>AWS</em>) или <em>VPC Service Controls</em> (в <em>Google Cloud</em>). Это позволит ограничить доступ к сервисам мониторинга только из вашей виртуальной сети.</p></div>
+
+<h2 id="faq-частые-вопросы-по-мониторингу-серверов">FAQ: Частые вопросы по мониторингу серверов</h2>
+
+<details>
+  <summary>🔍 Как часто нужно проверять метрики сервера?</summary>
+  <p>Это зависит от критичности сервиса:</p>
+  <ul>
+    <li>📊 <strong>Базовые метрики</strong> (CPU, RAM, диск): каждые 1–5 минут.</li>
+    <li>🌐 <strong>Внешняя доступность</strong> (ping, HTTP-запросы): каждые 30–60 секунд.</li>
+    <li>📈 <strong>Логи</strong>: в реальном времени (с буферизацией для анализа).</li>
+  </ul>
+  <p>Для высоконагруженных систем (например, торговой площадки) интервал можно сократить до 10–30 секунд.</p>
+</details>
+
+<details>
+  <summary>⚠️ Почему мониторинг показывает высокую загрузку CPU, но сервер работает нормально?</summary>
+  <p>Возможные причины:</p>
+  <ul>
+    <li>🖥️ <strong>Фоновые задачи</strong>: резервное копирование, индексация <em>Elasticsearch</em>, <code>cron</code>-задачи.</li>
+    <li>🔄 <strong>Пиковая нагрузка</strong>: например, ночные расчёты или отчёты.</li>
+    <li>📊 <strong>Ошибка метрик</strong>: некоторые агенты (например, <em>Netdata</em>) могут показывать загрузку с учётом <code>steal time</code> (время, украденное виртуальной машиной).</li>
+    <li>🔍 <strong>Неправильные пороги</strong>: например, алерт срабатывает при 70% загрузки, хотя для вашего сервера норма — 80%.</li>
+  </ul>
+  <p>Используйте <code>top</code> или <code>htop</code>, чтобы увидеть, какой именно процесс грузит CPU. Если это легитимная задача (например, <code>mysqld</code>), возможно, нужно оптимизировать её расписание.</p>
+</details>
+
+<details>
+  <summary>📈 Как мониторить сервера в разных дата-центрах или облаках?</summary>
+  <p>Используйте <strong>мультирегиональные решения</strong>:</p>
+  <ul>
+    <li>🌍 <strong>Централизованный сбор метрик</strong>: разверните <em>Prometheus</em> с <em>Federation</em> или <em>Thanos</em> для агрегации данных из разных локаций.</li>
+    <li>🔗 <strong>Объединённые дашборды</strong>: в <em>Grafana</em> можно подключить несколько источников данных (например, <em>Prometheus</em> в <em>AWS</em> и <em>Azure Monitor</em>).</li>
+    <li>📡 <strong>Синтетический мониторинг</strong>: сервисы вроде <em>Pingdom</em> или <em>UptimeRobot</em> проверяют доступность из разных регионов.</li>
+  </ul>
+  <p>Для облачных сервисов используйте их native-инструменты:</p>
+  <ul>
+    <li><em>AWS</em>: <em>CloudWatch</em> + <em>CloudTrail</em>.</li>
+    <li><em>Google Cloud</em>: <em>Cloud Monitoring</em> + <em>Cloud Logging</em>.</li>
+    <li><em>Azure</em>: <em>Azure Monitor</em> + <em>Log Analytics</em>.</li>
+  </ul>
+</details>
+
+<details>
+  <summary>💰 Сколько стоит мониторинг серверов?</summary>
+  <p>Стоимость зависит от инструментов и масштаба:</p>
+  <ul>
+    <li>🆓 <strong>Бесплатно</strong>:
+      <ul>
+        <li>Встроенные утилиты (<code>top</code>, <code>vmstat</code>).</li>
+        <li><em>Prometheus</em> + <em>Grafana</em> (self-hosted).</li>
+        <li><em>Zabbix</em> (до 100 хостов на бесплатной версии).</li>
+      </ul>
+    </li>
+    <li>💳 <strong>От $10/месяц</strong>:
+      <ul>
+        <li><em>UptimeRobot</em> (до 50 мониторов).</li>
+        <li><em>New Relic</em> (бесплатный тариф с ограничениями).</li>
+      </ul>
+    </li>
+    <li>💼 <strong>От $50/месяц</strong>:
+      <ul>
+        <li><em>Datadog</em> (платные тарифы для инфраструктурного мониторинга).</li>
+        <li><em>Dynatrace</em> (для enterprise-решений).</li>
+      </ul>
+    </li>
+    <li>☁️ <strong>Облачные сервисы</strong>:
+      <ul>
+        <li><em>AWS CloudWatch</em>: ~$0.30 за метрику/месяц + $0.03 за GB логов.</li>
+        <li><em>Google Cloud Monitoring</em>: ~$0.25 за метрику/месяц.</li>
+      </ul>
+    </li>
+  </ul>
+  <p>Для самохостинга учитывайте стоимость сервера под мониторинг (от $5/месяц за VPS).</p>
+</details>
+
+<details>
+  <summary>🛡️ Как защитить данные мониторинга от утечки?</summary>
+  <p>Меры безопасности:</p>
+  <ul>
+    <li>🔐 <strong>Шифрование данных</strong>:
+      <ul>
+        <li>Используйте <code></div>
+                    <!--#include virtual="/ssi/article_after.html" -->
+
+                </article>
+                <aside class="article-sidebar"><!--#include virtual="/ssi/sidebar_top.html" --><nav class="sidebar-search"><div class="sidebar-search-box"><input type="text" id="globalSearchInput" placeholder="🔍 Поиск статей..." autocomplete="off"><div class="search-dropdown" id="globalSearchDropdown"></div></div></nav><!--#include virtual="/ssi/sidebar_before_toc.html" --><nav class="sidebar-toc" id="sidebarToc"><h3>Содержание</h3><ul><li><a href="#1-какие-параметры-сервера-нужно-мониторить-в-первую-очередь">1. Какие параметры сервера нужно мониторить в первую очередь</a></li><li><a href="#2-инструменты-для-мониторинга-от-встроенных-утилит-до-облачных-сервисов">2. Инструменты для мониторинга: от встроенных утилит до облачных сервисов</a></li><li><a href="#3-настройка-оповещений-как-не-пропустить-критические-события">3. Настройка оповещений: как не пропустить критические события</a></li><li><a href="#4-мониторинг-веб-серверов-nginx-apache-iis">4. Мониторинг веб-серверов: Nginx, Apache, IIS</a></li><li><a href="#5-мониторинг-баз-данных-mysql-postgresql-mongodb">5. Мониторинг баз данных: MySQL, PostgreSQL, MongoDB</a></li><li><a href="#6-обнаружение-и-диагностика-сбоев-что-делать-если-сервер-упал">6. Обнаружение и диагностика сбоев: что делать, если сервер «упал»</a></li><li><a href="#7-автоматизация-и-масштабирование-мониторинга">7. Автоматизация и масштабирование мониторинга</a></li><li><a href="#8-безопасность-мониторинга-как-не-открыть-лазейку-для-хакеров">8. Безопасность мониторинга: как не открыть лазейку для хакеров</a></li><li><a href="#faq-частые-вопросы-по-мониторингу-серверов">FAQ: Частые вопросы по мониторингу серверов</a></li></ul></nav><!--#include virtual="/ssi/sidebar_before_related.html" --><nav class="sidebar-related"><h3>Похожие статьи</h3><ul><li><a href="/articles/k/ka/kak-postavit-drajver-dlya-monitora.html" class="related-card">Как установить драйвер монитора: пошаговая инструкция 2026</a></li><li><a href="/articles/k/ka/kak-sdelat-chtob-myshka-sama-dvigalas-po-monitoru.html" class="related-card">Как заставить курсор мыши двигаться автоматически: программы и настройки</a></li><li><a href="/articles/k/ka/kak-otkryt-monitor-resursov-na-windows-10-cherez-win-r.html" class="related-card">Как открыть монитор ресурсов Windows 10 через Win+R: Полная инструкция</a></li><li><a href="/articles/p/po/pochemu-monitor-frizit.html" class="related-card">Почему монитор фризит: причины, диагностика и способы устранения</a></li><li><a href="/articles/k/ka/kak-zaskrinit-monitor-pk.html" class="related-card">Как сделать скриншот экрана на ПК: 5 способов в Windows 10/11</a></li></ul></nav><!--#include virtual="/ssi/sidebar_after_related.html" --></aside>
+            </div>
+        </div>
+    </main>
+
+    <!--#include virtual="/ssi/before_related_bottom.html" -->
+    <section class="related-bottom">
+        <div class="container">
+            <h2 class="related-bottom-heading">📖 Читайте также</h2>
+            <div class="related-bottom-grid"><a href="/articles/k/ka/kak-postavit-drajver-dlya-monitora.html" class="related-bottom-card"><span class="related-bottom-title">Как установить драйвер монитора: пошаговая инструкция 2026</span><span class="related-bottom-desc">Узнайте, как правильно скачать и поставить драйвер для монитора Windows 10/11. Инструкция по настрой</span></a><a href="/articles/k/ka/kak-sdelat-chtob-myshka-sama-dvigalas-po-monitoru.html" class="related-bottom-card"><span class="related-bottom-title">Как заставить курсор мыши двигаться автоматически: программы и настройки</span><span class="related-bottom-desc">Пошаговая инструкция по настройке автодвижения курсора. Обзор софта для автотестов, презентаций и де</span></a><a href="/articles/k/ka/kak-otkryt-monitor-resursov-na-windows-10-cherez-win-r.html" class="related-bottom-card"><span class="related-bottom-title">Как открыть монитор ресурсов Windows 10 через Win+R: Полная инструкция</span><span class="related-bottom-desc">Узнайте, как быстро запустить монитор ресурсов в Windows 10 с помощью клавиш Win+R. Разбор команд, а</span></a><a href="/articles/p/po/pochemu-monitor-frizit.html" class="related-bottom-card"><span class="related-bottom-title">Почему монитор фризит: причины, диагностика и способы устранения</span><span class="related-bottom-desc">Монитор зависает или мерцает? Узнайте основные причины фризов: от драйверов до перегрева. Пошаговая </span></a><a href="/articles/k/ka/kak-zaskrinit-monitor-pk.html" class="related-bottom-card"><span class="related-bottom-title">Как сделать скриншот экрана на ПК: 5 способов в Windows 10/11</span><span class="related-bottom-desc">Полная инструкция: как заскринить монитор на Windows и Mac. Клавиши, горячие клавиши, Snipping Tool </span></a><a href="/articles/k/ka/kak-monitorit-temperaturu-gpu.html" class="related-bottom-card"><span class="related-bottom-title">Как мониторить температуру видеокарты: лучшие утилиты и нормы</span><span class="related-bottom-desc">Полное руководство по контролю нагрева GPU. Обзор программ для мониторинга, безопасные температурные</span></a></div>
+        </div>
+    </section>
+    <!--#include virtual="/ssi/after_related_bottom.html" -->
+
+    <footer class="site-footer-premium">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-col">
+                    <div class="footer-brand">🖥️ Мониторум</div>
+                    <p class="footer-about">Полный справочник по настройке, ремонту и выбору компьютерных мониторов для любых задач.</p>
+                </div>
+                <div class="footer-col">
+                    <h4>Разделы</h4>
+                    <ul><li><a href="/category/nastrojka-ekrana/">⚙️ Настройка экрана</a></li>
+<li><a href="/category/podklyuchenie-ustrojstv/">🔌 Подключение устройств</a></li>
+<li><a href="/category/mnozhestvennye-ekrany/">🖥️🖥️ Множественные экраны</a></li>
+<li><a href="/category/zvuk-i-audio/">🔊 Звук и аудио</a></li>
+<li><a href="/category/remont-i-polomki/">🔧 Ремонт и поломки</a></li>
+<li><a href="/category/ukhod-i-chistka/">🧼 Уход и чистка</a></li></ul>
+                </div>
+                <div class="footer-col">
+                    <h4>Информация</h4>
+                    <ul>
+                        <li><a href="/">Главная</a></li>
+                        <li><a href="/about.html">О проекте</a></li>
+                        <li><a href="/categories.html">Все разделы</a></li>
+                        <li><a href="/contact.html">Контакты</a></li>
+                        <li><a href="/privacy.html">Конфиденциальность</a></li>
+                        <li><a href="/sitemap.xml">Карта сайта</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>© Мониторум. Все права защищены.</p>
+                <!--LiveInternet counter--><div style="margin-top:10px;"><a href="https://www.liveinternet.ru/click"
+                target="_blank"><img id="licnt06C4" width="88" height="15" style="border:0" 
+                title="LiveInternet: показано число посетителей за сегодня"
+                src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAEALAAAAAABAAEAAAIBTAA7"
+                alt=""/></a><script>(function(d,s){d.getElementById("licnt06C4").src=
+                "https://counter.yadro.ru/hit?t26.5;r"+escape(d.referrer)+
+                ((typeof(s)=="undefined")?"":";s"+s.width+"*"+s.height+"*"+
+                (s.colorDepth?s.colorDepth:s.pixelDepth))+";u"+escape(d.URL)+
+                ";h"+escape(d.title.substring(0,150))+";"+Math.random()})(document,screen)</script></div><!--/LiveInternet-->
+            </div>
+        </div>
+    </footer>
+    <div id="cookie-consent" class="cookie-popup">
+        <div class="cookie-inner">
+            <span>🍪 Мы используем файлы cookie для улучшения работы сайта.</span>
+            <button id="cookie-accept" class="cookie-btn">Принять</button>
+        </div>
+    </div>
+    <script src="/static/js/main.js"></script>
+    <script>
+    (function() {
+        const popup = document.getElementById('cookie-consent');
+        const btn = document.getElementById('cookie-accept');
+        if (popup && btn && !localStorage.getItem('cookie-accepted')) {
+            popup.classList.add('visible');
+            btn.onclick = () => {
+                localStorage.setItem('cookie-accepted', 'true');
+                popup.classList.remove('visible');
+            };
+        }
+    })();
+    </script>
+    <script>
+    function pbPollVote(el) {
+        var poll = el.closest('.poll-widget');
+        if (poll.classList.contains('voted')) return;
+        poll.classList.add('voted');
+        el.classList.add('selected');
+        var opts = poll.querySelectorAll('.poll-widget-option');
+        var n = opts.length;
+        var raw = [];
+        var sum = 0;
+        for (var i = 0; i < n; i++) {
+            var v = Math.random() * 50 + 5;
+            if (opts[i] === el) v += 30;
+            raw.push(v);
+            sum += v;
+        }
+        var pcts = raw.map(function(v) { return Math.round(v / sum * 100); });
+        var diff = 100 - pcts.reduce(function(a,b){ return a+b; }, 0);
+        pcts[Array.from(opts).indexOf(el)] += diff;
+        setTimeout(function() {
+            opts.forEach(function(opt, i) {
+                opt.querySelector('.poll-widget-bar').style.width = pcts[i] + '%';
+                opt.querySelector('.poll-widget-pct').textContent = pcts[i] + '%';
+            });
+        }, 50);
+    }
+    </script>
+    <!--#include virtual="/ssi/body_bottom.html" -->
+    <script src="/static/js/inject.js" defer></script>
+</body>
+</html>

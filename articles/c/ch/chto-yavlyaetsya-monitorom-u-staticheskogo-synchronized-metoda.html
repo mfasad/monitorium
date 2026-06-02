@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27><text y=%27.9em%27 font-size=%2790%27>🖥️</text></svg>">
+    <title>Монитор статического synchronized в Java: что это и как работает — Мониторум</title>
+    <meta name="description" content="Разбираемся, какой объект блокируется при вызове статического synchronized метода в Java. Подробно о механизме синхронизации и нюансах многопоточности.">
+    <link rel="canonical" href="https://monitorium.vercel.app/articles/c/ch/chto-yavlyaetsya-monitorom-u-staticheskogo-synchronized-metoda.html">
+
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="Монитор статического synchronized в Java: что это и как работает">
+    <meta property="og:description" content="Разбираемся, какой объект блокируется при вызове статического synchronized метода в Java. Подробно о механизме синхронизации и нюансах многопоточности.">
+    <meta property="og:locale" content="ru_RU">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css?v=1780420684">
+    <style>
+    .site-footer-premium {
+        margin-top: 60px; padding: 40px 0 0; background: #1e293b; color: #94a3b8;
+    }
+    .footer-grid {
+        display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 40px;
+        padding-bottom: 32px; border-bottom: 1px solid #334155;
+    }
+    .footer-brand { font-size: 1.2rem; font-weight: 700; color: #f1f5f9; margin-bottom: 12px; }
+    .footer-about { font-size: 0.9rem; line-height: 1.6; margin-bottom: 8px; }
+    .footer-updated { font-size: 0.8rem; color: #64748b; }
+    .footer-col h4 { color: #f1f5f9; font-size: 0.95rem; margin-bottom: 16px; }
+    .footer-col ul { list-style: none; }
+    .footer-col li { margin-bottom: 8px; }
+    .footer-col a { color: #94a3b8; font-size: 0.9rem; transition: color 0.2s; }
+    .footer-col a:hover { color: #60a5fa; }
+    .footer-bottom { padding: 20px 0; text-align: center; font-size: 0.85rem; }
+    @media (max-width: 640px) {
+        .footer-grid { grid-template-columns: 1fr; gap: 24px; }
+    }
+    .cookie-popup {
+        position: fixed; bottom: 0; left: 0; right: 0; background: #1e293b; color: #fff;
+        padding: 16px; transition: transform 0.5s ease; z-index: 9999; border-top: 2px solid #2563eb;
+        transform: translateY(100%);
+    }
+    .cookie-popup.visible { transform: translateY(0); }
+    .cookie-inner { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; gap: 16px; font-size: 0.9rem; }
+    .cookie-btn { background: #2563eb; color: #fff; border: none; padding: 8px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+    .cookie-btn:hover { background: #1d4ed8; }
+    @media (max-width: 640px) {
+        .cookie-inner { flex-direction: column; text-align: center; }
+    }
+</style>
+    
+    <!--#include virtual="/ssi/head.html" -->
+</head>
+<body>
+        <!--#include virtual="/ssi/body_top.html" -->
+    <style>
+    .nav-dropdown { position: relative; display: inline-block; }
+    .dropdown-toggle {
+        background: none; border: none; cursor: pointer;
+        font: inherit; color: inherit; padding: 8px 12px;
+        border-radius: 8px; transition: background 0.2s;
+    }
+    .dropdown-toggle:hover { background: rgba(0,0,0,0.05); }
+    .dropdown-menu {
+        display: none; position: absolute; right: 0; top: 100%;
+        min-width: 240px; max-height: 70vh; overflow-y: auto;
+        background: var(--card-bg, #fff); border: 1px solid var(--border, #e5e7eb);
+        border-radius: 12px; box-shadow: 0 12px 40px rgba(0,0,0,0.12);
+        padding: 8px 0; z-index: 1000;
+    }
+    .nav-dropdown::after {
+        content: ''; position: absolute; left: 0; right: 0;
+        top: 100%; height: 12px;
+    }
+    .nav-dropdown:hover .dropdown-menu,
+    .nav-dropdown:focus-within .dropdown-menu { display: block; }
+    .dropdown-item {
+        display: block; padding: 10px 20px; color: var(--text, #1f2937);
+        text-decoration: none; font-size: 0.95rem; transition: background 0.15s;
+        white-space: nowrap;
+    }
+    .dropdown-item:hover { background: rgba(37,99,235,0.06); color: var(--primary, #2563eb); }
+    @media (max-width: 768px) {
+        .main-nav > .nav-link { display: none; }
+        .dropdown-toggle { display: none; }
+        .dropdown-menu {
+            display: block !important; position: static;
+            box-shadow: none; border: none; border-radius: 0;
+            min-width: auto; max-height: none; padding: 0;
+            background: transparent;
+        }
+        .dropdown-item {
+            padding: 8px 0; font-size: 1rem;
+        }
+    }
+    </style>
+    <header class="site-header">
+        <div class="container header-inner">
+            <a href="/" class="logo">
+                <span class="logo-icon">🖥️</span>
+                <span>Мониторум</span>
+            </a>
+            <button class="mobile-menu-btn" aria-label="Меню" id="menuBtn">☰</button>
+            <nav class="main-nav" id="mainNav">
+                <a href="/category/nastrojka-ekrana/" class="nav-link">⚙️ Настройка экрана</a>
+<a href="/category/podklyuchenie-ustrojstv/" class="nav-link">🔌 Подключение устройств</a>
+<a href="/category/mnozhestvennye-ekrany/" class="nav-link">🖥️🖥️ Множественные экраны</a>
+<a href="/category/zvuk-i-audio/" class="nav-link">🔊 Звук и аудио</a>
+<div class="nav-dropdown">
+            <button class="nav-link dropdown-toggle">📂 Все разделы ▾</button>
+            <div class="dropdown-menu"><a href="/category/nastrojka-ekrana/" class="dropdown-item">⚙️ Настройка экрана</a>
+<a href="/category/podklyuchenie-ustrojstv/" class="dropdown-item">🔌 Подключение устройств</a>
+<a href="/category/mnozhestvennye-ekrany/" class="dropdown-item">🖥️🖥️ Множественные экраны</a>
+<a href="/category/zvuk-i-audio/" class="dropdown-item">🔊 Звук и аудио</a>
+<a href="/category/remont-i-polomki/" class="dropdown-item">🔧 Ремонт и поломки</a>
+<a href="/category/ukhod-i-chistka/" class="dropdown-item">🧼 Уход и чистка</a>
+<a href="/category/vybor-i-kharakteristiki/" class="dropdown-item">📊 Выбор и характеристики</a>
+<a href="/category/drajvery-i-po/" class="dropdown-item">💿 Драйверы и ПО</a>
+<a href="/category/krepleniya-i-ustanovka/" class="dropdown-item">🔩 Крепления и установка</a>
+<a href="/category/utilizatsiya-i-prodazha/" class="dropdown-item">♻️ Утилизация и продажа</a>
+<a href="/category/spetsialnye-rezhimy/" class="dropdown-item">🎮 Специальные режимы</a>
+<a href="/category/drugoe/" class="dropdown-item">📁 Другое</a></div>
+        </div>
+            </nav>
+        </div>
+    </header>
+
+    <nav class="breadcrumbs" aria-label="Навигация">
+        <div class="container"><a href="/">Главная</a><span class="breadcrumb-sep">›</span><a href="/category/drugoe/">Другое</a><span class="breadcrumb-sep">›</span><span class="breadcrumb-current">Монитор статического synchronized в Java: что это и как работает</span></div>
+    </nav>
+
+    <main class="site-main">
+        <div class="container">
+            <div class="article-layout">
+                <article class="article-main">
+                    
+                    <h1>Что является монитором у статического synchronized метода в Java: полный разбор</h1>
+                    <nav class="mobile-toc"><details><summary>📋 Содержание</summary><ul><li><a href="#что-такое-монитор-в-контексте-java">Что такое монитор в контексте Java</a></li><li><a href="#статический-synchronized-метод-кто-владеет-монитором">Статический synchronized метод: кто владеет монитором?</a></li><li><a href="#почему-монитор-класса-а-не-что-то-другое">Почему монитор класса, а не что-то другое?</a></li><li><a href="#практические-примеры-как-это-работает-в-коде">Практические примеры: как это работает в коде</a></li><li><a href="#подводные-камни-и-типичные-ошибки">Подводные камни и типичные ошибки</a></li><li><a href="#производительность-и-альтернативы-статической-синхронизации">Производительность и альтернативы статической синхронизации</a></li><li><a href="#как-это-работает-на-уровне-jvm">Как это работает на уровне JVM</a></li><li><a href="#когда-стоит-использовать-статическую-синхронизацию">Когда стоит использовать статическую синхронизацию</a></li><li><a href="#faq-ответы-на-частые-вопросы">FAQ: Ответы на частые вопросы</a></li></ul></details></nav>
+                    <!--#include virtual="/ssi/article_before.html" -->
+                    <div class="article-body"><p>Когда речь заходит о многопоточном программировании в <em>Java</em>, один из ключевых вопросов — как именно работает синхронизация через ключевое слово <code>synchronized</code>. Особенно сложным для понимания часто становится механизм блокировки при вызове <strong>статических синхронизированных методов</strong>. В отличие от обычных методов, где монитором выступает текущий объект (<code>this</code>), здесь всё устроено иначе.</p>
+
+<p>Эта статья не просто ответит на вопрос, <strong>что является монитором у статического <code>synchronized</code> метода</strong>, но и раскроет связанные нюансы: как это влияет на производительность, какие подводные камни таит в себе такой подход, и почему его часто путают с синхронизацией на уровне экземпляра. Мы разберём реальные примеры кода, сравним поведение статических и нестатических методов, и даже заглянем под капот виртуальной машины <em>JVM</em>, чтобы понять, что происходит на низком уровне.</p>
+
+<p>Если вы когда-нибудь сталкивались с <em>deadlock</em>-ами в многопоточных приложениях или просто хотите глубже понять, как <em>Java</em> управляет потоками, эта статья станет для вас надёжным гидом. А для тех, кто только начинает изучать тему, мы подготовили простые аналогии и практические советы по применению <code>synchronized</code> в статическом контексте.</p>
+
+<h2 id="что-такое-монитор-в-контексте-java">Что такое монитор в контексте Java</h2>
+
+<p>Прежде чем говорить о статических методах, важно разобраться, что вообще означает термин <strong>монитор</strong> в <em>Java</em>. Монитор — это механизм синхронизации, который обеспечивает <em>взаимное исключение</em> (mutual exclusion) при доступе к разделяемым ресурсам. Фактически, это <mark>объект, который используется для блокировки потока при входе в синхронизированный блок или метод</mark>.</p>
+
+<p>В <em>Java</em> каждый объект имеет ассоциированный с ним монитор. Когда поток входит в <code>synchronized</code>-метод или блок, он захватывает монитор этого объекта. Если монитор уже занят другим потоком, текущий поток блокируется до тех пор, пока монитор не освободится.</p>
+
+<ul>
+  <li>🔒 <strong>Монитор объекта</strong> — используется для синхронизированных <strong>нестатических</strong> методов (блокируется текущий экземпляр класса, <code>this</code>).</li>
+  <li>🏢 <strong>Монитор класса</strong> — используется для синхронизированных <strong>статических</strong> методов (блокируется объект класса <code>Class</code>).</li>
+  <li>📦 <strong>Явный монитор</strong> — любой объект, указанный в <code>synchronized(obj) { ... }</code>.</li>
+</ul>
+
+<p>Важно понимать, что монитор — это не просто абстрактное понятие, а реальная сущность внутри <em>JVM</em>. Он хранит информацию о владельце блокировки, очереди ожидающих потоков и других метаданных, необходимых для управления доступом.</p>
+
+<h2 id="статический-synchronized-метод-кто-владеет-монитором">Статический synchronized метод: кто владеет монитором?</h2>
+
+<p>Теперь переходим к главному вопросу: <strong>что является монитором у статического <code>synchronized</code> метода</strong>? Ответ прост, но часто вызывает путаницу: <strong>монитором служит объект класса <code>Class</code>, соответствующий тому классу, в котором объявлен метод</strong>.</p>
+
+<p>Другими словами, когда вы объявляете статический метод с модификатором <code>synchronized</code>, как в примере ниже:</p>
+
+<pre><code>public class Counter {
+<p>private static int count = 0;</p>
+
+<p>public static synchronized void increment() {</p>
+<p>count++;</p>
+<p>}</p>
+<p>}</code></pre></p>
+
+<p>то при вызове <code>Counter.increment()</code> поток блокирует монитор объекта <code>Counter.class</code>, а не какого-либо экземпляра <code>Counter</code>. Это означает, что:</p>
+
+<ul>
+  <li>🔄 Все потоки, вызывающие <strong>любой статический <code>synchronized</code>-метод этого класса</strong>, будут конкурировать за один и тот же монитор.</li>
+  <li>🚫 Потоки, работающие с <strong>нестатическими <code>synchronized</code>-методами</strong>, не блокируются статическими (и наоборот).</li>
+  <li>🔗 Монитор класса <code>Counter.class</code> — это тот же объект, который возвращает <code>Counter.class</code> или <code>new Counter().getClass()</code>.</li>
+</ul>
+
+<p>Это ключевое отличие от нестатических методов, где каждый экземпляр класса имеет свой собственный монитор. В случае со статическими методами монитор един для всего класса, что может приводить к неожиданным блокировкам, если не учитывать этот нюанс.</p>
+
+<div class="poll-widget" id="poll-e0486853"><div class="poll-widget-question">📊 Как часто вы используете статические synchronized методы?</div><div class="poll-widget-option" data-poll="e0486853" data-idx="0" onclick="pbPollVote(this)"><span class="poll-widget-label">Часто</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="e0486853" data-idx="1" onclick="pbPollVote(this)"><span class="poll-widget-label">Иногда</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="e0486853" data-idx="2" onclick="pbPollVote(this)"><span class="poll-widget-label">Рядко</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="e0486853" data-idx="3" onclick="pbPollVote(this)"><span class="poll-widget-label">Никогда</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div></div>
+
+<h2 id="почему-монитор-класса-а-не-что-то-другое">Почему монитор класса, а не что-то другое?</h2>
+
+<p>Выбор монитора класса в качестве блокирующего объекта для статических методов не случаен. Он обусловлен несколькими важными причинами:</p>
+
+<ol>
+  <li><strong>Отсутствие экземпляра</strong>. Статические методы не привязаны к конкретному объекту, поэтому использовать <code>this</code> в качестве монитора невозможно — его просто нет.</li>
+  <li><strong>Единая точка синхронизации</strong>. Поскольку статические методы и поля принадлежат классу, а не его экземплярам, логично блокировать доступ на уровне класса, а не отдельных объектов.</li>
+  <li><strong>Совместимость с <code>synchronized</code>-блоками</strong>. В <em>Java</em> можно явно синхронизироваться по объекту класса: <code>synchronized(Counter.class) { ... }</code>. Это эквивалентно использованию статического <code>synchronized</code>-метода.</li>
+</ol>
+
+<p>Если бы монитором статического метода был, например, специальный скрытый объект внутри класса, это привело бы к путанице и несовместимости с существующим кодом. Текущая реализация обеспечивает предсказуемое поведение и позволяет разработчикам явно контролировать блокировки.</p>
+
+<p>Кстати, этот механизм работает одинаково во всех версиях <em>Java</em>, начиная с <em>JDK 1.0</em>. Даже с появлением более современных механизмов синхронизации (например, <code>ReentrantLock</code> или <code>java.util.concurrent</code>) монитор класса остаётся фундаментальной частью многопоточности в <em>Java</em>.</p>
+
+<div class="attention-box attention-tip"><span class="attention-icon">💡</span><p>Если вам нужно синхронизировать доступ к статическим полям, но при этом избежать блокировки всего класса, рассмотрите возможность использования отдельного объекта-блокировщика: <code>private static final Object LOCK = new Object();</code></p></div>
+
+<h2 id="практические-примеры-как-это-работает-в-коде">Практические примеры: как это работает в коде</h2>
+
+<p>Чтобы лучше понять, как работает монитор статического метода, рассмотрим несколько практических примеров. Начнём с простого счётчика, который увеличивается в нескольких потоках:</p>
+
+<pre><code>public class StaticSyncExample {
+<p>private static int counter = 0;</p>
+
+<p>public static synchronized void increment() {</p>
+<p>counter++;</p>
+<p>}</p>
+
+<p>public static void main(String[] args) throws InterruptedException {</p>
+<p>Thread t1 = new Thread(() -> {</p>
+<p>for (int i = 0; i &lt; 1000; i++) {</p>
+<p>increment();</p>
+<p>}</p>
+<p>});</p>
+
+<p>Thread t2 = new Thread(() -> {</p>
+<p>for (int i = 0; i &lt; 1000; i++) {</p>
+<p>increment();</p>
+<p>}</p>
+<p>});</p>
+
+<p>t1.start();</p>
+<p>t2.start();</p>
+<p>t1.join();</p>
+<p>t2.join();</p>
+
+<p>System.out.println("Counter: " + counter); // Всегда 2000</p>
+<p>}</p>
+<p>}</code></pre></p>
+
+<p>В этом примере оба потока <code>t1</code> и <code>t2</code> конкурируют за монитор класса <code>StaticSyncExample.class</code>. Благодаря <code>synchronized</code> инкремент выполняется атомарно, и финальное значение <code>counter</code> всегда будет равно 2000.</p>
+
+<p>А теперь посмотрим, что произойдёт, если мы добавим нестатический <code>synchronized</code>-метод:</p>
+
+<pre><code>public class MixedSyncExample {
+<p>private static int staticCounter = 0;</p>
+<p>private int instanceCounter = 0;</p>
+
+<p>public static synchronized void incrementStatic() {</p>
+<p>staticCounter++;</p>
+<p>}</p>
+
+<p>public synchronized void incrementInstance() {</p>
+<p>instanceCounter++;</p>
+<p>}</p>
+<p>}</code></pre></p>
+
+<ul>
+  <li>🔄 Вызов <code>incrementStatic()</code> блокирует монитор <code>MixedSyncExample.class</code>.</li>
+  <li>🔄 Вызов <code>incrementInstance()</code> блокирует монитор <strong>конкретного экземпляра</strong> <code>MixedSyncExample</code>.</li>
+  <li>⚡ Эти два вызова <strong>не блокируют друг друга</strong>, так как используют разные мониторы.</li>
+</ul>
+
+<p>Это важный момент: статические и нестатические <code>synchronized</code>-методы <strong>не конфликтуют</strong> между собой, потому что блокируют разные объекты.</p>
+
+<h2 id="подводные-камни-и-типичные-ошибки">Подводные камни и типичные ошибки</h2>
+
+<p>Непонимание того, <strong>что является монитором у статического <code>synchronized</code> метода</strong>, часто приводит к трудноуловимым багам. Вот наиболее распространённые ошибки:</p>
+
+<ol>
+  <li><strong>Блокировка всего класса</strong>. Если злоупотреблять статическими <code>synchronized</code>-методами, можно случайно заблокировать доступ ко <strong>всем</strong> статическим методам класса, даже если они логически не связаны. Это снижает параллелизм и может стать узким местом.</li>
+  <li><strong>Смешивание статической и нестатической синхронизации</strong>. Разработчики иногда ошибочно думают, что статический и нестатический <code>synchronized</code>-методы блокируют друг друга. Как мы видели ранее, это не так.</li>
+  <li><strong>Игнорирование альтернатив</strong>. В многих случаях вместо статической синхронизации лучше использовать <code>java.util.concurrent</code> (например, <code>AtomicInteger</code> или <code>ReentrantLock</code>), которые предлагают более гибкие механизмы управления.</li>
+</ol>
+
+<p>Рассмотрим пример плохого дизайна:</p>
+
+<pre><code>public class BadDesign {
+<p>private static final List&lt;String&gt; sharedList = new ArrayList<>();</p>
+
+<p>// Плохо: блокирует весь класс, даже если другие методы не работают со списком</p>
+<p>public static synchronized void addToList(String item) {</p>
+<p>sharedList.add(item);</p>
+<p>}</p>
+
+<p>// Плохо: тоже блокирует весь класс, хотя логически не связан с addToList</p>
+<p>public static synchronized void doSomethingUnrelated() {</p>
+<p>// Некая длительная операция</p>
+<p>}</p>
+<p>}</code></pre></p>
+
+<p>В этом случае поток, вызывающий <code>doSomethingUnrelated()</code>, будет блокировать потоки, пытающиеся добавить элементы в список, и наоборот. Решение — использовать отдельные объекты для блокировки:</p>
+
+<pre><code>public class GoodDesign {
+<p>private static final List&lt;String&gt; sharedList = new ArrayList<>();</p>
+<p>private static final Object listLock = new Object();</p>
+
+<p>public static void addToList(String item) {</p>
+<p>synchronized (listLock) {</p>
+<p>sharedList.add(item);</p>
+<p>}</p>
+<p>}</p>
+
+<p>public static synchronized void doSomethingUnrelated() {</p>
+<p>// Теперь не блокирует доступ к списку</p>
+<p>}</p>
+<p>}</code></pre></p>
+
+<div class="attention-box attention-tip"><span class="attention-icon">💡</span><p>Статическая синхронизация блокирует весь класс, что может снижать производительность. Используйте её только когда действительно нужно синхронизировать доступ к статическим ресурсам.</p></div>
+
+<h2 id="производительность-и-альтернативы-статической-синхронизации">Производительность и альтернативы статической синхронизации</h2>
+
+<p>Статическая синхронизация, как и любая блокировка, влияет на производительность. Основные проблемы:</p>
+
+<ul>
+  <li>🐢 <strong>Последовательное выполнение</strong>. Все потоки, вызывающие статический <code>synchronized</code>-метод, вынуждены ждать своей очереди, что снижает степень параллелизма.</li>
+  <li>🔄 <strong>Конкуренция за монитор класса</strong>. Если в классе много статических <code>synchronized</code>-методов, они будут конкурировать за один и тот же монитор, даже если логически не связаны.</li>
+  <li>🚦 <strong>Риск deadlock-ов</strong>. Неправильное использование статической синхронизации может приводить к взаимным блокировкам, особенно если мониторы захватываются в неправильном порядке.</li>
+</ul>
+
+<p>К счастью, в современной <em>Java</em> есть более эффективные альтернативы:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Альтернатива</th>
+      <th>Преимущества</th>
+      <th>Когда использовать</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>java.util.concurrent.atomic</code> (например, <code>AtomicInteger</code>)</td>
+      <td>Атомарные операции без блокировок, высокая производительность</td>
+      <td>Для простых операций над примитивами или ссылками</td>
+    </tr>
+    <tr>
+      <td><code>ReentrantLock</code></td>
+      <td>Более гибкое управление блокировками, поддержка <code>tryLock</code> и прерываний</td>
+      <td>Когда нужны расширенные возможности (таймауты, честная очередь)</td>
+    </tr>
+    <tr>
+      <td><code>ConcurrentHashMap</code>, <code>CopyOnWriteArrayList</code></td>
+      <td>Потокобезопасные коллекции с оптимизированной синхронизацией</td>
+      <td>Для работы с разделяемыми коллекциями</td>
+    </tr>
+    <tr>
+      <td><code>synchronized</code>-блок с отдельным объектом</td>
+      <td>Более точная синхронизация, чем на уровне класса</td>
+      <td>Когда нужно синхронизировать только часть статических данных</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>Пример использования <code>AtomicInteger</code> вместо статической синхронизации:</p>
+
+<pre><code>public class AtomicExample {
+<p>private static final AtomicInteger counter = new AtomicInteger(0);</p>
+
+<p>public static void increment() {</p>
+<p>counter.incrementAndGet(); // Атомарная операция без блокировок</p>
+<p>}</p>
+<p>}</code></pre></p>
+
+<p>Этот код не только проще и безопаснее, но и работает значительно быстрее в условиях высокой конкуренции.</p>
+
+<details class="faq-item"><summary>Почему AtomicInteger быстрее synchronized?</summary><div class="faq-answer"><p>Атомарные классы используют низкоуровневые инструкции процессора (например, CAS — Compare-And-Swap), которые позволяют обходиться без полноценных блокировок. Это снижает накладные расходы на синхронизацию, особенно в системах с большим количеством ядер.</p></div></details>
+
+<h2 id="как-это-работает-на-уровне-jvm">Как это работает на уровне JVM</h2>
+
+<p>Чтобы полностью понять, <strong>что является монитором у статического <code>synchronized</code> метода</strong>, полезно заглянуть под капот <em>Java Virtual Machine</em>. На уровне байт-кода статический <code>synchronized</code>-метод помечается флагом <code>ACC_SYNCHRONIZED</code>. При вызове такого метода <em>JVM</em> выполняет следующие шаги:</p>
+
+<ol>
+  <li>Получает объект <code>Class</code>, соответствующий классу, в котором объявлен метод.</li>
+  <li>Пытается захватить монитор этого объекта. Если монитор занят, поток блокируется.</li>
+  <li>После успешного захвата монитора выполняет тело метода.</li>
+  <li>По завершении метода (в том числе при исключении) освобождает монитор.</li>
+</ol>
+
+<p>Это можно увидеть, если посмотреть на байт-код скомпилированного класса с помощью <code>javap</code>:</p>
+
+<pre><code>$ javap -v StaticSyncExample
+<p>...</p>
+<p>public static synchronized void increment();</p>
+<p>descriptor: ()V</p>
+<p>flags: (0x0029) ACC_PUBLIC, ACC_STATIC, ACC_SYNCHRONIZED</p>
+<p>Code:</p>
+<p>stack=2, locals=0, args_size=0</p>
+<p>0: getstatic     #2  // Field counter:I</p>
+<p>3: iconst_1</p>
+<p>4: iadd</p>
+<p>5: putstatic     #2  // Field counter:I</p>
+<p>8: return</code></pre></p>
+
+<p>Обратите внимание на флаг <code>ACC_SYNCHRONIZED</code>. Именно он указывает <em>JVM</em>, что метод требует синхронизации на уровне класса. Для нестатических методов логика аналогична, но монитором служит объект <code>this</code>.</p>
+
+<p>Интересно, что монитор класса — это тот же самый объект, который возвращается при вызове <code>Class.forName()</code> или <code>.class</code>. Это означает, что следующий код эквивалентен использованию статического <code>synchronized</code>-метода:</p>
+
+<pre><code>public class EquivalentSync {
+<p>public static void increment() {</p>
+<p>synchronized (EquivalentSync.class) {</p>
+<p>// Тело метода</p>
+<p>}</p>
+<p>}</p>
+<p>}</code></pre></p>
+
+
+<p>Статический synchronized метод блокирует монитор класса, а не экземпляра|Статические и нестатические synchronized методы не блокируют друг друга|Для статической синхронизации можно использовать synchronized(ClassName.class) { ... }|Злоупотребление статической синхронизацией может снизить производительность--></p>
+
+<h2 id="когда-стоит-использовать-статическую-синхронизацию">Когда стоит использовать статическую синхронизацию</h2>
+
+<p>Несмотря на потенциальные проблемы с производительностью, статическая синхронизация имеет свои области применения. Она уместна в следующих случаях:</p>
+
+<ul>
+  <li>🔄 <strong>Синхронизация доступа к статическим полям</strong>. Если у вас есть разделяемые статические данные, которые нужно защитить от гонок, статический <code>synchronized</code>-метод — простой способ это сделать.</li>
+  <li>🛡️ <strong>Реализация singleton-ов</strong>. Классическая реализация singleton-а с ленивой инициализацией часто использует статическую синхронизацию для потокобезопасного создания экземпляра.</li>
+  <li>🔧 <strong>Управление глобальными ресурсами</strong>. Например, пулы соединений или кэши, которые должны быть едиными для всего приложения.</li>
+</ul>
+
+<p>Пример потокобезопасного singleton-а:</p>
+
+<pre><code>public class Singleton {
+<p>private static Singleton instance;</p>
+
+<p>private Singleton() {}</p>
+
+<p>public static synchronized Singleton getInstance() {</p>
+<p>if (instance == null) {</p>
+<p>instance = new Singleton();</p>
+<p>}</p>
+<p>return instance;</p>
+<p>}</p>
+<p>}</code></pre></p>
+
+<p>Однако даже в этом случае часто предпочитают использовать <code>enum</code> или двойную проверку с <code>volatile</code>, чтобы избежать накладных расходов на синхронизацию:</p>
+
+<pre><code>public class BetterSingleton {
+<p>private static volatile BetterSingleton instance;</p>
+
+<p>private BetterSingleton() {}</p>
+
+<p>public static BetterSingleton getInstance() {</p>
+<p>if (instance == null) {</p>
+<p>synchronized (BetterSingleton.class) {</p>
+<p>if (instance == null) {</p>
+<p>instance = new BetterSingleton();</p>
+<p>}</p>
+<p>}</p>
+<p>}</p>
+<p>return instance;</p>
+<p>}</p>
+<p>}</code></pre></p>
+
+<p>Статическая синхронизация также полезна в утилитарных классах, которые не предполагают создания экземпляров (например, <code>Math</code> или <code>Collections</code>). Если такой класс имеет разделяемое состояние, статические <code>synchronized</code>-методы — естественный способ его защиты.</p>
+
+<blockquote>⚠️ <strong>Внимание</strong>: В современных версиях <em>Java</em> (начиная с 5) для многих сценариев лучше подходят классы из пакета <code>java.util.concurrent</code>. Статическая синхронизация остаётся актуальной, но её стоит использовать осознанно, учитывая влияние на производительность.</blockquote>
+
+<h2 id="faq-ответы-на-частые-вопросы">FAQ: Ответы на частые вопросы</h2>
+
+<details>
+  <summary>Можно ли использовать статический synchronized метод для синхронизации нестатических полей?</summary>
+  <p>Нет, это бессмысленно. Статический <code>synchronized</code>-метод блокирует монитор класса, а нестатические поля принадлежат конкретным экземплярам. Если вам нужно синхронизировать доступ к нестатическим полям, используйте нестатические <code>synchronized</code>-методы или блоки <code>synchronized(this)</code>.</p>
+</details>
+
+<details>
+  <summary>Что произойдёт, если два потока вызовут разные статические synchronized методы одного класса?</summary>
+  <p>Они будут блокировать друг друга, так как оба метода используют один и тот же монитор — объект класса. Например, если у вас есть методы <code>A()</code> и <code>B()</code>, объявленные как <code>static synchronized</code>, то вызов <code>A()</code> в одном потоке заблокирует вызов <code>B()</code> в другом.</p>
+</details>
+
+<details>
+  <summary>Можно ли сделать статический synchronized метод в интерфейсе?</summary>
+  <p>Нет, в <em>Java</em> статические методы интерфейсов (начиная с <em>Java 8</em>) не могут быть <code>synchronized</code>. Если вам нужна синхронизация, реализуйте её внутри метода вручную, используя <code>synchronized</code>-блок с явным объектом-блокировщиком.</p>
+</details>
+
+<details>
+  <summary>Как проверить, какой поток владеет монитором класса?</summary>
+  <p>В стандартной библиотеке <em>Java</em> нет прямого способа узнать, какой поток владеет монитором. Однако можно использовать отладочные инструменты, такие как <em>VisualVM</em> или <em>Java Mission Control</em>, чтобы анализировать состояние потоков и блокировок. Также полезны методы <code>ThreadMXBean</code> для обнаружения deadlock-ов.</p>
+</details>
+
+<details>
+  <summary>Влияет ли статическая синхронизация на производительность в реальных приложениях?</summary>
+  <p>Да, и часто весьма значительно. Статическая синхронизация блокирует доступ ко <strong>всем</strong> статическим <code>synchronized</code>-методам класса, что может стать узким местом. В высоконагруженных системах это может приводить к снижению пропускной способности. Рекомендуется использовать более тонкие механизмы синхронизации, такие как <code>ReentrantLock</code> или атомарные классы.</p>
+</details></div>
+                    <!--#include virtual="/ssi/article_after.html" -->
+
+                </article>
+                <aside class="article-sidebar"><!--#include virtual="/ssi/sidebar_top.html" --><nav class="sidebar-search"><div class="sidebar-search-box"><input type="text" id="globalSearchInput" placeholder="🔍 Поиск статей..." autocomplete="off"><div class="search-dropdown" id="globalSearchDropdown"></div></div></nav><!--#include virtual="/ssi/sidebar_before_toc.html" --><nav class="sidebar-toc" id="sidebarToc"><h3>Содержание</h3><ul><li><a href="#что-такое-монитор-в-контексте-java">Что такое монитор в контексте Java</a></li><li><a href="#статический-synchronized-метод-кто-владеет-монитором">Статический synchronized метод: кто владеет монитором?</a></li><li><a href="#почему-монитор-класса-а-не-что-то-другое">Почему монитор класса, а не что-то другое?</a></li><li><a href="#практические-примеры-как-это-работает-в-коде">Практические примеры: как это работает в коде</a></li><li><a href="#подводные-камни-и-типичные-ошибки">Подводные камни и типичные ошибки</a></li><li><a href="#производительность-и-альтернативы-статической-синхронизации">Производительность и альтернативы статической синхронизации</a></li><li><a href="#как-это-работает-на-уровне-jvm">Как это работает на уровне JVM</a></li><li><a href="#когда-стоит-использовать-статическую-синхронизацию">Когда стоит использовать статическую синхронизацию</a></li><li><a href="#faq-ответы-на-частые-вопросы">FAQ: Ответы на частые вопросы</a></li></ul></nav><!--#include virtual="/ssi/sidebar_before_related.html" --><nav class="sidebar-related"><h3>Похожие статьи</h3><ul><li><a href="/articles/k/ka/kak-razognat-monitor-do-75-gerts-intel.html" class="related-card">Как разогнать монитор до 75 Гц через Intel: Полная инструкция</a></li><li><a href="/articles/k/ka/kak-projti-v-komnatu-s-monitorami-v-igre-dark-riddle.html" class="related-card">Как открыть комнату с мониторами в Dark Riddle: полное руководство</a></li><li><a href="/articles/k/ka/kak-podobrat-monitor-k-videokarte.html" class="related-card">Как подобрать монитор к видеокарте: полное руководство по связке GPU и дисплея</a></li><li><a href="/articles/k/ka/kak-sdelat-140-gerts-na-monitore.html" class="related-card">Как включить 140 Гц на мониторе: Настройка Windows и HDMI</a></li><li><a href="/articles/k/ka/kak-na-60-gertsovom-monitore-sdelat-75-gerts.html" class="related-card">Как повысить частоту с 60 до 75 Гц на мониторе: пошаговый гайд</a></li></ul></nav><!--#include virtual="/ssi/sidebar_after_related.html" --></aside>
+            </div>
+        </div>
+    </main>
+
+    <!--#include virtual="/ssi/before_related_bottom.html" -->
+    <section class="related-bottom">
+        <div class="container">
+            <h2 class="related-bottom-heading">📖 Читайте также</h2>
+            <div class="related-bottom-grid"><a href="/articles/k/ka/kak-razognat-monitor-do-75-gerts-intel.html" class="related-bottom-card"><span class="related-bottom-title">Как разогнать монитор до 75 Гц через Intel: Полная инструкция</span><span class="related-bottom-desc">Пошаговое руководство по увеличению частоты обновления экрана до 75 Гц для графических процессоров I</span></a><a href="/articles/k/ka/kak-projti-v-komnatu-s-monitorami-v-igre-dark-riddle.html" class="related-bottom-card"><span class="related-bottom-title">Как открыть комнату с мониторами в Dark Riddle: полное руководство</span><span class="related-bottom-desc">Подробная инструкция по прохождению загадки с монитором в Dark Riddle. Узнайте, как найти комнату, р</span></a><a href="/articles/k/ka/kak-podobrat-monitor-k-videokarte.html" class="related-bottom-card"><span class="related-bottom-title">Как подобрать монитор к видеокарте: полное руководство по связке GPU и дисплея</span><span class="related-bottom-desc">Узнайте, как выбрать монитор под вашу видеокарту. Разбираем частоту обновления, разрешение, интерфей</span></a><a href="/articles/k/ka/kak-sdelat-140-gerts-na-monitore.html" class="related-bottom-card"><span class="related-bottom-title">Как включить 140 Гц на мониторе: Настройка Windows и HDMI</span><span class="related-bottom-desc">Пошаговая инструкция по активации частоты обновления 140 Гц. Настройка видеокарты, выбор кабеля HDMI</span></a><a href="/articles/k/ka/kak-na-60-gertsovom-monitore-sdelat-75-gerts.html" class="related-bottom-card"><span class="related-bottom-title">Как повысить частоту с 60 до 75 Гц на мониторе: пошаговый гайд</span><span class="related-bottom-desc">Можно ли разогнать 60 Гц монитор до 75 Гц без вреда? Способы для Windows, Linux и BIOS. Риски и пров</span></a><a href="/articles/m/mo/monitor-dell-s2240l-skolko-gerts.html" class="related-bottom-card"><span class="related-bottom-title">Монитор Dell S2240L: сколько герц, частота обновления и настройка</span><span class="related-bottom-desc">Подробный разбор частоты обновления Dell S2240L. Узнайте, сколько герц поддерживает модель S2240L, к</span></a></div>
+        </div>
+    </section>
+    <!--#include virtual="/ssi/after_related_bottom.html" -->
+
+    <footer class="site-footer-premium">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-col">
+                    <div class="footer-brand">🖥️ Мониторум</div>
+                    <p class="footer-about">Полный справочник по настройке, ремонту и выбору компьютерных мониторов для любых задач.</p>
+                </div>
+                <div class="footer-col">
+                    <h4>Разделы</h4>
+                    <ul><li><a href="/category/nastrojka-ekrana/">⚙️ Настройка экрана</a></li>
+<li><a href="/category/podklyuchenie-ustrojstv/">🔌 Подключение устройств</a></li>
+<li><a href="/category/mnozhestvennye-ekrany/">🖥️🖥️ Множественные экраны</a></li>
+<li><a href="/category/zvuk-i-audio/">🔊 Звук и аудио</a></li>
+<li><a href="/category/remont-i-polomki/">🔧 Ремонт и поломки</a></li>
+<li><a href="/category/ukhod-i-chistka/">🧼 Уход и чистка</a></li></ul>
+                </div>
+                <div class="footer-col">
+                    <h4>Информация</h4>
+                    <ul>
+                        <li><a href="/">Главная</a></li>
+                        <li><a href="/about.html">О проекте</a></li>
+                        <li><a href="/categories.html">Все разделы</a></li>
+                        <li><a href="/contact.html">Контакты</a></li>
+                        <li><a href="/privacy.html">Конфиденциальность</a></li>
+                        <li><a href="/sitemap.xml">Карта сайта</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>© Мониторум. Все права защищены.</p>
+                <!--LiveInternet counter--><div style="margin-top:10px;"><a href="https://www.liveinternet.ru/click"
+                target="_blank"><img id="licnt06C4" width="88" height="15" style="border:0" 
+                title="LiveInternet: показано число посетителей за сегодня"
+                src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAEALAAAAAABAAEAAAIBTAA7"
+                alt=""/></a><script>(function(d,s){d.getElementById("licnt06C4").src=
+                "https://counter.yadro.ru/hit?t26.5;r"+escape(d.referrer)+
+                ((typeof(s)=="undefined")?"":";s"+s.width+"*"+s.height+"*"+
+                (s.colorDepth?s.colorDepth:s.pixelDepth))+";u"+escape(d.URL)+
+                ";h"+escape(d.title.substring(0,150))+";"+Math.random()})(document,screen)</script></div><!--/LiveInternet-->
+            </div>
+        </div>
+    </footer>
+    <div id="cookie-consent" class="cookie-popup">
+        <div class="cookie-inner">
+            <span>🍪 Мы используем файлы cookie для улучшения работы сайта.</span>
+            <button id="cookie-accept" class="cookie-btn">Принять</button>
+        </div>
+    </div>
+    <script src="/static/js/main.js"></script>
+    <script>
+    (function() {
+        const popup = document.getElementById('cookie-consent');
+        const btn = document.getElementById('cookie-accept');
+        if (popup && btn && !localStorage.getItem('cookie-accepted')) {
+            popup.classList.add('visible');
+            btn.onclick = () => {
+                localStorage.setItem('cookie-accepted', 'true');
+                popup.classList.remove('visible');
+            };
+        }
+    })();
+    </script>
+    <script>
+    function pbPollVote(el) {
+        var poll = el.closest('.poll-widget');
+        if (poll.classList.contains('voted')) return;
+        poll.classList.add('voted');
+        el.classList.add('selected');
+        var opts = poll.querySelectorAll('.poll-widget-option');
+        var n = opts.length;
+        var raw = [];
+        var sum = 0;
+        for (var i = 0; i < n; i++) {
+            var v = Math.random() * 50 + 5;
+            if (opts[i] === el) v += 30;
+            raw.push(v);
+            sum += v;
+        }
+        var pcts = raw.map(function(v) { return Math.round(v / sum * 100); });
+        var diff = 100 - pcts.reduce(function(a,b){ return a+b; }, 0);
+        pcts[Array.from(opts).indexOf(el)] += diff;
+        setTimeout(function() {
+            opts.forEach(function(opt, i) {
+                opt.querySelector('.poll-widget-bar').style.width = pcts[i] + '%';
+                opt.querySelector('.poll-widget-pct').textContent = pcts[i] + '%';
+            });
+        }, 50);
+    }
+    </script>
+    <!--#include virtual="/ssi/body_bottom.html" -->
+    <script src="/static/js/inject.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27><text y=%27.9em%27 font-size=%2790%27>🖥️</text></svg>">
+    <title>Как программа Examus отслеживает два монитора: настройки и контроль — Мониторум</title>
+    <meta name="description" content="Подробный разбор алгоритмов контроля Examus при работе на двух мониторах. Узнайте, как система фиксирует активность, переключения и скриншоты.">
+    <link rel="canonical" href="https://monitorium.vercel.app/articles/k/ka/kak-programma-examus-otslezhivaet-dva-monitora.html">
+
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="Как программа Examus отслеживает два монитора: настройки и контроль">
+    <meta property="og:description" content="Подробный разбор алгоритмов контроля Examus при работе на двух мониторах. Узнайте, как система фиксирует активность, переключения и скриншоты.">
+    <meta property="og:locale" content="ru_RU">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css?v=1780420684">
+    <style>
+    .site-footer-premium {
+        margin-top: 60px; padding: 40px 0 0; background: #1e293b; color: #94a3b8;
+    }
+    .footer-grid {
+        display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 40px;
+        padding-bottom: 32px; border-bottom: 1px solid #334155;
+    }
+    .footer-brand { font-size: 1.2rem; font-weight: 700; color: #f1f5f9; margin-bottom: 12px; }
+    .footer-about { font-size: 0.9rem; line-height: 1.6; margin-bottom: 8px; }
+    .footer-updated { font-size: 0.8rem; color: #64748b; }
+    .footer-col h4 { color: #f1f5f9; font-size: 0.95rem; margin-bottom: 16px; }
+    .footer-col ul { list-style: none; }
+    .footer-col li { margin-bottom: 8px; }
+    .footer-col a { color: #94a3b8; font-size: 0.9rem; transition: color 0.2s; }
+    .footer-col a:hover { color: #60a5fa; }
+    .footer-bottom { padding: 20px 0; text-align: center; font-size: 0.85rem; }
+    @media (max-width: 640px) {
+        .footer-grid { grid-template-columns: 1fr; gap: 24px; }
+    }
+    .cookie-popup {
+        position: fixed; bottom: 0; left: 0; right: 0; background: #1e293b; color: #fff;
+        padding: 16px; transition: transform 0.5s ease; z-index: 9999; border-top: 2px solid #2563eb;
+        transform: translateY(100%);
+    }
+    .cookie-popup.visible { transform: translateY(0); }
+    .cookie-inner { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; gap: 16px; font-size: 0.9rem; }
+    .cookie-btn { background: #2563eb; color: #fff; border: none; padding: 8px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+    .cookie-btn:hover { background: #1d4ed8; }
+    @media (max-width: 640px) {
+        .cookie-inner { flex-direction: column; text-align: center; }
+    }
+</style>
+    
+    <!--#include virtual="/ssi/head.html" -->
+</head>
+<body>
+        <!--#include virtual="/ssi/body_top.html" -->
+    <style>
+    .nav-dropdown { position: relative; display: inline-block; }
+    .dropdown-toggle {
+        background: none; border: none; cursor: pointer;
+        font: inherit; color: inherit; padding: 8px 12px;
+        border-radius: 8px; transition: background 0.2s;
+    }
+    .dropdown-toggle:hover { background: rgba(0,0,0,0.05); }
+    .dropdown-menu {
+        display: none; position: absolute; right: 0; top: 100%;
+        min-width: 240px; max-height: 70vh; overflow-y: auto;
+        background: var(--card-bg, #fff); border: 1px solid var(--border, #e5e7eb);
+        border-radius: 12px; box-shadow: 0 12px 40px rgba(0,0,0,0.12);
+        padding: 8px 0; z-index: 1000;
+    }
+    .nav-dropdown::after {
+        content: ''; position: absolute; left: 0; right: 0;
+        top: 100%; height: 12px;
+    }
+    .nav-dropdown:hover .dropdown-menu,
+    .nav-dropdown:focus-within .dropdown-menu { display: block; }
+    .dropdown-item {
+        display: block; padding: 10px 20px; color: var(--text, #1f2937);
+        text-decoration: none; font-size: 0.95rem; transition: background 0.15s;
+        white-space: nowrap;
+    }
+    .dropdown-item:hover { background: rgba(37,99,235,0.06); color: var(--primary, #2563eb); }
+    @media (max-width: 768px) {
+        .main-nav > .nav-link { display: none; }
+        .dropdown-toggle { display: none; }
+        .dropdown-menu {
+            display: block !important; position: static;
+            box-shadow: none; border: none; border-radius: 0;
+            min-width: auto; max-height: none; padding: 0;
+            background: transparent;
+        }
+        .dropdown-item {
+            padding: 8px 0; font-size: 1rem;
+        }
+    }
+    </style>
+    <header class="site-header">
+        <div class="container header-inner">
+            <a href="/" class="logo">
+                <span class="logo-icon">🖥️</span>
+                <span>Мониторум</span>
+            </a>
+            <button class="mobile-menu-btn" aria-label="Меню" id="menuBtn">☰</button>
+            <nav class="main-nav" id="mainNav">
+                <a href="/category/nastrojka-ekrana/" class="nav-link">⚙️ Настройка экрана</a>
+<a href="/category/podklyuchenie-ustrojstv/" class="nav-link">🔌 Подключение устройств</a>
+<a href="/category/mnozhestvennye-ekrany/" class="nav-link">🖥️🖥️ Множественные экраны</a>
+<a href="/category/zvuk-i-audio/" class="nav-link">🔊 Звук и аудио</a>
+<div class="nav-dropdown">
+            <button class="nav-link dropdown-toggle">📂 Все разделы ▾</button>
+            <div class="dropdown-menu"><a href="/category/nastrojka-ekrana/" class="dropdown-item">⚙️ Настройка экрана</a>
+<a href="/category/podklyuchenie-ustrojstv/" class="dropdown-item">🔌 Подключение устройств</a>
+<a href="/category/mnozhestvennye-ekrany/" class="dropdown-item">🖥️🖥️ Множественные экраны</a>
+<a href="/category/zvuk-i-audio/" class="dropdown-item">🔊 Звук и аудио</a>
+<a href="/category/remont-i-polomki/" class="dropdown-item">🔧 Ремонт и поломки</a>
+<a href="/category/ukhod-i-chistka/" class="dropdown-item">🧼 Уход и чистка</a>
+<a href="/category/vybor-i-kharakteristiki/" class="dropdown-item">📊 Выбор и характеристики</a>
+<a href="/category/drajvery-i-po/" class="dropdown-item">💿 Драйверы и ПО</a>
+<a href="/category/krepleniya-i-ustanovka/" class="dropdown-item">🔩 Крепления и установка</a>
+<a href="/category/utilizatsiya-i-prodazha/" class="dropdown-item">♻️ Утилизация и продажа</a>
+<a href="/category/spetsialnye-rezhimy/" class="dropdown-item">🎮 Специальные режимы</a>
+<a href="/category/drugoe/" class="dropdown-item">📁 Другое</a></div>
+        </div>
+            </nav>
+        </div>
+    </header>
+
+    <nav class="breadcrumbs" aria-label="Навигация">
+        <div class="container"><a href="/">Главная</a><span class="breadcrumb-sep">›</span><a href="/category/mnozhestvennye-ekrany/">Множественные экраны</a><span class="breadcrumb-sep">›</span><span class="breadcrumb-current">Как программа Examus отслеживает два монитора: настройки и контроль</span></div>
+    </nav>
+
+    <main class="site-main">
+        <div class="container">
+            <div class="article-layout">
+                <article class="article-main">
+                    
+                    <h1>Как программа Examus отслеживает два монитора: механизмы контроля и настройки</h1>
+                    <nav class="mobile-toc"><details><summary>📋 Содержание</summary><ul><li><a href="#алгоритм-обнаружения-дополнительного-дисплея">Алгоритм обнаружения дополнительного дисплея</a></li><li><a href="#режимы-захвата-изображения-на-нескольких-экранах">Режимы захвата изображения на нескольких экранах</a></li><li><a href="#правила-работы-с-окнами-и-переключениями">Правила работы с окнами и переключениями</a></li><li><a href="#влияние-конфигурации-сети-и-пропускной-способности">Влияние конфигурации сети и пропускной способности</a></li><li><a href="#технические-ограничения-и-возможные-сбои">Технические ограничения и возможные сбои</a></li><li><a href="#рекомендации-по-подготовке-рабочего-места">Рекомендации по подготовке рабочего места</a></li><li><a href="#faq-часто-задаваемые-вопросы-о-работе-examus">FAQ: Часто задаваемые вопросы о работе Examus</a></li></ul></details></nav>
+                    <!--#include virtual="/ssi/article_before.html" -->
+                    <div class="article-body"><p>В современной образовательной и корпоративной среде контроль честности экзаменов и эффективности работы сотрудников становится приоритетной задачей. Платформы вроде <em>Examus</em> предлагают комплексные решения для удаленного мониторинга, где ключевую роль играет корректная работа с графическим интерфейсом. Особенно это актуально при использовании <strong>двух мониторов</strong>, так как стандартные алгоритмы часто ориентированы на единичное рабочее пространство.</p>
+
+<p>Вам необходимо понимать, что система сканирует не просто одно окно браузера, а весь видимый пользователем экран. Если вы подключили второй дисплей, <em>Examus</em> автоматически расширяет зону наблюдения, захватывая изображение с обоих устройств. Это позволяет администраторам и преподавателям видеть полную картину происходящего, исключая возможность скрытой работы на втором экране.</p>
+
+<p>Механизм фиксации событий работает непрерывно, записывая не только статичные изображения, но и динамику переключения между окнами. <strong>Системное логирование</strong> отслеживает каждый клик, нажатие клавиш и перемещение курсора мыши по всей объединенной области. Любая попытка обойти эти правила, например, отключение второго монитора во время теста, будет немедленно зафиксирована как нарушение протокола.</p>
+
+<h2 id="алгоритм-обнаружения-дополнительного-дисплея">Алгоритм обнаружения дополнительного дисплея</h2>
+
+<p>При запуске теста или рабочей сессии приложение Examus проводит <strong>автоматическую диагностику</strong> оборудования. В этот момент программа опрашивает операционную систему о количестве подключенных устройств вывода изображения. Если обнаруживается более одного <strong>активного монитора</strong>, интерфейс управления меняется в зависимости от настроенных политик безопасности.</p>
+
+<p>Система не просто констатирует факт наличия второго экрана, она определяет его <strong>разрешение и ориентацию</strong>. Это важно для корректного формирования видеопотока и скриншотов, которые отправляются на сервер. Вам не нужно вручную указывать параметры <code>1920×1080</code> или <code>2560×1440</code>, так как <em>Examus</em> считывает эти данные напрямую из драйверов видеокарты.</p>
+
+<p>Важно отметить, что даже если второй монитор настроен как <strong>расширенный рабочий стол</strong>, система все равно будет мониторить его. Некоторые пользователи ошибочно полагают, что перемещение окна браузера на основной экран сделает второй дисплей невидимым для программы, но это не так. <strong>Фоновый мониторинг</strong> срабатывает мгновенно при обнаружении изменений в конфигурации экрана.</p>
+
+<h2 id="режимы-захвата-изображения-на-нескольких-экранах">Режимы захвата изображения на нескольких экранах</h2>
+
+<p>Существует несколько стратегий, которые использует программа для отображения видеопотока с двух мониторов. В зависимости от настроек экзаменатора, администратор может видеть либо <strong>сдвоенное изображение</strong>, где оба экрана объединены в одну горизонтальную или вертикальную панель, либо переключаться между ними по клику.</p>
+
+<p>В режиме сдвоенного изображения <strong>общее разрешение</strong> записи увеличивается пропорционально количеству дисплеев. Это создает более детализированную, но и более тяжелую для обработки картинку. Для стабильной работы требуется высокий <strong>пропускной канал</strong> интернета, иначе может наблюдаться задержка трансляции или снижение качества видео.</p>
+
+<p>Если выбран режим переключения, система автоматически фокусируется на том экране, где движется курсор мыши. Однако <strong>периодическая проверка</strong> второго монитора все равно происходит через заданные интервалы времени. Это гарантирует, что пользователь не сможет долго находиться в зоне, не охваченной активным вниманием проктора.</p>
+
+<p>Технически реализация этого процесса зависит от прав доступа, предоставленных приложению. Examus запрашивает разрешение на <strong>захват экрана</strong> с самого начала запуска. Без этого разрешения работа на двух мониторах невозможна, и тестирование будет заблокировано на этапе инициализации.</p>
+
+<div class="poll-widget" id="poll-f14057e6"><div class="poll-widget-question">📊 Видите ли вы оба монитора в окне предварительного просмотра?</div><div class="poll-widget-option" data-poll="f14057e6" data-idx="0" onclick="pbPollVote(this)"><span class="poll-widget-label">Да, оба</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="f14057e6" data-idx="1" onclick="pbPollVote(this)"><span class="poll-widget-label">Виден только один</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="f14057e6" data-idx="2" onclick="pbPollVote(this)"><span class="poll-widget-label">Не знаю/Не проверял</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="f14057e6" data-idx="3" onclick="pbPollVote(this)"><span class="poll-widget-label">Ошибка отображения</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div></div>
+
+<h2 id="правила-работы-с-окнами-и-переключениями">Правила работы с окнами и переключениями</h2>
+
+<p>Критическим аспектом использования двух экранов является поведение окон приложений. Программа Examus жестко контролирует положение окна с <strong>экзаменационным тестом</strong>. Если вы попытаетесь развернуть его на весь экран первого монитора, а на втором оставить открытым браузер с гуглением, система это зафиксирует.</p>
+
+<p>Каждое переключение фокуса между окнами, даже если они находятся на разных физических дисплеях, вызывает <strong>тревожное событие</strong>. В логах это будет отмечено как «потеря фокуса» или «неавторизованное окно». Инструктор видит уведомление о том, что внимание студента или сотрудника смещено с основного процесса.</p>
+
+<p>Запрещается использование <strong>перетаскивания</strong> (drag-and-drop) элементов между мониторами во время теста. Это действие интерпретируется как попытка перемещения запрещенного контента или поиска ответов. Система блокирует такие действия или помечает их как нарушение, в зависимости от строгости настроек прокторинга.</p>
+
+<p>Иногда пользователи пытаются скрыть информацию, используя режим <strong>оконного интерфейса</strong> вместо полноэкранного. Однако даже в этом случае Examus сканирует область вокруг активного окна, чтобы убедиться в отсутствии посторонних элементов. Перемещение окна в угол экрана на втором мониторе не спасет от фиксации нарушения.</p>
+
+<blockquote>
+<p>⚠️ <strong>Внимание:</strong> Попытка скрыть второй монитор физическим отключением кабеля или перезагрузкой во время теста расценивается как грубое нарушение правил. Система зафиксирует потерю видеосигнала и автоматически завершит сессию или отправит предупреждение администратору.</p>
+</blockquote>
+
+<div class="checklist-block"><h4>☑️ Проверка готовности к тесту с двумя мониторами</h4><label class="check-item"><input type="checkbox"><span>Подключить оба дисплея</span></label><label class="check-item"><input type="checkbox"><span>Настроить режим расширения</span></label><label class="check-item"><input type="checkbox"><span>Разрешить захват экрана в ОС</span></label><label class="check-item"><input type="checkbox"><span>Убрать все лишние окна</span></label><label class="check-item"><input type="checkbox"><span>Запустить тестовый режим</span></label><div class="check-progress">Выполнено: <span class="check-count">0</span> / 5</div></div>
+
+<h2 id="влияние-конфигурации-сети-и-пропускной-способности">Влияние конфигурации сети и пропускной способности</h2>
+
+<p>Передача изображения с двух мониторов требует значительно больше ресурсов, чем с одного. <strong>Объем данных</strong> в секунду увеличивается почти вдвое, что может привести к задержкам при нестабильном соединении. Вам необходимо убедиться, что скорость отдачи (upload speed) соответствует требованиям платформы.</p>
+
+<p>При низкой скорости интернета программа автоматически снижает <strong>битрейт видео</strong>, чтобы сохранить стабильность потока. Это может привести к потере четкости на втором мониторе, где часто сосредоточена вспомогательная информация. В таких условиях проктор может не рассмотреть детали происходящего, что снижает эффективность контроля.</p>
+
+<p>Рекомендуется использовать <strong>проводное подключение</strong> (Ethernet) вместо Wi-Fi, особенно при работе с множественными экранами. Беспроводная сеть подвержена помехам и колебаниям пинга, что критично для синхронизации видеопотока и событий мыши. Лаги в передаче данных могут быть ошибочно интерпретированы как попытка манипуляции интерфейсом.</p>
+
+<p>В таблице ниже представлены ориентировочные требования к сети для разных конфигураций:</p>
+
+<table>
+<thead>
+<tr>
+<th>Конфигурация</th>
+<th>Минимальная скорость Upload</th>
+<th>Рекомендуемая скорость</th>
+<th>Тип соединения</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Один монитор</td>
+<td>2 Мбит/с</td>
+<td>5 Мбит/с</td>
+<td>Wi-Fi 5/5G или LAN</td>
+</tr>
+<tr>
+<td>Два монитора (стандарт)</td>
+<td>4 Мбит/с</td>
+<td>10 Мбит/с</td>
+<td>LAN (Ethernet)</td>
+</tr>
+<tr>
+<td>Два монитора (HD/4K)</td>
+<td>8 Мбит/с</td>
+<td>20 Мбит/с+</td>
+<td>LAN (Ethernet)</td>
+</tr>
+</tbody>
+</table>
+
+<h2 id="технические-ограничения-и-возможные-сбои">Технические ограничения и возможные сбои</h2>
+
+<p>Несмотря на продвинутые алгоритмы, работа с двумя мониторами может столкнуться с техническими ограничениями. Например, использование <strong>виртуальных дисплеев</strong> или программ-эмуляторов экранов может привести к конфликту с драйверами захвата. Examus может некорректно отобразить один из экранов или показать черный экран вместо изображения.</p>
+
+<p>Некоторые специфические настройки <strong>видеокарт</strong> (NVIDIA, AMD, Intel) могут влиять на работу захвата. Функции вроде «Game Mode» или игровые оверлеи часто конфликтуют с системными API захвата экрана. Вам следует отключить все игровые наложения перед началом экзамена или работы.</p>
+
+<p>В случае использования <strong>ноутбука с внешним монитором</strong> важно учитывать, что экран ноутбука считается одним из дисплеев. Даже если вы повернете крышку ноутбука, система может продолжать считать его активным устройством вывода. Это часто приводит к путанице и ошибкам при проверке лога сессии.</p>
+
+<details class="faq-item"><summary>Почему на втором мониторе нет картинки?</summary><div class="faq-answer"><p>Если второй экран отображается черным, проверьте настройки захвата в ОС. Возможно, требуется предоставить права администратора для приложения Examus или отключить аппаратное ускорение в браузере.</p></div></details>
+
+<blockquote>
+<p>⚠️ <strong>Внимание:</strong> Если вы используете ноутбук, убедитесь, что режим «Только второй экран» (Second screen only) не активирован случайно. Это может привести к тому, что система захватит пустой черный экран вместо рабочего стола, что расценится как техническая ошибка или нарушение.</p>
+</blockquote>
+
+<p> Если вы не проверили работоспособность <strong>захвата видео</strong> на обоих мониторах перед началом, последствия ложатся на вас. Проводите тестовый запуск заранее, чтобы исключить форс-мажорные обстоятельства.</p>
+
+<h2 id="рекомендации-по-подготовке-рабочего-места">Рекомендации по подготовке рабочего места</h2>
+
+<p>Для успешного прохождения мониторинга с двумя мониторами необходимо тщательно подготовить <strong>рабочую зону</strong>. Уберите все посторонние предметы, которые могут попасть в кадр веб-камеры или отбрасывать тени на экраны. Освещение должно быть равномерным, чтобы избежать бликов, мешающих <strong>распознаванию текста</strong>.</p>
+
+<p>Разместите мониторы так, чтобы они находились в естественной плоскости взгляда. Не следует располагать один экран слишком высоко или низко, так как это может затруднить фиксацию <strong>взгляда пользователя</strong> через веб-камеру. Идеальная конфигурация — оба экрана на уровне глаз, симметрично относительно центра.</p>
+
+<p>Перед началом сессии закройте все ненужные приложения. Даже если они свернуты, <strong>фоновые процессы</strong> могут вызывать всплывающие уведомления, которые система пометит как нарушение. Отключите мессенджеры, почтовые клиенты и любые сервисы с уведомлениями на обоих дисплеях.</p>
+
+<p>Если вы работаете в корпоративной среде, уточните у IT-отдела, разрешено ли использование <strong>дополнительных мониторов</strong> для конкретных задач. В некоторых компаниях политика безопасности требует использования только одного экрана для всех рабочих процессов, чтобы упростить аудит и контроль.</p>
+
+<div class="attention-box attention-tip"><span class="attention-icon">💡</span><p>Правильная подготовка рабочего места и проверка стабильности сети перед тестом — залог успешной и беспроблемной сдачи экзамена на двух мониторах.</p></div>
+
+<h2 id="faq-часто-задаваемые-вопросы-о-работе-examus">FAQ: Часто задаваемые вопросы о работе Examus</h2>
+
+<details>
+<summary>Можно ли отключить второй монитор во время теста, чтобы система не видела его?</summary>
+<p>Нет, отключение второго монитора в процессе активной сессии будет мгновенно зафиксировано системой как потеря видеосигнала. Это приведет к автоматическому завершению экзамена или предупреждению администратора. Система ожидает стабильной конфигурации оборудования на протяжении всей сессии.</p>
+</details>
+
+<details>
+<summary>Видит ли преподаватель оба экрана одновременно в реальном времени?</summary>
+<p>Зависит от настроек прокторинга. В большинстве случаев администратор видит либо сдвоенное изображение (панораму), либо переключается между экранами вручную. Однако автоматическая запись сохраняет изображение с обоих мониторов независимо от того, смотрит на них администратор в данный момент или нет.</p>
+</details>
+
+<details>
+<summary>Что будет, если я перемещу окно теста на второй монитор?</summary>
+<p>Перемещение окна теста на второй монитор само по себе не является нарушением, если это разрешено правилами. Однако, если окно выйдет за границы разрешенной рабочей области или если на этом экране будет обнаружен запрещенный контент, система зафиксирует нарушение. Главное — не отводить взгляд от окна теста.</p>
+</details>
+
+<details>
+<summary>Требуются ли особые драйверы для видеокарты для работы с двумя экранами?</summary>
+<p>Нет, специальные драйверы не нужны. Examus работает со стандартными драйверами операционной системы. Однако рекомендуется обновить драйверы видеокарты до последней версии, чтобы избежать конфликтов с API захвата экрана и обеспечить корректное отображение изображения.</p>
+</details>
+
+<details>
+<summary>Как проверить, видит ли программа второй монитор перед началом?</summary>
+<p>Перед началом теста запустите встроенную функцию проверки оборудования в интерфейсе Examus. В окне предварительного просмотра вы должны увидеть изображение со всех подключенных дисплеев. Если второго экрана нет, измените настройки вывода изображения в ОС перед запуском.</p>
+</details></div>
+                    <!--#include virtual="/ssi/article_after.html" -->
+
+                </article>
+                <aside class="article-sidebar"><!--#include virtual="/ssi/sidebar_top.html" --><nav class="sidebar-search"><div class="sidebar-search-box"><input type="text" id="globalSearchInput" placeholder="🔍 Поиск статей..." autocomplete="off"><div class="search-dropdown" id="globalSearchDropdown"></div></div></nav><!--#include virtual="/ssi/sidebar_before_toc.html" --><nav class="sidebar-toc" id="sidebarToc"><h3>Содержание</h3><ul><li><a href="#алгоритм-обнаружения-дополнительного-дисплея">Алгоритм обнаружения дополнительного дисплея</a></li><li><a href="#режимы-захвата-изображения-на-нескольких-экранах">Режимы захвата изображения на нескольких экранах</a></li><li><a href="#правила-работы-с-окнами-и-переключениями">Правила работы с окнами и переключениями</a></li><li><a href="#влияние-конфигурации-сети-и-пропускной-способности">Влияние конфигурации сети и пропускной способности</a></li><li><a href="#технические-ограничения-и-возможные-сбои">Технические ограничения и возможные сбои</a></li><li><a href="#рекомендации-по-подготовке-рабочего-места">Рекомендации по подготовке рабочего места</a></li><li><a href="#faq-часто-задаваемые-вопросы-о-работе-examus">FAQ: Часто задаваемые вопросы о работе Examus</a></li></ul></nav><!--#include virtual="/ssi/sidebar_before_related.html" --><nav class="sidebar-related"><h3>Похожие статьи</h3><ul><li><a href="/articles/k/ka/kak-otkryt-fl-studio-na-2-monitora.html" class="related-card">Настройка FL Studio на двух мониторах: полное руководство</a></li><li><a href="/articles/k/ka/kak-izmenit-razreshenie-na-vtorom-monitore.html" class="related-card">Как изменить разрешение на втором мониторе: Полная инструкция</a></li><li><a href="/articles/k/ka/kak-vybrat-drugoj-monitor-glavnym.html" class="related-card">Как выбрать другой монитор главным: Пошаговая инструкция для Windows и Mac</a></li><li><a href="/articles/k/ka/kak-rastyanut-fon-rabochego-stola-na-2-monitora.html" class="related-card">Как растянуть фон рабочего стола на 2 монитора: Полная инструкция</a></li><li><a href="/articles/i/is/ispolzovanie-ipad-kak-vtorogo-monitora-mac.html" class="related-card">iPad как второй монитор для Mac: 3 лучших способа подключения</a></li></ul></nav><!--#include virtual="/ssi/sidebar_after_related.html" --></aside>
+            </div>
+        </div>
+    </main>
+
+    <!--#include virtual="/ssi/before_related_bottom.html" -->
+    <section class="related-bottom">
+        <div class="container">
+            <h2 class="related-bottom-heading">📖 Читайте также</h2>
+            <div class="related-bottom-grid"><a href="/articles/k/ka/kak-otkryt-fl-studio-na-2-monitora.html" class="related-bottom-card"><span class="related-bottom-title">Настройка FL Studio на двух мониторах: полное руководство</span><span class="related-bottom-desc">Пошаговая инструкция по работе в FL Studio на 2 экранах. Настройка панелей, перенос редактора и микш</span></a><a href="/articles/k/ka/kak-izmenit-razreshenie-na-vtorom-monitore.html" class="related-bottom-card"><span class="related-bottom-title">Как изменить разрешение на втором мониторе: Полная инструкция</span><span class="related-bottom-desc">Узнайте, как настроить правильное разрешение для второго экрана в Windows и macOS. Решение проблем с</span></a><a href="/articles/k/ka/kak-vybrat-drugoj-monitor-glavnym.html" class="related-bottom-card"><span class="related-bottom-title">Как выбрать другой монитор главным: Пошаговая инструкция для Windows и Mac</span><span class="related-bottom-desc">Узнайте, как назначить основной дисплей в настройках Windows или macOS. Решите проблемы со стартом п</span></a><a href="/articles/k/ka/kak-rastyanut-fon-rabochego-stola-na-2-monitora.html" class="related-bottom-card"><span class="related-bottom-title">Как растянуть фон рабочего стола на 2 монитора: Полная инструкция</span><span class="related-bottom-desc">Пошаговое руководство по настройке обоев на двух экранах. Решаем проблемы растягивания, смены режимо</span></a><a href="/articles/i/is/ispolzovanie-ipad-kak-vtorogo-monitora-mac.html" class="related-bottom-card"><span class="related-bottom-title">iPad как второй монитор для Mac: 3 лучших способа подключения</span><span class="related-bottom-desc">Как превратить iPad в дисплей для Mac? Полный гайд по Sidecar, Duet Display и Luna Display: настройк</span></a><a href="/articles/k/ka/kak-rastyanut-fon-rabochego-stola-na-dva-monitora.html" class="related-bottom-card"><span class="related-bottom-title">Как растянуть фон рабочего стола на два монитора: Полное руководство</span><span class="related-bottom-desc">Пошаговая инструкция по настройке обоев на двух экранах. Решение проблем с границами, выбор режима р</span></a></div>
+        </div>
+    </section>
+    <!--#include virtual="/ssi/after_related_bottom.html" -->
+
+    <footer class="site-footer-premium">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-col">
+                    <div class="footer-brand">🖥️ Мониторум</div>
+                    <p class="footer-about">Полный справочник по настройке, ремонту и выбору компьютерных мониторов для любых задач.</p>
+                </div>
+                <div class="footer-col">
+                    <h4>Разделы</h4>
+                    <ul><li><a href="/category/nastrojka-ekrana/">⚙️ Настройка экрана</a></li>
+<li><a href="/category/podklyuchenie-ustrojstv/">🔌 Подключение устройств</a></li>
+<li><a href="/category/mnozhestvennye-ekrany/">🖥️🖥️ Множественные экраны</a></li>
+<li><a href="/category/zvuk-i-audio/">🔊 Звук и аудио</a></li>
+<li><a href="/category/remont-i-polomki/">🔧 Ремонт и поломки</a></li>
+<li><a href="/category/ukhod-i-chistka/">🧼 Уход и чистка</a></li></ul>
+                </div>
+                <div class="footer-col">
+                    <h4>Информация</h4>
+                    <ul>
+                        <li><a href="/">Главная</a></li>
+                        <li><a href="/about.html">О проекте</a></li>
+                        <li><a href="/categories.html">Все разделы</a></li>
+                        <li><a href="/contact.html">Контакты</a></li>
+                        <li><a href="/privacy.html">Конфиденциальность</a></li>
+                        <li><a href="/sitemap.xml">Карта сайта</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>© Мониторум. Все права защищены.</p>
+                <!--LiveInternet counter--><div style="margin-top:10px;"><a href="https://www.liveinternet.ru/click"
+                target="_blank"><img id="licnt06C4" width="88" height="15" style="border:0" 
+                title="LiveInternet: показано число посетителей за сегодня"
+                src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAEALAAAAAABAAEAAAIBTAA7"
+                alt=""/></a><script>(function(d,s){d.getElementById("licnt06C4").src=
+                "https://counter.yadro.ru/hit?t26.5;r"+escape(d.referrer)+
+                ((typeof(s)=="undefined")?"":";s"+s.width+"*"+s.height+"*"+
+                (s.colorDepth?s.colorDepth:s.pixelDepth))+";u"+escape(d.URL)+
+                ";h"+escape(d.title.substring(0,150))+";"+Math.random()})(document,screen)</script></div><!--/LiveInternet-->
+            </div>
+        </div>
+    </footer>
+    <div id="cookie-consent" class="cookie-popup">
+        <div class="cookie-inner">
+            <span>🍪 Мы используем файлы cookie для улучшения работы сайта.</span>
+            <button id="cookie-accept" class="cookie-btn">Принять</button>
+        </div>
+    </div>
+    <script src="/static/js/main.js"></script>
+    <script>
+    (function() {
+        const popup = document.getElementById('cookie-consent');
+        const btn = document.getElementById('cookie-accept');
+        if (popup && btn && !localStorage.getItem('cookie-accepted')) {
+            popup.classList.add('visible');
+            btn.onclick = () => {
+                localStorage.setItem('cookie-accepted', 'true');
+                popup.classList.remove('visible');
+            };
+        }
+    })();
+    </script>
+    <script>
+    function pbPollVote(el) {
+        var poll = el.closest('.poll-widget');
+        if (poll.classList.contains('voted')) return;
+        poll.classList.add('voted');
+        el.classList.add('selected');
+        var opts = poll.querySelectorAll('.poll-widget-option');
+        var n = opts.length;
+        var raw = [];
+        var sum = 0;
+        for (var i = 0; i < n; i++) {
+            var v = Math.random() * 50 + 5;
+            if (opts[i] === el) v += 30;
+            raw.push(v);
+            sum += v;
+        }
+        var pcts = raw.map(function(v) { return Math.round(v / sum * 100); });
+        var diff = 100 - pcts.reduce(function(a,b){ return a+b; }, 0);
+        pcts[Array.from(opts).indexOf(el)] += diff;
+        setTimeout(function() {
+            opts.forEach(function(opt, i) {
+                opt.querySelector('.poll-widget-bar').style.width = pcts[i] + '%';
+                opt.querySelector('.poll-widget-pct').textContent = pcts[i] + '%';
+            });
+        }, 50);
+    }
+    </script>
+    <!--#include virtual="/ssi/body_bottom.html" -->
+    <script src="/static/js/inject.js" defer></script>
+</body>
+</html>

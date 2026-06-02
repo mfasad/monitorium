@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27><text y=%27.9em%27 font-size=%2790%27>🖥️</text></svg>">
+    <title>Как настроить Citrix Workspace на два монитора: полное руководство — Мониторум</title>
+    <meta name="description" content="Пошаговая инструкция по включению режима двух мониторов в Citrix. Настройка клиента, групповых политик и устранение проблем с масштабированием.">
+    <link rel="canonical" href="https://monitorium.vercel.app/articles/k/ka/kak-sdelat-citrix-na-dva-monitora.html">
+
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="Как настроить Citrix Workspace на два монитора: полное руководство">
+    <meta property="og:description" content="Пошаговая инструкция по включению режима двух мониторов в Citrix. Настройка клиента, групповых политик и устранение проблем с масштабированием.">
+    <meta property="og:locale" content="ru_RU">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css?v=1780420684">
+    <style>
+    .site-footer-premium {
+        margin-top: 60px; padding: 40px 0 0; background: #1e293b; color: #94a3b8;
+    }
+    .footer-grid {
+        display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 40px;
+        padding-bottom: 32px; border-bottom: 1px solid #334155;
+    }
+    .footer-brand { font-size: 1.2rem; font-weight: 700; color: #f1f5f9; margin-bottom: 12px; }
+    .footer-about { font-size: 0.9rem; line-height: 1.6; margin-bottom: 8px; }
+    .footer-updated { font-size: 0.8rem; color: #64748b; }
+    .footer-col h4 { color: #f1f5f9; font-size: 0.95rem; margin-bottom: 16px; }
+    .footer-col ul { list-style: none; }
+    .footer-col li { margin-bottom: 8px; }
+    .footer-col a { color: #94a3b8; font-size: 0.9rem; transition: color 0.2s; }
+    .footer-col a:hover { color: #60a5fa; }
+    .footer-bottom { padding: 20px 0; text-align: center; font-size: 0.85rem; }
+    @media (max-width: 640px) {
+        .footer-grid { grid-template-columns: 1fr; gap: 24px; }
+    }
+    .cookie-popup {
+        position: fixed; bottom: 0; left: 0; right: 0; background: #1e293b; color: #fff;
+        padding: 16px; transition: transform 0.5s ease; z-index: 9999; border-top: 2px solid #2563eb;
+        transform: translateY(100%);
+    }
+    .cookie-popup.visible { transform: translateY(0); }
+    .cookie-inner { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; gap: 16px; font-size: 0.9rem; }
+    .cookie-btn { background: #2563eb; color: #fff; border: none; padding: 8px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+    .cookie-btn:hover { background: #1d4ed8; }
+    @media (max-width: 640px) {
+        .cookie-inner { flex-direction: column; text-align: center; }
+    }
+</style>
+    
+    <!--#include virtual="/ssi/head.html" -->
+</head>
+<body>
+        <!--#include virtual="/ssi/body_top.html" -->
+    <style>
+    .nav-dropdown { position: relative; display: inline-block; }
+    .dropdown-toggle {
+        background: none; border: none; cursor: pointer;
+        font: inherit; color: inherit; padding: 8px 12px;
+        border-radius: 8px; transition: background 0.2s;
+    }
+    .dropdown-toggle:hover { background: rgba(0,0,0,0.05); }
+    .dropdown-menu {
+        display: none; position: absolute; right: 0; top: 100%;
+        min-width: 240px; max-height: 70vh; overflow-y: auto;
+        background: var(--card-bg, #fff); border: 1px solid var(--border, #e5e7eb);
+        border-radius: 12px; box-shadow: 0 12px 40px rgba(0,0,0,0.12);
+        padding: 8px 0; z-index: 1000;
+    }
+    .nav-dropdown::after {
+        content: ''; position: absolute; left: 0; right: 0;
+        top: 100%; height: 12px;
+    }
+    .nav-dropdown:hover .dropdown-menu,
+    .nav-dropdown:focus-within .dropdown-menu { display: block; }
+    .dropdown-item {
+        display: block; padding: 10px 20px; color: var(--text, #1f2937);
+        text-decoration: none; font-size: 0.95rem; transition: background 0.15s;
+        white-space: nowrap;
+    }
+    .dropdown-item:hover { background: rgba(37,99,235,0.06); color: var(--primary, #2563eb); }
+    @media (max-width: 768px) {
+        .main-nav > .nav-link { display: none; }
+        .dropdown-toggle { display: none; }
+        .dropdown-menu {
+            display: block !important; position: static;
+            box-shadow: none; border: none; border-radius: 0;
+            min-width: auto; max-height: none; padding: 0;
+            background: transparent;
+        }
+        .dropdown-item {
+            padding: 8px 0; font-size: 1rem;
+        }
+    }
+    </style>
+    <header class="site-header">
+        <div class="container header-inner">
+            <a href="/" class="logo">
+                <span class="logo-icon">🖥️</span>
+                <span>Мониторум</span>
+            </a>
+            <button class="mobile-menu-btn" aria-label="Меню" id="menuBtn">☰</button>
+            <nav class="main-nav" id="mainNav">
+                <a href="/category/nastrojka-ekrana/" class="nav-link">⚙️ Настройка экрана</a>
+<a href="/category/podklyuchenie-ustrojstv/" class="nav-link">🔌 Подключение устройств</a>
+<a href="/category/mnozhestvennye-ekrany/" class="nav-link">🖥️🖥️ Множественные экраны</a>
+<a href="/category/zvuk-i-audio/" class="nav-link">🔊 Звук и аудио</a>
+<div class="nav-dropdown">
+            <button class="nav-link dropdown-toggle">📂 Все разделы ▾</button>
+            <div class="dropdown-menu"><a href="/category/nastrojka-ekrana/" class="dropdown-item">⚙️ Настройка экрана</a>
+<a href="/category/podklyuchenie-ustrojstv/" class="dropdown-item">🔌 Подключение устройств</a>
+<a href="/category/mnozhestvennye-ekrany/" class="dropdown-item">🖥️🖥️ Множественные экраны</a>
+<a href="/category/zvuk-i-audio/" class="dropdown-item">🔊 Звук и аудио</a>
+<a href="/category/remont-i-polomki/" class="dropdown-item">🔧 Ремонт и поломки</a>
+<a href="/category/ukhod-i-chistka/" class="dropdown-item">🧼 Уход и чистка</a>
+<a href="/category/vybor-i-kharakteristiki/" class="dropdown-item">📊 Выбор и характеристики</a>
+<a href="/category/drajvery-i-po/" class="dropdown-item">💿 Драйверы и ПО</a>
+<a href="/category/krepleniya-i-ustanovka/" class="dropdown-item">🔩 Крепления и установка</a>
+<a href="/category/utilizatsiya-i-prodazha/" class="dropdown-item">♻️ Утилизация и продажа</a>
+<a href="/category/spetsialnye-rezhimy/" class="dropdown-item">🎮 Специальные режимы</a>
+<a href="/category/drugoe/" class="dropdown-item">📁 Другое</a></div>
+        </div>
+            </nav>
+        </div>
+    </header>
+
+    <nav class="breadcrumbs" aria-label="Навигация">
+        <div class="container"><a href="/">Главная</a><span class="breadcrumb-sep">›</span><a href="/category/mnozhestvennye-ekrany/">Множественные экраны</a><span class="breadcrumb-sep">›</span><span class="breadcrumb-current">Как настроить Citrix Workspace на два монитора: полное руководство</span></div>
+    </nav>
+
+    <main class="site-main">
+        <div class="container">
+            <div class="article-layout">
+                <article class="article-main">
+                    
+                    <h1>Как настроить Citrix Workspace для работы на двух мониторах</h1>
+                    <nav class="mobile-toc"><details><summary>📋 Содержание</summary><ul><li><a href="#фундаментальные-требования-для-мультимониторности">Фундаментальные требования для мультимониторности</a></li><li><a href="#настройка-параметров-подключения-в-интерфейсе-клиента">Настройка параметров подключения в интерфейсе клиента</a></li><li><a href="#принудительное-включение-через-групповые-политики-local-group-policy">Принудительное включение через групповые политики (Local Group Policy)</a></li><li><a href="#особенности-работы-с-адаптерами-и-док-станциями">Особенности работы с адаптерами и док-станциями</a></li><li><a href="#устранение-проблем-с-масштабированием-и-размытостью-текста">Устранение проблем с масштабированием и размытостью текста</a></li><li><a href="#оптимизация-производительности-для-двойного-экрана">Оптимизация производительности для двойного экрана</a></li><li><a href="#вопросы-и-ответы-по-настройке-citrix">Вопросы и ответы по настройке Citrix</a></li></ul></details></nav>
+                    <!--#include virtual="/ssi/article_before.html" -->
+                    <div class="article-body"><p>Работа с удаленными рабочими столами часто требует расширения рабочего пространства для повышения продуктивности. Одной из самых востребованных функций является возможность вывода изображения на <strong>два монитора</strong> одновременно, что позволяет разделить задачи между локальной и удаленной средой. Если вы используете <em>Citrix Workspace</em>, эта опция становится доступной при правильной конфигурации клиента и серверных настроек.</p>
+
+<p>Многие пользователи сталкиваются с ситуацией, когда при подключении удаленный рабочий стол растягивается на все доступные дисплеи, либо отображается только на главном. Это происходит из-за особенностей протокола ICA и настроек групповых политик. В данной статье мы разберем, как настроить <strong>мультимониторный режим</strong> в Citrix, чтобы каждый экран работал корректно и без задержек.</p>
+
+<h2 id="фундаментальные-требования-для-мультимониторности">Фундаментальные требования для мультимониторности</h2>
+
+<p>Прежде чем приступать к тонкой настройке, необходимо убедиться, что ваше оборудование и программное обеспечение соответствуют техническим стандартам. Ключевым элементом здесь является локальная версия клиента <em>Citrix Workspace</em> или устаревшего <em>Citrix Receiver</em>. Убедитесь, что вы используете актуальную версию, так как старые сборки могут не поддерживать современные протоколы масштабирования.</p>
+
+<p>Важно проверить параметры вашего локального компьютера. Система должна иметь достаточное количество видеопамяти и актуальные драйверы графического адаптера. Если вы подключаете два монитора через адаптеры или док-станции, убедитесь, что они правильно определены операционной системой Windows до запуска сессии. Без этого удаленный сервер не сможет корректно обработать запрос о расширении экрана.</p>
+
+<p>Также стоит обратить внимание на сетевое подключение. Протокол <strong>ICA</strong> (Independent Computing Architecture) имеет свои ограничения по пропускной способности при передаче видео на несколько дисплеев. Если у вас низкая скорость интернета, включение двух мониторов может привести к задержкам ввода и "дерганому" изображению. В таких случаях рекомендуется снизить разрешение или частоту обновления на вторых экранах.</p>
+
+<blockquote>⚠️ <strong>Внимание!</strong> Если вы работаете в корпоративной сети, настройки мультимониторности могут быть заблокированы системным администратором на уровне групповых политик домена. В этом случае локальные изменения не вступят в силу без изменения конфигурации сервера.</blockquote>
+
+<h2 id="настройка-параметров-подключения-в-интерфейсе-клиента">Настройка параметров подключения в интерфейсе клиента</h2>
+
+<p>Основной способ активации двух мониторов находится в свойствах конкретного подключения. Запустите приложение <em>Citrix Workspace</em> и найдите иконку нужной удаленной сессии. Нажмите на нее правой кнопкой мыши и выберите пункт <code>Настройки</code> или <code>Properties</code> в зависимости от версии интерфейса. Далее перейдите во вкладку <code>Дисплей</code> (Display).</p>
+
+<p>В этом разделе вы увидите галочку, отвечающую за использование нескольких мониторов. Она может называться <code>Use all my monitors for the remote session</code>. Установите эту опцию и сохраните изменения. После этого при следующем запуске сессии удаленный рабочий стол должен автоматически адаптироваться под вашу локальную конфигурацию дисплеев.</p>
+
+<p>Если вы не видите требуемых настроек в графическом интерфейсе, возможно, используется упрощенная версия клиента. В этом случае необходимо проверить параметры в <code>Advanced Preferences</code>. Часто пользователи пропускают этот шаг, полагая, что настройки применяются глобально, но для каждого подключения они могут быть индивидуальными. Проверьте также, не стоит ли разрешение на <code>Full Screen</code> без привязки к конкретным мониторам.</p>
+
+<div class="poll-widget" id="poll-a0b74b32"><div class="poll-widget-question">📊 Вам комфортно работать на одном удаленном экране?</div><div class="poll-widget-option" data-poll="a0b74b32" data-idx="0" onclick="pbPollVote(this)"><span class="poll-widget-label">Да, мне хватает</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="a0b74b32" data-idx="1" onclick="pbPollVote(this)"><span class="poll-widget-label">Нет, хочу два экрана</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="a0b74b32" data-idx="2" onclick="pbPollVote(this)"><span class="poll-widget-label">Только один монитор доступен технически</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="a0b74b32" data-idx="3" onclick="pbPollVote(this)"><span class="poll-widget-label">Не знаю, как настроить</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div></div>
+
+<h2 id="принудительное-включение-через-групповые-политики-local-group-policy">Принудительное включение через групповые политики (Local Group Policy)</h2>
+
+<p>Иногда стандартный интерфейс не позволяет активировать функцию, или настройки сбрасываются после перезагрузки. В таких случаях приходится обращаться к редактору локальных групповых политик. Нажмите <code>Win + R</code>, введите <code>gpedit.msc</code> и перейдите по пути: <code>Конфигурация компьютера → Административные шаблоны → Компоненты Windows → Службы удаленных рабочих столов → Клиент удаленных рабочих столов</code>.</p>
+
+<p>В списке политик найдите пункт <code>Разрешить использование нескольких мониторов для сеанса удаленного рабочего стола</code> (Allow RDP redirection of other supported RemoteFX USB devices). Установите его в положение <code>Включено</code>. Это действие принудительно активирует перенаправление видеопотока на все доступные дисплеи, игнорируя ограничения интерфейса.</p>
+
+<p>Для Citrix специфичным является использование параметров реестра, если групповые политики не работают. Откройте <code>regedit</code> и перейдите в раздел <code>HKEY_LOCAL_MACHINE\SOFTWARE\Citrix\ICA Client\GenericUSB</code>. Создайте или измените параметр <code>AllowMultiMonitor</code>, установив ему значение <code>1</code>. Это гарантирует, что драйвер клиента будет обрабатывать запросы от всех подключенных видеоадаптеров.</p>
+
+<div class="checklist-block"><h4>☑️ Проверка настроек перед запуском</h4><label class="check-item"><input type="checkbox"><span>Проверена версия клиента</span></label><label class="check-item"><input type="checkbox"><span>Найдена галочка в настройках</span></label><label class="check-item"><input type="checkbox"><span>Изменены локальные политики</span></label><label class="check-item"><input type="checkbox"><span>Перезагружена сессия</span></label><div class="check-progress">Выполнено: <span class="check-count">0</span> / 4</div></div>
+
+<h2 id="особенности-работы-с-адаптерами-и-док-станциями">Особенности работы с адаптерами и док-станциями</h2>
+
+<p>Современные ноутбуки часто не имеют достаточного количества видеовыходов для подключения двух мониторов без использования дополнительных устройств. Использование USB-док-станций или переходников (например, USB-C на HDMI) может вызвать проблемы с определением дисплеев в удаленной сессии. В этом случае важно, чтобы драйверы самого док-устройства были обновлены.</p>
+
+<p>Протокол Citrix может интерпретировать виртуальные дисплеи, созданные док-станцией, как одно большое устройство или наоборот, игнорировать их. Если вы видите только один экран, попробуйте подключить мониторы напрямую к видеовыходам ноутбука перед запуском сессии, а затем подключите док-станцию. Это поможет системе корректно сформировать матрицу дисплеев.</p>
+
+<p>Также стоит учитывать разрешение мониторов. Если один монитор имеет разрешение <code>4K</code>, а второй <code>1080p</code>, при включении мультимониторного режима может возникнуть проблема с масштабированием интерфейса. Удаленный рабочий стол может выглядеть размытым на одном из экранов. В настройках Citrix можно попробовать отключить автоматическое масштабирование для конкретных дисплеев.</p>
+
+<blockquote>⚠️ <strong>Внимание!</strong> При использовании нескольких мониторов с разным разрешением или плотностью пикселей (DPI) интерфейс удаленного приложения может отображаться некорректно. Рекомендуется использовать мониторы с одинаковыми характеристиками для стабильной работы.</blockquote>
+
+<div class="attention-box attention-tip"><span class="attention-icon">💡</span><p>Если вы используете док-станцию, подключите ее к порту USB 3.0 или выше, чтобы обеспечить достаточную пропускную способность для видеосигнала на два экрана без задержек.</p></div>
+
+<h2 id="устранение-проблем-с-масштабированием-и-размытостью-текста">Устранение проблем с масштабированием и размытостью текста</h2>
+
+<p>Одной из самых частых жалоб пользователей является размытый текст при работе в полном экране на двух мониторах. Это связано с тем, как Citrix интерполирует пиксели между локальным и удаленным разрешением. Для решения этой проблемы необходимо изменить настройки визуализации в свойствах подключения.</p>
+
+<p>Перейдите в <code>Настройки</code> → <code>Дисплей</code> → <code>Advanced</code> (Дополнительно). Найдите опцию, отвечающую за качество изображения, и попробуйте переключить режим с <code>High Quality</code> на <code>Fast</code> или наоборот. Иногда помогает отключение функции <code>Desktop Composition</code> в параметрах клиентской системы, что устраняет конфликты с драйвером видеопроцессора.</p>
+
+<p>Если текст остается размытым только на одном из экранов, проверьте настройки масштабирования Windows для этого конкретного монитора. Убедитесь, что уровень DPI установлен на <code>100%</code> или <code>125%</code> везде одинаково. Разные значения масштаба на разных мониторах часто приводят к тому, что клиент Citrix не может корректно рассчитать размер шрифтов и элементов интерфейса.</p>
+
+<table>
+<thead>
+<tr>
+<th>Проблема</th>
+<th>Вероятная причина</th>
+<th>Рекомендуемое решение</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Только один экран активен</td>
+<td>Отключена опция в свойствах</td>
+<td>Включить галочку в настройках подключения</td>
+</tr>
+<tr>
+<td>Размытый текст</td>
+<td>Конфликт DPI и масштабирования</td>
+<td>Выставить одинаковый масштаб на всех мониторах</td>
+</tr>
+<tr>
+<td>Медленная работа</td>
+<td>Недостаточная пропускная способность сети</td>
+<td>Снизить качество рендеринга в настройках</td>
+</tr>
+<tr>
+<td>Черный экран на одном мониторе</td>
+<td>Несовместимость драйверов видеокарты</td>
+<td>Обновить драйверы графического адаптера</td>
+</tr>
+</tbody>
+</table>
+
+<details class="faq-item"><summary>Что делать, если настройки сбрасываются?</summary><div class="faq-answer"><p>Если после перезагрузки сессии настройки пропадают, возможно, на сервере включена политика принудительного сброса параметров клиента. В этом случае необходимо создать локальный файл конфигурации .ica с жестко прописанными параметрами двух мониторов и подключаться через него.</p></div></details>
+
+<h2 id="оптимизация-производительности-для-двойного-экрана">Оптимизация производительности для двойного экрана</h2>
+
+<p>Работа на двух мониторах требует передачи вдвое большего объема видеоданных, что создает повышенную нагрузку на сеть и процессор. Для минимизации задержек (lag) и артефактов изображения важно оптимизировать параметры сессии. В настройках клиента перейдите во вкладку <code>Network</code> и выберите профиль соответствующий вашему соединению.</p>
+
+<p>Для стабильной работы на двух дисплеях рекомендуется выбрать профиль <code>LAN</code> или <code>WAN</code> в зависимости от реальной скорости, но отключить опции, требующие высокой пропускной способности, такие как печать принтера или перенаправление USB-устройств, если они не критичны. Это освободит канал для видеопотока.</p>
+
+<p>Дополнительно можно ограничить частоту обновления удаленного рабочего стола до <code>30 Гц</code> или <code>60 Гц</code> в зависимости от требований задач. Снижение частоты кадров незначительно влияет на работу с текстом и таблицами, но существенно снижает нагрузку на сеть. Для графических задач это может быть неприемлемо, поэтому настройка должна быть индивидуальной.</p>
+
+<div class="attention-box attention-tip"><span class="attention-icon">💡</span><p>Оптимальная настройка производительности для двух мониторов включает отключение лишнего перенаправления устройств и подбор профиля сети, соответствующего реальной скорости соединения.</p></div>
+
+<h2 id="вопросы-и-ответы-по-настройке-citrix">Вопросы и ответы по настройке Citrix</h2>
+
+<details>
+<summary>Почему галочка "использовать все мониторы" не сохраняется?</summary>
+<p>Чаще всего это связано с политикой сервера, которая принудительно сбрасывает конфигурацию клиента при начале новой сессии. Попробуйте пересоздать подключение или использовать файл конфигурации .ica с сохраненными параметрами.</p>
+</details>
+
+<details>
+<summary>Можно ли настроить разные разрешения для двух мониторов в одной сессии?</summary>
+<p>Да, Citrix поддерживает гибридные режимы, но это может привести к проблемам с масштабированием. Рекомендуется использовать мониторы с одинаковым разрешением для корректной работы интерфейса.</p>
+</details>
+
+<details>
+<summary>Работает ли двухмониторный режим на Mac и Linux?</summary>
+<p>Да, клиент Citrix Workspace для macOS и Linux также поддерживает режим нескольких мониторов, но настройки могут отличаться от версии для Windows. Обычно это включается в меню настроек дисплея приложения.</p>
+</details>
+
+<details>
+<summary>Как проверить, что два монитора действительно подключены к сессии?</summary>
+<p>Внутри удаленной сессии откройте <code>Панель управления</code> → <code>Экран</code> (Display Settings). Если вы видите два монитора со своими номерами и настройками, значит подключение прошло успешно.</p>
+</details>
+
+<p>Настройка двух мониторов в Citrix открывает новые возможности для продуктивной работы, позволяя удобно распределять информационные потоки. Главное — правильно подготовить локальное оборудование и настроить параметры клиента, учитывая особенности вашего сетевого соединения и требований к качеству изображения.</p></div>
+                    <!--#include virtual="/ssi/article_after.html" -->
+
+                </article>
+                <aside class="article-sidebar"><!--#include virtual="/ssi/sidebar_top.html" --><nav class="sidebar-search"><div class="sidebar-search-box"><input type="text" id="globalSearchInput" placeholder="🔍 Поиск статей..." autocomplete="off"><div class="search-dropdown" id="globalSearchDropdown"></div></div></nav><!--#include virtual="/ssi/sidebar_before_toc.html" --><nav class="sidebar-toc" id="sidebarToc"><h3>Содержание</h3><ul><li><a href="#фундаментальные-требования-для-мультимониторности">Фундаментальные требования для мультимониторности</a></li><li><a href="#настройка-параметров-подключения-в-интерфейсе-клиента">Настройка параметров подключения в интерфейсе клиента</a></li><li><a href="#принудительное-включение-через-групповые-политики-local-group-policy">Принудительное включение через групповые политики (Local Group Policy)</a></li><li><a href="#особенности-работы-с-адаптерами-и-док-станциями">Особенности работы с адаптерами и док-станциями</a></li><li><a href="#устранение-проблем-с-масштабированием-и-размытостью-текста">Устранение проблем с масштабированием и размытостью текста</a></li><li><a href="#оптимизация-производительности-для-двойного-экрана">Оптимизация производительности для двойного экрана</a></li><li><a href="#вопросы-и-ответы-по-настройке-citrix">Вопросы и ответы по настройке Citrix</a></li></ul></nav><!--#include virtual="/ssi/sidebar_before_related.html" --><nav class="sidebar-related"><h3>Похожие статьи</h3><ul><li><a href="/articles/m/mo/mozhno-li-ispolzovat-noutbuk-kak-dopolnitelnyj-monitor.html" class="related-card">Ноутбук как монитор: способы подключения, программы и ограничения</a></li><li><a href="/articles/k/ka/kak-sdelat-printskrin-tolko-1-monitora.html" class="related-card">Как сделать скриншот только одного монитора при нескольких экранах</a></li><li><a href="/articles/k/ka/kak-podklyuchit-mak-kak-vtoroj-monitor.html" class="related-card">Как подключить Mac как второй монитор: AirPlay и Sidecar</a></li><li><a href="/articles/k/ka/kak-podsoedinit-vtoroj-monitor.html" class="related-card">Как подключить второй монитор: пошаговая инструкция и настройка</a></li><li><a href="/articles/k/ka/kak-iz-telefona-sdelat-2-monitor-dlya-kompyutera-cherez-usb.html" class="related-card">Как сделать из телефона второй монитор для ПК через USB: 5 способов</a></li></ul></nav><!--#include virtual="/ssi/sidebar_after_related.html" --></aside>
+            </div>
+        </div>
+    </main>
+
+    <!--#include virtual="/ssi/before_related_bottom.html" -->
+    <section class="related-bottom">
+        <div class="container">
+            <h2 class="related-bottom-heading">📖 Читайте также</h2>
+            <div class="related-bottom-grid"><a href="/articles/m/mo/mozhno-li-ispolzovat-noutbuk-kak-dopolnitelnyj-monitor.html" class="related-bottom-card"><span class="related-bottom-title">Ноутбук как монитор: способы подключения, программы и ограничения</span><span class="related-bottom-desc">Узнайте, как превратить ноутбук во второй экран для ПК или консоли. Обзор программ Spacedesk, Window</span></a><a href="/articles/k/ka/kak-sdelat-printskrin-tolko-1-monitora.html" class="related-bottom-card"><span class="related-bottom-title">Как сделать скриншот только одного монитора при нескольких экранах</span><span class="related-bottom-desc">Пошаговая инструкция: как сделать принтскрин только 1 монитора на Windows без захвата всего рабочего</span></a><a href="/articles/k/ka/kak-podklyuchit-mak-kak-vtoroj-monitor.html" class="related-bottom-card"><span class="related-bottom-title">Как подключить Mac как второй монитор: AirPlay и Sidecar</span><span class="related-bottom-desc">Полное руководство: как превратить MacBook или iMac во второй экран для компьютера. Настройка AirPla</span></a><a href="/articles/k/ka/kak-podsoedinit-vtoroj-monitor.html" class="related-bottom-card"><span class="related-bottom-title">Как подключить второй монитор: пошаговая инструкция и настройка</span><span class="related-bottom-desc">Подробное руководство по подключению второго монитора к ПК или ноутбуку. Выбор кабеля, настройка раз</span></a><a href="/articles/k/ka/kak-iz-telefona-sdelat-2-monitor-dlya-kompyutera-cherez-usb.html" class="related-bottom-card"><span class="related-bottom-title">Как сделать из телефона второй монитор для ПК через USB: 5 способов</span><span class="related-bottom-desc">Пошаговое руководство по использованию смартфона как дополнительного экрана через USB: программы, на</span></a><a href="/articles/k/ka/kak-podklyuchit-vtoroj-monitor-dlya-kompyutera.html" class="related-bottom-card"><span class="related-bottom-title">Как подключить второй монитор к ПК: Полное руководство по настройке</span><span class="related-bottom-desc">Пошаговая инструкция, как подключить второй монитор к компьютеру. Обзор разъемов HDMI, DisplayPort, </span></a></div>
+        </div>
+    </section>
+    <!--#include virtual="/ssi/after_related_bottom.html" -->
+
+    <footer class="site-footer-premium">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-col">
+                    <div class="footer-brand">🖥️ Мониторум</div>
+                    <p class="footer-about">Полный справочник по настройке, ремонту и выбору компьютерных мониторов для любых задач.</p>
+                </div>
+                <div class="footer-col">
+                    <h4>Разделы</h4>
+                    <ul><li><a href="/category/nastrojka-ekrana/">⚙️ Настройка экрана</a></li>
+<li><a href="/category/podklyuchenie-ustrojstv/">🔌 Подключение устройств</a></li>
+<li><a href="/category/mnozhestvennye-ekrany/">🖥️🖥️ Множественные экраны</a></li>
+<li><a href="/category/zvuk-i-audio/">🔊 Звук и аудио</a></li>
+<li><a href="/category/remont-i-polomki/">🔧 Ремонт и поломки</a></li>
+<li><a href="/category/ukhod-i-chistka/">🧼 Уход и чистка</a></li></ul>
+                </div>
+                <div class="footer-col">
+                    <h4>Информация</h4>
+                    <ul>
+                        <li><a href="/">Главная</a></li>
+                        <li><a href="/about.html">О проекте</a></li>
+                        <li><a href="/categories.html">Все разделы</a></li>
+                        <li><a href="/contact.html">Контакты</a></li>
+                        <li><a href="/privacy.html">Конфиденциальность</a></li>
+                        <li><a href="/sitemap.xml">Карта сайта</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>© Мониторум. Все права защищены.</p>
+                <!--LiveInternet counter--><div style="margin-top:10px;"><a href="https://www.liveinternet.ru/click"
+                target="_blank"><img id="licnt06C4" width="88" height="15" style="border:0" 
+                title="LiveInternet: показано число посетителей за сегодня"
+                src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAEALAAAAAABAAEAAAIBTAA7"
+                alt=""/></a><script>(function(d,s){d.getElementById("licnt06C4").src=
+                "https://counter.yadro.ru/hit?t26.5;r"+escape(d.referrer)+
+                ((typeof(s)=="undefined")?"":";s"+s.width+"*"+s.height+"*"+
+                (s.colorDepth?s.colorDepth:s.pixelDepth))+";u"+escape(d.URL)+
+                ";h"+escape(d.title.substring(0,150))+";"+Math.random()})(document,screen)</script></div><!--/LiveInternet-->
+            </div>
+        </div>
+    </footer>
+    <div id="cookie-consent" class="cookie-popup">
+        <div class="cookie-inner">
+            <span>🍪 Мы используем файлы cookie для улучшения работы сайта.</span>
+            <button id="cookie-accept" class="cookie-btn">Принять</button>
+        </div>
+    </div>
+    <script src="/static/js/main.js"></script>
+    <script>
+    (function() {
+        const popup = document.getElementById('cookie-consent');
+        const btn = document.getElementById('cookie-accept');
+        if (popup && btn && !localStorage.getItem('cookie-accepted')) {
+            popup.classList.add('visible');
+            btn.onclick = () => {
+                localStorage.setItem('cookie-accepted', 'true');
+                popup.classList.remove('visible');
+            };
+        }
+    })();
+    </script>
+    <script>
+    function pbPollVote(el) {
+        var poll = el.closest('.poll-widget');
+        if (poll.classList.contains('voted')) return;
+        poll.classList.add('voted');
+        el.classList.add('selected');
+        var opts = poll.querySelectorAll('.poll-widget-option');
+        var n = opts.length;
+        var raw = [];
+        var sum = 0;
+        for (var i = 0; i < n; i++) {
+            var v = Math.random() * 50 + 5;
+            if (opts[i] === el) v += 30;
+            raw.push(v);
+            sum += v;
+        }
+        var pcts = raw.map(function(v) { return Math.round(v / sum * 100); });
+        var diff = 100 - pcts.reduce(function(a,b){ return a+b; }, 0);
+        pcts[Array.from(opts).indexOf(el)] += diff;
+        setTimeout(function() {
+            opts.forEach(function(opt, i) {
+                opt.querySelector('.poll-widget-bar').style.width = pcts[i] + '%';
+                opt.querySelector('.poll-widget-pct').textContent = pcts[i] + '%';
+            });
+        }, 50);
+    }
+    </script>
+    <!--#include virtual="/ssi/body_bottom.html" -->
+    <script src="/static/js/inject.js" defer></script>
+</body>
+</html>

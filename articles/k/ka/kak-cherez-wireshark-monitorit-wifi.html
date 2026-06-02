@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27><text y=%27.9em%27 font-size=%2790%27>🖥️</text></svg>">
+    <title>Мониторинг Wi-Fi в Wireshark: настройка захвата и анализ трафика — Мониторум</title>
+    <meta name="description" content="Руководство по настройке Wireshark для мониторинга Wi-Fi: режим мониторинга, фильтры, расшифровка WPA2 и анализ проблем сети.">
+    <link rel="canonical" href="https://monitorium.vercel.app/articles/k/ka/kak-cherez-wireshark-monitorit-wifi.html">
+
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="Мониторинг Wi-Fi в Wireshark: настройка захвата и анализ трафика">
+    <meta property="og:description" content="Руководство по настройке Wireshark для мониторинга Wi-Fi: режим мониторинга, фильтры, расшифровка WPA2 и анализ проблем сети.">
+    <meta property="og:locale" content="ru_RU">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css?v=1780420684">
+    <style>
+    .site-footer-premium {
+        margin-top: 60px; padding: 40px 0 0; background: #1e293b; color: #94a3b8;
+    }
+    .footer-grid {
+        display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 40px;
+        padding-bottom: 32px; border-bottom: 1px solid #334155;
+    }
+    .footer-brand { font-size: 1.2rem; font-weight: 700; color: #f1f5f9; margin-bottom: 12px; }
+    .footer-about { font-size: 0.9rem; line-height: 1.6; margin-bottom: 8px; }
+    .footer-updated { font-size: 0.8rem; color: #64748b; }
+    .footer-col h4 { color: #f1f5f9; font-size: 0.95rem; margin-bottom: 16px; }
+    .footer-col ul { list-style: none; }
+    .footer-col li { margin-bottom: 8px; }
+    .footer-col a { color: #94a3b8; font-size: 0.9rem; transition: color 0.2s; }
+    .footer-col a:hover { color: #60a5fa; }
+    .footer-bottom { padding: 20px 0; text-align: center; font-size: 0.85rem; }
+    @media (max-width: 640px) {
+        .footer-grid { grid-template-columns: 1fr; gap: 24px; }
+    }
+    .cookie-popup {
+        position: fixed; bottom: 0; left: 0; right: 0; background: #1e293b; color: #fff;
+        padding: 16px; transition: transform 0.5s ease; z-index: 9999; border-top: 2px solid #2563eb;
+        transform: translateY(100%);
+    }
+    .cookie-popup.visible { transform: translateY(0); }
+    .cookie-inner { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; gap: 16px; font-size: 0.9rem; }
+    .cookie-btn { background: #2563eb; color: #fff; border: none; padding: 8px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+    .cookie-btn:hover { background: #1d4ed8; }
+    @media (max-width: 640px) {
+        .cookie-inner { flex-direction: column; text-align: center; }
+    }
+</style>
+    
+    <!--#include virtual="/ssi/head.html" -->
+</head>
+<body>
+        <!--#include virtual="/ssi/body_top.html" -->
+    <style>
+    .nav-dropdown { position: relative; display: inline-block; }
+    .dropdown-toggle {
+        background: none; border: none; cursor: pointer;
+        font: inherit; color: inherit; padding: 8px 12px;
+        border-radius: 8px; transition: background 0.2s;
+    }
+    .dropdown-toggle:hover { background: rgba(0,0,0,0.05); }
+    .dropdown-menu {
+        display: none; position: absolute; right: 0; top: 100%;
+        min-width: 240px; max-height: 70vh; overflow-y: auto;
+        background: var(--card-bg, #fff); border: 1px solid var(--border, #e5e7eb);
+        border-radius: 12px; box-shadow: 0 12px 40px rgba(0,0,0,0.12);
+        padding: 8px 0; z-index: 1000;
+    }
+    .nav-dropdown::after {
+        content: ''; position: absolute; left: 0; right: 0;
+        top: 100%; height: 12px;
+    }
+    .nav-dropdown:hover .dropdown-menu,
+    .nav-dropdown:focus-within .dropdown-menu { display: block; }
+    .dropdown-item {
+        display: block; padding: 10px 20px; color: var(--text, #1f2937);
+        text-decoration: none; font-size: 0.95rem; transition: background 0.15s;
+        white-space: nowrap;
+    }
+    .dropdown-item:hover { background: rgba(37,99,235,0.06); color: var(--primary, #2563eb); }
+    @media (max-width: 768px) {
+        .main-nav > .nav-link { display: none; }
+        .dropdown-toggle { display: none; }
+        .dropdown-menu {
+            display: block !important; position: static;
+            box-shadow: none; border: none; border-radius: 0;
+            min-width: auto; max-height: none; padding: 0;
+            background: transparent;
+        }
+        .dropdown-item {
+            padding: 8px 0; font-size: 1rem;
+        }
+    }
+    </style>
+    <header class="site-header">
+        <div class="container header-inner">
+            <a href="/" class="logo">
+                <span class="logo-icon">🖥️</span>
+                <span>Мониторум</span>
+            </a>
+            <button class="mobile-menu-btn" aria-label="Меню" id="menuBtn">☰</button>
+            <nav class="main-nav" id="mainNav">
+                <a href="/category/nastrojka-ekrana/" class="nav-link">⚙️ Настройка экрана</a>
+<a href="/category/podklyuchenie-ustrojstv/" class="nav-link">🔌 Подключение устройств</a>
+<a href="/category/mnozhestvennye-ekrany/" class="nav-link">🖥️🖥️ Множественные экраны</a>
+<a href="/category/zvuk-i-audio/" class="nav-link">🔊 Звук и аудио</a>
+<div class="nav-dropdown">
+            <button class="nav-link dropdown-toggle">📂 Все разделы ▾</button>
+            <div class="dropdown-menu"><a href="/category/nastrojka-ekrana/" class="dropdown-item">⚙️ Настройка экрана</a>
+<a href="/category/podklyuchenie-ustrojstv/" class="dropdown-item">🔌 Подключение устройств</a>
+<a href="/category/mnozhestvennye-ekrany/" class="dropdown-item">🖥️🖥️ Множественные экраны</a>
+<a href="/category/zvuk-i-audio/" class="dropdown-item">🔊 Звук и аудио</a>
+<a href="/category/remont-i-polomki/" class="dropdown-item">🔧 Ремонт и поломки</a>
+<a href="/category/ukhod-i-chistka/" class="dropdown-item">🧼 Уход и чистка</a>
+<a href="/category/vybor-i-kharakteristiki/" class="dropdown-item">📊 Выбор и характеристики</a>
+<a href="/category/drajvery-i-po/" class="dropdown-item">💿 Драйверы и ПО</a>
+<a href="/category/krepleniya-i-ustanovka/" class="dropdown-item">🔩 Крепления и установка</a>
+<a href="/category/utilizatsiya-i-prodazha/" class="dropdown-item">♻️ Утилизация и продажа</a>
+<a href="/category/spetsialnye-rezhimy/" class="dropdown-item">🎮 Специальные режимы</a>
+<a href="/category/drugoe/" class="dropdown-item">📁 Другое</a></div>
+        </div>
+            </nav>
+        </div>
+    </header>
+
+    <nav class="breadcrumbs" aria-label="Навигация">
+        <div class="container"><a href="/">Главная</a><span class="breadcrumb-sep">›</span><a href="/category/drajvery-i-po/">Драйверы и ПО</a><span class="breadcrumb-sep">›</span><span class="breadcrumb-current">Мониторинг Wi-Fi в Wireshark: настройка захвата и анализ трафика</span></div>
+    </nav>
+
+    <main class="site-main">
+        <div class="container">
+            <div class="article-layout">
+                <article class="article-main">
+                    
+                    <h1>Как через Wireshark мониторить Wi-Fi: полное руководство</h1>
+                    <nav class="mobile-toc"><details><summary>📋 Содержание</summary><ul><li><a href="#подготовка-оборудования-и-выбор-адаптера">Подготовка оборудования и выбор адаптера</a></li><li><a href="#настройка-режима-мониторинга-в-операционной-системе">Настройка режима мониторинга в операционной системе</a></li><li><a href="#конфигурация-захвата-в-интерфейсе-wireshark">Конфигурация захвата в интерфейсе Wireshark</a></li><li><a href="#фильтрация-и-анализ-захваченного-трафика">Фильтрация и анализ захваченного трафика</a></li><li><a href="#расшифровка-защищенного-трафика-wpa2">Расшифровка защищенного трафика WPA2</a></li><li><a href="#таблица-основных-типов-кадров-wi-fi-для-анализа">Таблица основных типов кадров Wi-Fi для анализа</a></li><li><a href="#решение-распространенных-проблем-при-захвате">Решение распространенных проблем при захвате</a></li><li><a href="#безопасность-и-этика-использования">Безопасность и этика использования</a></li><li><a href="#часто-задаваемые-вопросы-faq">Часто задаваемые вопросы (FAQ)</a></li></ul></details></nav>
+                    <!--#include virtual="/ssi/article_before.html" -->
+                    <div class="article-body"><p>Анализ беспроводной сети — это сложный, но незаменимый процесс для диагностики проблем, поиска узких мест и проверки безопасности соединения. Обычные средства операционной системы часто показывают лишь поверхностные данные, тогда как профессиональный инструмент <strong>Wireshark</strong> позволяет заглянуть в самый низ сетевого стека. Вы увидите каждый пакет данных, заголовок управления доступом к среде и даже скрытые метаданные, которые обычные пользователи игнорируют.</p>
+
+<p>Многие новички сталкиваются с тем, что при попытке захвата пакетов они видят только свой собственный трафик, а не весь эфир вокруг. Это связано с ограничениями драйверов сетевых адаптеров и режимами работы, которые по умолчанию блокируют пассивный просмотр. Однако, если правильно настроить оборудование и программное обеспечение, вы получите полную картину радиоволновой обстановки в вашей локации.</p>
+
+<p>В этой статье мы разберем, как заставить Wireshark работать в режиме <strong>monitor mode</strong>, какие драйверы и адаптеры для этого нужны, и как фильтровать шум, чтобы увидеть именно то, что важно. Мы также рассмотрим технические нюансы захвата <em>802.11</em> пакетов и методы расшифровки защищенного трафика, если у вас есть ключ шифрования.</p>
+
+<h2 id="подготовка-оборудования-и-выбор-адаптера">Подготовка оборудования и выбор адаптера</h2>
+
+<p>Первым и самым критичным этапом является выбор правильного сетевого интерфейса. Стандартные встроенные модули Wi-Fi в ноутбуках и компьютерах часто не поддерживают режим мониторинга или имеют урезанный функционал захвата. Вам нужен адаптер, чипсет которого позволяет переключаться в режим пассивного прослушивания эфира.</p>
+
+<p>Наиболее популярными и проверенными чипсетами являются <em>Atheros AR9271</em>, <em>Ralink RT3070</em> и <em>Realtek RTL8812AU</em>. Именно наличие поддержки этих чипов в драйверах определяет, сможете ли вы увидеть пакеты от соседских сетей или только свои собственные. Убедитесь, что ваша операционная система (Linux, Windows или macOS) имеет соответствующие драйверы для выбранного устройства.</p>
+
+<p>Важно понимать, что просто купить адаптер недостаточно. Необходимо убедиться, что он корректно определяется системой и готов к работе. Проверка совместимости должна проводиться до начала настройки программного обеспечения, чтобы избежать фрустрации на этапе запуска захвата.</p>
+
+<ul>
+    <li>📡 Используйте внешние USB-адаптеры с антеннами для лучшего приема сигнала.</li>
+    <li>💻 Избегайте дешевых адаптеров на чипсетах без поддержки режима мониторинга.</li>
+    <li>🔧 Убедитесь, что драйверы обновлены до последней стабильной версии.</li>
+</ul>
+
+<h2 id="настройка-режима-мониторинга-в-операционной-системе">Настройка режима мониторинга в операционной системе</h2>
+
+<p>После подключения адаптера необходимо перевести его в режим мониторинга. В операционных системах семейства Windows этот процесс часто требует использования сторонних утилит, таких как <em>Npcap</em> с включенной опцией поддержки промискуозного режима. Без этого драйвер Wireshark не сможет перехватывать пакеты, адресованные не вашему устройству.</p>
+
+<p>Если вы работаете в Linux, процедура более прозрачна и часто выполняется через консольные команды. Необходимо использовать инструмент <code>iwconfig</code> или <code>airmon-ng</code> для переключения интерфейса в режим <strong>monitor</strong>. Например, команда <code>iwconfig wlan0 mode monitor</code> может изменить режим работы интерфейса, после чего Wireshark сможет увидеть все кадры управления и управления доступом к среде.</p>
+
+<p>В macOS ситуация зависит от версии системы и конкретной модели устройства. В старых версиях этот режим работал "из коробки" через <code>airport</code>, но в новых версиях Apple ограничила доступ к эфирному трафику для обычных пользователей. Требуется наличие ключа расширения ядра или использование специальных утилит для разблокировки функционала.</p>
+
+<blockquote>
+<p>⚠️ Внимание: При переходе в режим мониторинга ваш адаптер перестанет работать как обычный сетевой интерфейс. Вы потеряете возможность выходить в интернет через этот адаптер до тех пор, пока не вернете его в режим управления (managed mode).</p>
+</blockquote>
+
+<p>Некоторые пользователи пытаются форсировать этот режим через настройки реестра Windows, но это часто приводит к нестабильной работе. Лучше использовать проверенные методы установки драйверов, которые явно поддерживают захват беспроводного эфира. Игнорирование этого этапа приведет к тому, что в окне захвата вы увидите лишь пустоту или только свои пакеты.</p>
+
+<h2 id="конфигурация-захвата-в-интерфейсе-wireshark">Конфигурация захвата в интерфейсе Wireshark</h2>
+
+<p>После того как адаптер готов, запускаем саму программу <strong>Wireshark</strong>. В главном окне вы увидите список доступных интерфейсов. Тот, который вы настроили, должен быть доступен для выбора. Обратите внимание на график активности рядом с названием интерфейса — если он не движется, значит, захват не идет.</p>
+
+<p>Перед началом захвата настоятельно рекомендуется настроить параметры буфера и фильтрации, чтобы не перегрузить оперативную память. Беспроводной трафик может быть очень объемным, особенно если вы находитесь рядом с многолюдным местом или офисным центром. Настройте ограничение размера файла захвата, чтобы избежать зависания программы.</p>
+
+<p>В меню захвата <code>Capture Options</code> убедитесь, что выбран правильный интерфейс и включена опция захвата заголовков 802.11. Это критически важно для того, чтобы Wireshark понимал структуру беспроводных кадров. Без этих заголовков вы не сможете увидеть адресацию на уровне MAC и типы пакетов.</p>
+
+<div class="checklist-block"><h4>☑️ Подготовка к захвату Wi-Fi</h4><label class="check-item"><input type="checkbox"><span>Выбрать правильный интерфейс</span></label><label class="check-item"><input type="checkbox"><span>Включить режим мониторинга</span></label><label class="check-item"><input type="checkbox"><span>Настроить размер буфера</span></label><label class="check-item"><input type="checkbox"><span>Установить фильтр захвата</span></label><div class="check-progress">Выполнено: <span class="check-count">0</span> / 4</div></div>
+
+<p>Если вы видите пакеты, но они выглядят как "Data" без расшифровки, возможно, требуется дополнительная настройка. В разделе <code>Edit -> Preferences -> Protocols -> IEEE 802.11</code> можно включить декодирование пакетов и указать ключи шифрования для расшифровки WPA. Это позволит вам видеть содержимое пакетов, которые иначе были бы нечитаемы для вас.</p>
+
+<ul>
+    <li>⚙️ Проверьте настройки декодирования в разделе Preferences.</li>
+    <li>🔐 Введите ключ WPA/WPA2 для расшифровки защищенного трафика.</li>
+    <li>📉 Установите лимит размера файла для предотвращения переполнения памяти.</li>
+</ul>
+
+<h2 id="фильтрация-и-анализ-захваченного-трафика">Фильтрация и анализ захваченного трафика</h2>
+
+<p>После начала захвата вы получите огромный массив данных, который может включать тысячи пакетов в секунду. Сразу же применяйте фильтры, чтобы сузить круг поиска. Базовый фильтр <code>wlan</code> покажет все беспроводные кадры, но для детального анализа лучше использовать более специфичные запросы, такие как <code>wlan.fc.type_subtype == 0x08</code> для управления или <code>wlan.addr == XX:XX:XX:XX:XX:XX</code> для конкретного устройства.</p>
+
+<p>Анализ заголовков позволяет выявить проблемы с ретрансляцией, потерю пакетов и конфликты адресов. Вы можете отследить процесс ассоциации клиента с точкой доступа, наблюдая за последовательностью пакетов: Probe Request, Probe Response, Authentication, Association Request и Association Response. Любое отклонение в этой цепочке укажет на проблему.</p>
+
+<p>Для поиска проблем с безопасностью или атаками типа <strong>Deauthentication</strong> используйте фильтр <code>wlan.fc.type_subtype == 0x0c</code>. Это покажет пакеты, которые принудительно отключают устройства от сети. Если вы видите много таких пакетов в обрывках, это может свидетельствовать о попытке атаки или о нестабильной работе оборудования.</p>
+
+<blockquote>
+<p>⚠️ Внимание: Фильтр <code>wlan</code> может не работать корректно, если вы не включили захват заголовков 802.11. Проверьте настройки интерфейса перед началом анализа.</p>
+</blockquote>
+
+<p>Иногда вам нужно увидеть только трафик определенного протокола поверх Wi-Fi. Для этого можно использовать комбинацию фильтров, например, <code>ip.addr == 192.168.1.1 and wlan</code>. Это позволит отделить сетевой уровень от физического и показать только пакеты IP, проходящие через беспроводной канал. Это упрощает поиск проблем с маршрутизацией.</p>
+
+<details class="faq-item"><summary>Что такое RSSI и как его увидеть?</summary><div class="faq-answer"><p>RSSI (Received Signal Strength Indicator) показывает уровень сигнала. В Wireshark его можно увидеть в столбце "Signal" или добавив его в колонки через настройки. Значения обычно отрицательные (например, -60 dBm), где чем ближе к 0, тем лучше сигнал.</p></div></details>
+
+<h2 id="расшифровка-защищенного-трафика-wpa2">Расшифровка защищенного трафика WPA2</h2>
+
+<p>Современные сети используют шифрование WPA2 или WPA3, что делает пакеты нечитаемыми без ключа. Однако, если вы являетесь администратором сети и знаете пароль, Wireshark может расшифровать трафик в реальном времени. Для этого необходимо указать ключ в настройках протокола <em>IEEE 802.11</em>.</p>
+
+<p>Процесс расшифровки требует наличия полного четырехэтапного рукопожатия (4-way handshake) при подключении клиента. Если вы начнете захват до подключения устройства, Wireshark сохранит этот рукопожатие и сможет использовать его для расшифровки последующих пакетов. Без этого рукопожатия расшифровка невозможна.</p>
+
+<p>Важно отметить, что для расшифровки WPA3 процесс сложнее и требует поддержки новых стандартов в версии Wireshark. Убедитесь, что вы используете последнюю версию программы, чтобы иметь доступ к необходимым алгоритмам дешифровки. Старые версии могут не поддерживать современные методы защиты.</p>
+
+<div class="attention-box attention-tip"><span class="attention-icon">💡</span><p>Для расшифровки трафика WPA2 обязательно сохраните файл рукопожатия. Вы можете сделать это автоматически, если включите опцию "Save key to file" в настройках захвата перед началом анализа.</p></div>
+
+<p>Если вы видите пакеты, но они не расшифровываются, проверьте, правильность введенного ключа. Ошибка даже в одной букве сделает расшифровку невозможной. Также убедитесь, что тип шифрования выбран верно (TKIP vs AES). Несоответствие типов шифрования часто приводит к тому, что Wireshark показывает зашифрованные данные как "Data" без расшифровки.</p>
+
+<div class="attention-box attention-tip"><span class="attention-icon">💡</span><p>Без наличия 4-way handshake и правильного ключа расшифровать современный трафик WPA2/WPA3 невозможно. Это фундаментальное ограничение безопасности.</p></div>
+
+<h2 id="таблица-основных-типов-кадров-wi-fi-для-анализа">Таблица основных типов кадров Wi-Fi для анализа</h2>
+
+<p>Для эффективного использования Wireshark важно понимать структуру кадров. Ниже приведена таблица с основными типами пакетов, которые вы будете видеть при мониторинге. Знание этих типов поможет вам быстро фильтровать данные и находить нужную информацию.</p>
+
+<table>
+    <thead>
+        <tr>
+            <th>Тип кадра</th>
+            <th>Подтип</th>
+            <th>Описание</th>
+            <th>Фильтр Wireshark</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>Management</td>
+            <td>Beacon</td>
+            <td>Регулярная рассылка информации о точке доступа</td>
+            <td><code>wlan.fc.type_subtype == 0x08</code></td>
+        </tr>
+        <tr>
+            <td>Management</td>
+            <td>Probe Request</td>
+            <td>Запрос от клиента для поиска сетей</td>
+            <td><code>wlan.fc.type_subtype == 0x04</code></td>
+        </tr>
+        <tr>
+            <td>Management</td>
+            <td>Deauthentication</td>
+            <td>Пакет отключения клиента от сети</td>
+            <td><code>wlan.fc.type_subtype == 0x0c</code></td>
+        </tr>
+        <tr>
+            <td>Control</td>
+            <td>RTS/CTS</td>
+            <td>Механизм предотвращения коллизий</td>
+            <td><code>wlan.fc.type_subtype == 0xb</code></td>
+        </tr>
+        <tr>
+            <td>Data</td>
+            <td>Data</td>
+            <td>Основной полезный трафик (может быть зашифрован)</td>
+            <td><code>wlan.fc.type == 0</code></td>
+        </tr>
+    </tbody>
+</table>
+
+<p>Анализ этих кадров позволяет не только диагностировать проблемы, но и понимать, как именно работает сеть. Например, частые пакеты <code>Probe Request</code> могут указывать на то, что устройство ищет сеть, которую не может найти, или сканирует эфир на наличие известных SSID. Это полезная информация для настройки безопасности.</p>
+
+<div class="poll-widget" id="poll-61384867"><div class="poll-widget-question">📊 Какой основной инструмент вы используете для анализа сети?</div><div class="poll-widget-option" data-poll="61384867" data-idx="0" onclick="pbPollVote(this)"><span class="poll-widget-label">Wireshark</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="61384867" data-idx="1" onclick="pbPollVote(this)"><span class="poll-widget-label">tcpdump</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="61384867" data-idx="2" onclick="pbPollVote(this)"><span class="poll-widget-label">Системные утилиты</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="61384867" data-idx="3" onclick="pbPollVote(this)"><span class="poll-widget-label">Другой</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div></div>
+
+<h2 id="решение-распространенных-проблем-при-захвате">Решение распространенных проблем при захвате</h2>
+
+<p>Даже при правильном настройках можно столкнуться с проблемами. Самая частая — отсутствие пакетов в захвате, несмотря на активную сеть. Это часто связано с тем, что драйвер адаптера не поддерживает режим мониторинга в текущей ОС. В таком случае потребуется замена оборудования или использование виртуальной машины с Linux для захвата.</p>
+
+<p>Другая проблема — огромный объем данных, который быстро заполняет диск. Беспроводные сети могут генерировать сотни мегабайт трафика в минуту. Убедитесь, что у вас достаточно места на диске и настроена ротация файлов. Иначе захват прервется, и вы потеряете данные о критическом событии.</p>
+
+<p>Иногда пакеты теряются из-за переполнения буфера. Если вы видите сообщение о потере пакетов в статусной строке Wireshark, попробуйте увеличить размер буфера или снизить скорость захвата. Также может помочь использование более мощного компьютера с большим объемом оперативной памяти.</p>
+
+<blockquote>
+<p>⚠️ Внимание: Если вы используете Wireshark на Windows и не видите трафик, проверьте, установлен ли Npcap в режиме "Support raw 802.11 traffic". Это критично для захвата Wi-Fi.</p>
+</blockquote>
+
+<h2 id="безопасность-и-этика-использования">Безопасность и этика использования</h2>
+
+<p>Мониторинг Wi-Fi трафика — мощный инструмент, который требует ответственности. Прослушивание чужих сетей без разрешения может быть незаконным в зависимости от юрисдикции. Используйте этот инструмент только на своих сетях или с явного согласия владельца сети.</p>
+
+<p>Даже если вы анализируете свою сеть, помните, что вы можете перехватывать чувствительные данные, такие как пароли или личные сообщения. Убедитесь, что вы используете эти данные только для диагностики и не нарушаете конфиденциальность пользователей.</p>
+
+<p>Всегда удаляйте файлы захвата после завершения анализа, особенно если они содержат персональные данные. Никогда не публикуйте файлы захвата в открытом доступе, так как они могут содержать ключи шифрования или другую конфиденциальную информацию.</p>
+
+<div class="attention-box attention-tip"><span class="attention-icon">💡</span><p>Используйте Wireshark для диагностики только в легальных целях и на собственных сетях. Нарушение этого правила может повлечь юридическую ответственность.</p></div>
+
+<h2 id="часто-задаваемые-вопросы-faq">Часто задаваемые вопросы (FAQ)</h2>
+
+<details>
+    <summary>Почему Wireshark не видит трафик Wi-Fi на Windows?</summary>
+    <p>Скорее всего, ваш драйвер не поддерживает режим мониторинга или не установлена библиотека Npcap с соответствующими настройками. Проверьте совместимость адаптера и обновите драйверы.</p>
+</details>
+
+<details>
+    <summary>Можно ли расшифровать WPA2 без ключа?</summary>
+    <p>Нет, без ключа шифрования или перехвата полного 4-way handshake расшифровать трафик невозможно. Это фундаментальное свойство протокола безопасности.</p>
+</details>
+
+<details>
+    <summary>Какой адаптер лучше всего подходит для мониторинга?</summary>
+    <p>Лучше всего подходят адаптеры на чипсетах Atheros AR9271 или Realtek RTL8812AU, так как они имеют отличную поддержку режима мониторинга в Linux и Windows.</p>
+</details>
+
+<details>
+    <summary>Как сохранить только важные пакеты?</summary>
+    <p>Используйте фильтры захвата (Capture Filters) или фильтры дисплея (Display Filters) для отбора нужных протоколов. Например, <code>tcp.port == 80</code> покажет только HTTP трафик.</p>
+</details>
+
+<details>
+    <summary>Почему пакеты показываются как "Data" без расшифровки?</summary>
+    <p>Это означает, что трафик зашифрован, и у Wireshark нет ключа для расшифровки. Введите ключ WPA в настройках протокола IEEE 802.11, чтобы решить проблему.</p>
+</details></div>
+                    <!--#include virtual="/ssi/article_after.html" -->
+
+                </article>
+                <aside class="article-sidebar"><!--#include virtual="/ssi/sidebar_top.html" --><nav class="sidebar-search"><div class="sidebar-search-box"><input type="text" id="globalSearchInput" placeholder="🔍 Поиск статей..." autocomplete="off"><div class="search-dropdown" id="globalSearchDropdown"></div></div></nav><!--#include virtual="/ssi/sidebar_before_toc.html" --><nav class="sidebar-toc" id="sidebarToc"><h3>Содержание</h3><ul><li><a href="#подготовка-оборудования-и-выбор-адаптера">Подготовка оборудования и выбор адаптера</a></li><li><a href="#настройка-режима-мониторинга-в-операционной-системе">Настройка режима мониторинга в операционной системе</a></li><li><a href="#конфигурация-захвата-в-интерфейсе-wireshark">Конфигурация захвата в интерфейсе Wireshark</a></li><li><a href="#фильтрация-и-анализ-захваченного-трафика">Фильтрация и анализ захваченного трафика</a></li><li><a href="#расшифровка-защищенного-трафика-wpa2">Расшифровка защищенного трафика WPA2</a></li><li><a href="#таблица-основных-типов-кадров-wi-fi-для-анализа">Таблица основных типов кадров Wi-Fi для анализа</a></li><li><a href="#решение-распространенных-проблем-при-захвате">Решение распространенных проблем при захвате</a></li><li><a href="#безопасность-и-этика-использования">Безопасность и этика использования</a></li><li><a href="#часто-задаваемые-вопросы-faq">Часто задаваемые вопросы (FAQ)</a></li></ul></nav><!--#include virtual="/ssi/sidebar_before_related.html" --><nav class="sidebar-related"><h3>Похожие статьи</h3><ul><li><a href="/articles/k/ka/kak-pereustanovit-drajvera-na-monitor.html" class="related-card">Как переустановить драйвера на монитор: полная инструкция 2026</a></li><li><a href="/articles/d/dl/dlya-chego-nuzhen-sistemnyj-monitor.html" class="related-card">Для чего нужен системный монитор: функции, обзор и выбор ПО</a></li><li><a href="/articles/k/ka/kak-udalit-i-pereustanovit-drajvera-na-monitor.html" class="related-card">Удаление и переустановка драйверов монитора: Полная инструкция</a></li><li><a href="/articles/k/ka/kak-vyklyuchit-kompyuter-bez-monitora-windows-7.html" class="related-card">Как выключить компьютер без монитора на Windows 7: 5 рабочих способов</a></li><li><a href="/articles/k/ka/kak-otklyuchit-status-monitor-printera-l800.html" class="related-card">Как отключить статус монитор принтера Epson L800: полное руководство</a></li></ul></nav><!--#include virtual="/ssi/sidebar_after_related.html" --></aside>
+            </div>
+        </div>
+    </main>
+
+    <!--#include virtual="/ssi/before_related_bottom.html" -->
+    <section class="related-bottom">
+        <div class="container">
+            <h2 class="related-bottom-heading">📖 Читайте также</h2>
+            <div class="related-bottom-grid"><a href="/articles/k/ka/kak-pereustanovit-drajvera-na-monitor.html" class="related-bottom-card"><span class="related-bottom-title">Как переустановить драйвера на монитор: полная инструкция 2026</span><span class="related-bottom-desc">Пошаговое руководство по удалению и установке драйверов видеокарты и монитора. Решение проблем с раз</span></a><a href="/articles/d/dl/dlya-chego-nuzhen-sistemnyj-monitor.html" class="related-bottom-card"><span class="related-bottom-title">Для чего нужен системный монитор: функции, обзор и выбор ПО</span><span class="related-bottom-desc">Узнайте, зачем нужен системный монитор, как он помогает диагностировать проблемы ПК и оптимизировать</span></a><a href="/articles/k/ka/kak-udalit-i-pereustanovit-drajvera-na-monitor.html" class="related-bottom-card"><span class="related-bottom-title">Удаление и переустановка драйверов монитора: Полная инструкция</span><span class="related-bottom-desc">Пошаговое руководство по правильной удалении драйверов дисплея и установке новых версий. Исправление</span></a><a href="/articles/k/ka/kak-vyklyuchit-kompyuter-bez-monitora-windows-7.html" class="related-bottom-card"><span class="related-bottom-title">Как выключить компьютер без монитора на Windows 7: 5 рабочих способов</span><span class="related-bottom-desc">Полное руководство по корректному завершению работы ПК без видеосигнала. Узнайте, как использовать к</span></a><a href="/articles/k/ka/kak-otklyuchit-status-monitor-printera-l800.html" class="related-bottom-card"><span class="related-bottom-title">Как отключить статус монитор принтера Epson L800: полное руководство</span><span class="related-bottom-desc">Узнайте, как убрать всплывающее окно статуса монитора Epson L800. Пошаговая инструкция отключения ув</span></a><a href="/articles/k/ka/kak-ustanavlivat-drajvera-na-monitor.html" class="related-bottom-card"><span class="related-bottom-title">Как установить драйвер на монитор: пошаговая инструкция 2026</span><span class="related-bottom-desc">Полное руководство по установке и обновлению драйверов монитора. Устраняем ошибки в Windows, настраи</span></a></div>
+        </div>
+    </section>
+    <!--#include virtual="/ssi/after_related_bottom.html" -->
+
+    <footer class="site-footer-premium">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-col">
+                    <div class="footer-brand">🖥️ Мониторум</div>
+                    <p class="footer-about">Полный справочник по настройке, ремонту и выбору компьютерных мониторов для любых задач.</p>
+                </div>
+                <div class="footer-col">
+                    <h4>Разделы</h4>
+                    <ul><li><a href="/category/nastrojka-ekrana/">⚙️ Настройка экрана</a></li>
+<li><a href="/category/podklyuchenie-ustrojstv/">🔌 Подключение устройств</a></li>
+<li><a href="/category/mnozhestvennye-ekrany/">🖥️🖥️ Множественные экраны</a></li>
+<li><a href="/category/zvuk-i-audio/">🔊 Звук и аудио</a></li>
+<li><a href="/category/remont-i-polomki/">🔧 Ремонт и поломки</a></li>
+<li><a href="/category/ukhod-i-chistka/">🧼 Уход и чистка</a></li></ul>
+                </div>
+                <div class="footer-col">
+                    <h4>Информация</h4>
+                    <ul>
+                        <li><a href="/">Главная</a></li>
+                        <li><a href="/about.html">О проекте</a></li>
+                        <li><a href="/categories.html">Все разделы</a></li>
+                        <li><a href="/contact.html">Контакты</a></li>
+                        <li><a href="/privacy.html">Конфиденциальность</a></li>
+                        <li><a href="/sitemap.xml">Карта сайта</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>© Мониторум. Все права защищены.</p>
+                <!--LiveInternet counter--><div style="margin-top:10px;"><a href="https://www.liveinternet.ru/click"
+                target="_blank"><img id="licnt06C4" width="88" height="15" style="border:0" 
+                title="LiveInternet: показано число посетителей за сегодня"
+                src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAEALAAAAAABAAEAAAIBTAA7"
+                alt=""/></a><script>(function(d,s){d.getElementById("licnt06C4").src=
+                "https://counter.yadro.ru/hit?t26.5;r"+escape(d.referrer)+
+                ((typeof(s)=="undefined")?"":";s"+s.width+"*"+s.height+"*"+
+                (s.colorDepth?s.colorDepth:s.pixelDepth))+";u"+escape(d.URL)+
+                ";h"+escape(d.title.substring(0,150))+";"+Math.random()})(document,screen)</script></div><!--/LiveInternet-->
+            </div>
+        </div>
+    </footer>
+    <div id="cookie-consent" class="cookie-popup">
+        <div class="cookie-inner">
+            <span>🍪 Мы используем файлы cookie для улучшения работы сайта.</span>
+            <button id="cookie-accept" class="cookie-btn">Принять</button>
+        </div>
+    </div>
+    <script src="/static/js/main.js"></script>
+    <script>
+    (function() {
+        const popup = document.getElementById('cookie-consent');
+        const btn = document.getElementById('cookie-accept');
+        if (popup && btn && !localStorage.getItem('cookie-accepted')) {
+            popup.classList.add('visible');
+            btn.onclick = () => {
+                localStorage.setItem('cookie-accepted', 'true');
+                popup.classList.remove('visible');
+            };
+        }
+    })();
+    </script>
+    <script>
+    function pbPollVote(el) {
+        var poll = el.closest('.poll-widget');
+        if (poll.classList.contains('voted')) return;
+        poll.classList.add('voted');
+        el.classList.add('selected');
+        var opts = poll.querySelectorAll('.poll-widget-option');
+        var n = opts.length;
+        var raw = [];
+        var sum = 0;
+        for (var i = 0; i < n; i++) {
+            var v = Math.random() * 50 + 5;
+            if (opts[i] === el) v += 30;
+            raw.push(v);
+            sum += v;
+        }
+        var pcts = raw.map(function(v) { return Math.round(v / sum * 100); });
+        var diff = 100 - pcts.reduce(function(a,b){ return a+b; }, 0);
+        pcts[Array.from(opts).indexOf(el)] += diff;
+        setTimeout(function() {
+            opts.forEach(function(opt, i) {
+                opt.querySelector('.poll-widget-bar').style.width = pcts[i] + '%';
+                opt.querySelector('.poll-widget-pct').textContent = pcts[i] + '%';
+            });
+        }, 50);
+    }
+    </script>
+    <!--#include virtual="/ssi/body_bottom.html" -->
+    <script src="/static/js/inject.js" defer></script>
+</body>
+</html>

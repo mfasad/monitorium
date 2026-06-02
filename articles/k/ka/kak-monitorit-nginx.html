@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27><text y=%27.9em%27 font-size=%2790%27>🖥️</text></svg>">
+    <title>Как мониторить nginx: инструменты и лучшие практики 2026 — Мониторум</title>
+    <meta name="description" content="Полное руководство по мониторингу Nginx. Настройка статусов, лог-анализ, метрики Prometheus и Grafana для контроля производительности сервера.">
+    <link rel="canonical" href="https://monitorium.vercel.app/articles/k/ka/kak-monitorit-nginx.html">
+
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="Как мониторить nginx: инструменты и лучшие практики 2026">
+    <meta property="og:description" content="Полное руководство по мониторингу Nginx. Настройка статусов, лог-анализ, метрики Prometheus и Grafana для контроля производительности сервера.">
+    <meta property="og:locale" content="ru_RU">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css?v=1780420684">
+    <style>
+    .site-footer-premium {
+        margin-top: 60px; padding: 40px 0 0; background: #1e293b; color: #94a3b8;
+    }
+    .footer-grid {
+        display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 40px;
+        padding-bottom: 32px; border-bottom: 1px solid #334155;
+    }
+    .footer-brand { font-size: 1.2rem; font-weight: 700; color: #f1f5f9; margin-bottom: 12px; }
+    .footer-about { font-size: 0.9rem; line-height: 1.6; margin-bottom: 8px; }
+    .footer-updated { font-size: 0.8rem; color: #64748b; }
+    .footer-col h4 { color: #f1f5f9; font-size: 0.95rem; margin-bottom: 16px; }
+    .footer-col ul { list-style: none; }
+    .footer-col li { margin-bottom: 8px; }
+    .footer-col a { color: #94a3b8; font-size: 0.9rem; transition: color 0.2s; }
+    .footer-col a:hover { color: #60a5fa; }
+    .footer-bottom { padding: 20px 0; text-align: center; font-size: 0.85rem; }
+    @media (max-width: 640px) {
+        .footer-grid { grid-template-columns: 1fr; gap: 24px; }
+    }
+    .cookie-popup {
+        position: fixed; bottom: 0; left: 0; right: 0; background: #1e293b; color: #fff;
+        padding: 16px; transition: transform 0.5s ease; z-index: 9999; border-top: 2px solid #2563eb;
+        transform: translateY(100%);
+    }
+    .cookie-popup.visible { transform: translateY(0); }
+    .cookie-inner { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; gap: 16px; font-size: 0.9rem; }
+    .cookie-btn { background: #2563eb; color: #fff; border: none; padding: 8px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+    .cookie-btn:hover { background: #1d4ed8; }
+    @media (max-width: 640px) {
+        .cookie-inner { flex-direction: column; text-align: center; }
+    }
+</style>
+    
+    <!--#include virtual="/ssi/head.html" -->
+</head>
+<body>
+        <!--#include virtual="/ssi/body_top.html" -->
+    <style>
+    .nav-dropdown { position: relative; display: inline-block; }
+    .dropdown-toggle {
+        background: none; border: none; cursor: pointer;
+        font: inherit; color: inherit; padding: 8px 12px;
+        border-radius: 8px; transition: background 0.2s;
+    }
+    .dropdown-toggle:hover { background: rgba(0,0,0,0.05); }
+    .dropdown-menu {
+        display: none; position: absolute; right: 0; top: 100%;
+        min-width: 240px; max-height: 70vh; overflow-y: auto;
+        background: var(--card-bg, #fff); border: 1px solid var(--border, #e5e7eb);
+        border-radius: 12px; box-shadow: 0 12px 40px rgba(0,0,0,0.12);
+        padding: 8px 0; z-index: 1000;
+    }
+    .nav-dropdown::after {
+        content: ''; position: absolute; left: 0; right: 0;
+        top: 100%; height: 12px;
+    }
+    .nav-dropdown:hover .dropdown-menu,
+    .nav-dropdown:focus-within .dropdown-menu { display: block; }
+    .dropdown-item {
+        display: block; padding: 10px 20px; color: var(--text, #1f2937);
+        text-decoration: none; font-size: 0.95rem; transition: background 0.15s;
+        white-space: nowrap;
+    }
+    .dropdown-item:hover { background: rgba(37,99,235,0.06); color: var(--primary, #2563eb); }
+    @media (max-width: 768px) {
+        .main-nav > .nav-link { display: none; }
+        .dropdown-toggle { display: none; }
+        .dropdown-menu {
+            display: block !important; position: static;
+            box-shadow: none; border: none; border-radius: 0;
+            min-width: auto; max-height: none; padding: 0;
+            background: transparent;
+        }
+        .dropdown-item {
+            padding: 8px 0; font-size: 1rem;
+        }
+    }
+    </style>
+    <header class="site-header">
+        <div class="container header-inner">
+            <a href="/" class="logo">
+                <span class="logo-icon">🖥️</span>
+                <span>Мониторум</span>
+            </a>
+            <button class="mobile-menu-btn" aria-label="Меню" id="menuBtn">☰</button>
+            <nav class="main-nav" id="mainNav">
+                <a href="/category/nastrojka-ekrana/" class="nav-link">⚙️ Настройка экрана</a>
+<a href="/category/podklyuchenie-ustrojstv/" class="nav-link">🔌 Подключение устройств</a>
+<a href="/category/mnozhestvennye-ekrany/" class="nav-link">🖥️🖥️ Множественные экраны</a>
+<a href="/category/zvuk-i-audio/" class="nav-link">🔊 Звук и аудио</a>
+<div class="nav-dropdown">
+            <button class="nav-link dropdown-toggle">📂 Все разделы ▾</button>
+            <div class="dropdown-menu"><a href="/category/nastrojka-ekrana/" class="dropdown-item">⚙️ Настройка экрана</a>
+<a href="/category/podklyuchenie-ustrojstv/" class="dropdown-item">🔌 Подключение устройств</a>
+<a href="/category/mnozhestvennye-ekrany/" class="dropdown-item">🖥️🖥️ Множественные экраны</a>
+<a href="/category/zvuk-i-audio/" class="dropdown-item">🔊 Звук и аудио</a>
+<a href="/category/remont-i-polomki/" class="dropdown-item">🔧 Ремонт и поломки</a>
+<a href="/category/ukhod-i-chistka/" class="dropdown-item">🧼 Уход и чистка</a>
+<a href="/category/vybor-i-kharakteristiki/" class="dropdown-item">📊 Выбор и характеристики</a>
+<a href="/category/drajvery-i-po/" class="dropdown-item">💿 Драйверы и ПО</a>
+<a href="/category/krepleniya-i-ustanovka/" class="dropdown-item">🔩 Крепления и установка</a>
+<a href="/category/utilizatsiya-i-prodazha/" class="dropdown-item">♻️ Утилизация и продажа</a>
+<a href="/category/spetsialnye-rezhimy/" class="dropdown-item">🎮 Специальные режимы</a>
+<a href="/category/drugoe/" class="dropdown-item">📁 Другое</a></div>
+        </div>
+            </nav>
+        </div>
+    </header>
+
+    <nav class="breadcrumbs" aria-label="Навигация">
+        <div class="container"><a href="/">Главная</a><span class="breadcrumb-sep">›</span><a href="/category/drajvery-i-po/">Драйверы и ПО</a><span class="breadcrumb-sep">›</span><span class="breadcrumb-current">Как мониторить nginx: инструменты и лучшие практики 2026</span></div>
+    </nav>
+
+    <main class="site-main">
+        <div class="container">
+            <div class="article-layout">
+                <article class="article-main">
+                    
+                    <h1>Полный гид по мониторингу производительности и безопасности Nginx</h1>
+                    <nav class="mobile-toc"><details><summary>📋 Содержание</summary><ul><li><a href="#включение-базового-модуля-статуса">Включение базового модуля статуса</a></li><li><a href="#анализ-логов-ошибок-и-доступа">Анализ логов ошибок и доступа</a></li><li><a href="#интеграция-с-prometheus-и-grafana">Интеграция с Prometheus и Grafana</a></li><li><a href="#мониторинг-системных-ресурсов-и-нагрузки">Мониторинг системных ресурсов и нагрузки</a></li><li><a href="#трекинг-безопасности-и-аномалий">Трекинг безопасности и аномалий</a></li><li><a href="#автоматизация-уведомлений-и-алертинга">Автоматизация уведомлений и алертинга</a></li><li><a href="#часто-задаваемые-вопросы">Часто задаваемые вопросы</a></li></ul></details></nav>
+                    <!--#include virtual="/ssi/article_before.html" -->
+                    <div class="article-body"><p>Эффективная работа веб-сервера напрямую зависит от его наблюдаемости. Nginx является фундаментом для огромного количества высоконагруженных проектов, и отсутствие контроля над его состоянием может привести к критическим сбоям. Без системы <strong>мониторинга</strong> вы остаетесь слепым перед лицом растущей нагрузки или скрытых уязвимостей.</p>
+
+<p>Администраторам необходимо понимать, что просто запустить процесс недостаточно. Требуется непрерывный сбор данных о потреблении ресурсов, количестве запросов и времени ответа. Грамотно настроенный <strong>статус</strong> позволяет выявлять аномалии до того, как они повлияют на пользователей.</p>
+
+<h2 id="включение-базового-модуля-статуса">Включение базового модуля статуса</h2>
+
+<p>Первым шагом в любом сценарии <strong>наблюдаемости</strong> является активация встроенного модуля `ngx_http_stub_status_module`. Этот компонент предоставляет минимальную, но критически важную статистику о количестве соединений и обработанных запросов. Он не требует установки дополнительных пакетов, так как обычно компилируется вместе с основным ядром <em>Nginx</em>.</p>
+
+<p>Чтобы получить доступ к данным, необходимо добавить специальный блок в конфигурационный файл, ограничив доступ только доверенным IP-адресам. Это предотвращает утечку информации о внутренней структуре сети. Вы можете проверить работоспособность, отправив запрос к локальному хосту.</p>
+
+<p>Пример настройки блокировки доступа и активации модуля выглядит следующим образом:</p>
+
+<pre><code>location /nginx_status {
+<p>stub_status on;</p>
+<p>access_log off;</p>
+<p>allow 127.0.0.1;</p>
+<p>allow 192.168.1.0/24;</p>
+<p>deny all;</p>
+<p>}</code></pre></p>
+
+<p>После перезагрузки сервиса вы получите текстовый вывод с ключевыми метриками. Обратите внимание на параметр <code>Active connections</code>, который показывает текущее число открытых сессий. Также важен счетчик <code>Accepted</code>, отражающий общее количество принятых за все время подключений.</p>
+
+<blockquote>⚠️ Внимание: Никогда не открывайте эндпоинт статуса для публичного интернета без дополнительной аутентификации, так как это раскрывает реальную нагрузку вашего сервера потенциальным злоумышленникам.</blockquote>
+
+<p>Сбор данных через этот метод прост, но он не хранит историю. Для построения графиков необходимо использовать внешний инструмент, который будет регулярно опрашивать этот URL.</p>
+
+<div class="poll-widget" id="poll-b9e7e38e"><div class="poll-widget-question">📊 Какой инструмент мониторинга вы используете для Nginx?</div><div class="poll-widget-option" data-poll="b9e7e38e" data-idx="0" onclick="pbPollVote(this)"><span class="poll-widget-label">Zabbix</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="b9e7e38e" data-idx="1" onclick="pbPollVote(this)"><span class="poll-widget-label">Prometheus</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="b9e7e38e" data-idx="2" onclick="pbPollVote(this)"><span class="poll-widget-label">Nagios</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="b9e7e38e" data-idx="3" onclick="pbPollVote(this)"><span class="poll-widget-label">Собственные скрипты</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div></div>
+
+<h2 id="анализ-логов-ошибок-и-доступа">Анализ логов ошибок и доступа</h2>
+
+<p>Лог-файлы — это первичный источник информации о том, что происходит внутри сервера. Файл <code>access.log</code> фиксирует каждый запрос, а <code>error.log</code> содержит детали сбоев и предупреждений. Регулярный анализ этих файлов позволяет находить паттерны атак и некорректные запросы клиентов.</p>
+
+<p>Для глубокого анализа ручного просмотра недостаточно. Необходимо использовать специализированные утилиты, такие как <em>GoAccess</em> или <em>AWStats</em>, которые превращают сырые данные в понятные отчеты. Они помогают быстро определить, какие страницы вызывают наибольшую нагрузку или возвращают ошибки 4xx и 5xx.</p>
+
+<p>Важно настроить ротацию логов, чтобы они не занимали весь диск. Конфигурация логирования может быть настроена индивидуально для разных серверов в рамках одного инстанса.</p>
+
+<ul>
+<li>Используйте <strong>логирование</strong> в формате JSON для удобной парсинга BigQuery или ELK стеком.</li>
+<li>Настройте фильтрацию по кодам ответа, чтобы сразу видеть критические ошибки <code>502</code> или <code>504</code>.</li>
+<li>Реализуйте автоматическое удаление старых записей через <code>logrotate</code> для экономии места.</li>
+</ul>
+
+<blockquote>⚠️ Внимание: Запись слишком большого количества деталей в <code>error.log</code> может снизить производительность сервера при высоких нагрузках, так как операции записи на диск являются ресурсоемкими.</blockquote>
+
+<div class="attention-box attention-tip"><span class="attention-icon">💡</span><p>Для мгновенного просмотра последних ошибок используйте команду tail: tail -f /var/log/nginx/error.log | grep "error"</p></div>
+
+<h2 id="интеграция-с-prometheus-и-grafana">Интеграция с Prometheus и Grafana</h2>
+
+<p>Современный подход к <strong>наблюдаемости</strong> подразумевает централизацию метрик. Экосистема Prometheus в связке с Grafana стала стандартом де-факто для сбора и визуализации данных. Чтобы Nginx стал источником метрик, требуется использовать экспортёр, например, <em>nginx-prometheus-exporter</em>.</p>
+
+<p>Этот инструмент подключается к эндпоинту статуса или использует модуль <code>ngx_http_stub_status_module</code> для сбора данных и преобразует их в формат, понятный Prometheus. После этого вы получаете возможность строить красивые дашборды с исторической динамикой. Вы сможете видеть не только текущую нагрузку, но и тренды за неделю или месяц.</p>
+
+<p>Настройка требует создания файла экспорта и добавления его в конфигурацию Prometheus для скрапинга. Ключевые метрики, которые стоит отслеживать, включают количество активных соединений, время ожидания и статусы HTTP-ответов. Это позволяет выявлять медленные запросы задолго до того, как пользователи начнут жаловаться на зависания.</p>
+
+<div class="checklist-block"><h4>☑️ Настройка Prometheus Exporter</h4><label class="check-item"><input type="checkbox"><span>Установить бинарь exporter</span></label><label class="check-item"><input type="checkbox"><span>Настроить порт скрапинга</span></label><label class="check-item"><input type="checkbox"><span>Добавить в prometheus.yml</span></label><label class="check-item"><input type="checkbox"><span>Создать дашборд Grafana</span></label><div class="check-progress">Выполнено: <span class="check-count">0</span> / 4</div></div>
+
+<h2 id="мониторинг-системных-ресурсов-и-нагрузки">Мониторинг системных ресурсов и нагрузки</h2>
+
+<p>Nginx работает не в вакууме, он зависит от ресурсов хостовой ОС. Высокая нагрузка на <strong>CPU</strong> или нехватка оперативной памяти могут привести к тому, что даже идеально настроенный веб-сервер начнет выдавать таймауты. Необходимо контролировать потребление дискового I/O и сетевой пропускной способности.</p>
+
+<p>Использование системных утилит, таких как <code>top</code>, <code>htop</code> или специализированных агентов мониторинга, обязательно. Если процесс Nginx потребляет аномально много памяти, это может указывать на утечку или некорректную настройку буферов. В некоторых случаях переполнение очереди соединений может быть следствием DDoS-атаки.</p>
+
+<table>
+<thead>
+<tr>
+<th>Показатель</th>
+<th>Нормальное значение</th>
+<th>Критическое значение</th>
+<th>Действие</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Загрузка CPU</td>
+<td>до 60%</td>
+<td>выше 90%</td>
+<td>Проверить процессорные блокировки</td>
+</tr>
+<tr>
+<td>Использование RAM</td>
+<td>до 70%</td>
+<td>выше 85%</td>
+<td>Увеличить Swap или RAM</td>
+</tr>
+<tr>
+<td>Время ответа</td>
+<td>до 200 мс</td>
+<td>выше 1 сек</td>
+<td>Анализ медленных запросов</td>
+</tr>
+<tr>
+<td>Ошибки 5xx</td>
+<td>0-1%</td>
+<td>выше 5%</td>
+<td>Проверка бэкенда</td>
+</tr>
+</tbody>
+</table>
+
+<p>Особое внимание следует уделить сетевым буферам. Если очередь отправки пакетов заполняется, это сигнал о проблемах с сетевым интерфейсом или перегрузке каналов. Используйте <code>ss</code> или <code>netstat</code> для анализа состояния сокетов.</p>
+
+<details class="faq-item"><summary>Как проверить лимиты дескрипторов?Убедитесь, что ulimit -n достаточно высок (например, 65535), иначе новые соединения будут отклоняться при высокой нагрузке.-->
+
+<h2 id="трекинг-безопасности-и-аномалий">Трекинг безопасности и аномалий</h2>
+
+<p>Мониторинг безопасности — это не только проверка логов, но и анализ паттернов доступа. Частые запросы с одного IP-адреса могут указывать на сканирование уязвимостей или подбор паролей. Системы защиты от DDoS, такие как <em>Fail2Ban</em>, интегрируются с логами Nginx для автоматической блокировки подозрительных сессий.</p>
+
+<p>Важно отслеживать количество запросов, завершающихся кодами 403 и 401. Резкий скачок этих ошибок часто свидетельствует о попытке несанкционированного доступа к закрытым директориям или административным панелям. Настройка правил фильтрации в самом Nginx может помочь отсеять часть атак на уровне сервера.</p>
+
+<p>Не забывайте проверять актуальность SSL-сертификатов и шифрование соединений. Устаревшие протоколы или слабые шифры могут быть использованы злоумышленниками для перехвата данных. Инструменты вроде <em>SSL Labs</em> позволяют проводить регулярный аудит конфигурации безопасности.</p>
+
+<blockquote>⚠️ Внимание</summary><div class="faq-answer"><p> Регулярно обновляйте конфигурацию безопасности, так как новые векторы атак появляются постоянно, а стандартные настройки по умолчанию могут быть недостаточными.</blockquote>
+
+
+
+<h2 id="автоматизация-уведомлений-и-алертинга">Автоматизация уведомлений и алертинга</h2>
+
+<p>Собрать данные недостаточно — нужно оперативно реагировать на инциденты. Система алертинга должна отправлять уведомления в мессенджеры, на почту или в Slack при превышении пороговых значений. Например, если количество ошибок 500 превысит 10 за минуту, администратор должен получить сигнал немедленно.</p>
+
+<p>Настройка правил оповещения требует баланса: слишком частые уведомления приведут к "усталости" от алертов, а редкие — к пропуску критических сбоев. Используйте многоуровневую систему критичности, где P1-инциденты вызывают звонок, а P2-инциденты — только email.</p>
+
+<ul>
+<li>Настройте <strong>эскалацию</strong> правил: если алерт не подтвержден за 15 минут, уведомление отправляется руководителю.</li>
+<li>Используйте "тихие часы" для не критичных уведомлений, чтобы не будить команду ночью без необходимости.</li>
+<li>Протестируйте систему отправки сообщений, чтобы убедиться, что каналы связи работают корректно.</li>
+</ul>
+
+<p>Автоматизация позволяет сократить время восстановления сервиса (MTTR) и минимизировать влияние сбоев на бизнес. Интеграция с системами управления инцидентами (ITSM) помогает документировать все действия по устранению проблем.</p>
+
+<div class="attention-box attention-tip"><span class="attention-icon">💡</span><p>Правильно настроенная система алертинга — это гарантия того, что вы узнаете о проблеме раньше, чем о ней сообщат пользователи.</p></div>
+
+<h2 id="часто-задаваемые-вопросы">Часто задаваемые вопросы</h2>
+
+<details>
+<summary>Как часто нужно обновлять метрики мониторинга?</summary>
+<p>Частота зависит от нагрузки. Для высоконагруженных серверов рекомендуется интервал скрапинга 15-30 секунд. Для статических сайтов достаточно 1-5 минут, чтобы снизить нагрузку на базу данных метрик.</p>
+</details>
+
+<details>
+<summary>Можно ли использовать встроенный модуль статуса для продакшена?</summary>
+<p>Да, но только если он закрыт от публичного доступа через IP-фильтрацию или базовую аутентификацию. Открытый статус-страница может стать вектором для атак на доступность.</p>
+</details>
+
+<details>
+<summary>Что делать, если мониторинг не показывает реальные значения нагрузки?</summary>
+<p>Проверьте, не включен ли режим кэширования в прокси-промежуточном слое. Также убедитесь, что время на сервере синхронизировано, так как рассинхронизация может вызывать ошибки в сборе метрик.</p>
+</details>
+
+<details>
+<summary>Какой инструмент лучше: Zabbix или Prometheus?</summary>
+<p>Выбор зависит от архитектуры. Zabbix идеален для классической инфраструктуры с агентами, тогда как Prometheus лучше подходит для динамических облачных сред и микросервисов благодаря своей модели pull-сбора метрик.</p>
+</details>
+
+<details>
+<summary>Как отследить медленные запросы к бэкенду?</summary>
+<p>Включите логирование медленных запросов в Nginx, установив директиву <code>slow_log</code> или анализируя время ответа в access.log. Это поможет выявить неэффективные запросы к базе данных или внешним API.</p>
+</details></div>
+                    <!--#include virtual="/ssi/article_after.html" -->
+
+                </article>
+                <aside class="article-sidebar"><!--#include virtual="/ssi/sidebar_top.html" --><nav class="sidebar-search"><div class="sidebar-search-box"><input type="text" id="globalSearchInput" placeholder="🔍 Поиск статей..." autocomplete="off"><div class="search-dropdown" id="globalSearchDropdown"></div></div></nav><!--#include virtual="/ssi/sidebar_before_toc.html" --><nav class="sidebar-toc" id="sidebarToc"><h3>Содержание</h3><ul><li><a href="#включение-базового-модуля-статуса">Включение базового модуля статуса</a></li><li><a href="#анализ-логов-ошибок-и-доступа">Анализ логов ошибок и доступа</a></li><li><a href="#интеграция-с-prometheus-и-grafana">Интеграция с Prometheus и Grafana</a></li><li><a href="#мониторинг-системных-ресурсов-и-нагрузки">Мониторинг системных ресурсов и нагрузки</a></li><li><a href="#трекинг-безопасности-и-аномалий">Трекинг безопасности и аномалий</a></li><li><a href="#автоматизация-уведомлений-и-алертинга">Автоматизация уведомлений и алертинга</a></li><li><a href="#часто-задаваемые-вопросы">Часто задаваемые вопросы</a></li></ul></nav><!--#include virtual="/ssi/sidebar_before_related.html" --><nav class="sidebar-related"><h3>Похожие статьи</h3><ul><li><a href="/articles/k/ka/kak-prinyat-na-uchet-monitor.html" class="related-card">Как принять на учет монитор: пошаговая инструкция по инвентаризации</a></li><li><a href="/articles/k/ka/kak-proshit-monitor-hp.html" class="related-card">Прошивка монитора HP: инструкция по обновлению и сбросу</a></li><li><a href="/articles/p/po/pochemu-pri-vyklyuchenii-kompyutera-monitor-gasnet-a-sistemnik-rabotaet-vindovs-10.html" class="related-card">Монитор гаснет, а системник работает: причины и решение в Windows 10</a></li><li><a href="/articles/k/ka/kak-skopirovat-s-ekrana-monitora-pomoshchyu-klaviatury.html" class="related-card">Как скопировать с экрана монитора: клавиатура и горячие клавиши</a></li><li><a href="/articles/k/ka/kak-obnovit-monitor-ed.html" class="related-card">Как обновить монитор E-D: драйверы, прошивка и настройки</a></li></ul></nav><!--#include virtual="/ssi/sidebar_after_related.html" --></aside>
+            </div>
+        </div>
+    </main>
+
+    <!--#include virtual="/ssi/before_related_bottom.html" -->
+    <section class="related-bottom">
+        <div class="container">
+            <h2 class="related-bottom-heading">📖 Читайте также</h2>
+            <div class="related-bottom-grid"><a href="/articles/k/ka/kak-prinyat-na-uchet-monitor.html" class="related-bottom-card"><span class="related-bottom-title">Как принять на учет монитор: пошаговая инструкция по инвентаризации</span><span class="related-bottom-desc">Полное руководство по постановке монитора на баланс организации. Правила учета, амортизации и списан</span></a><a href="/articles/k/ka/kak-proshit-monitor-hp.html" class="related-bottom-card"><span class="related-bottom-title">Прошивка монитора HP: инструкция по обновлению и сбросу</span><span class="related-bottom-desc">Пошаговая инструкция, как обновить прошивку и сбросить настройки монитора HP. Устранение глюков OSD,</span></a><a href="/articles/p/po/pochemu-pri-vyklyuchenii-kompyutera-monitor-gasnet-a-sistemnik-rabotaet-vindovs-10.html" class="related-bottom-card"><span class="related-bottom-title">Монитор гаснет, а системник работает: причины и решение в Windows 10</span><span class="related-bottom-desc">Почему при выключении ПК экран гаснет, но компьютер продолжает шуметь? Разбор причин: от драйверов и</span></a><a href="/articles/k/ka/kak-skopirovat-s-ekrana-monitora-pomoshchyu-klaviatury.html" class="related-bottom-card"><span class="related-bottom-title">Как скопировать с экрана монитора: клавиатура и горячие клавиши</span><span class="related-bottom-desc">Полное руководство по созданию скриншотов с помощью клавиатуры. Горячие клавиши, встроенные инструме</span></a><a href="/articles/k/ka/kak-obnovit-monitor-ed.html" class="related-bottom-card"><span class="related-bottom-title">Как обновить монитор E-D: драйверы, прошивка и настройки</span><span class="related-bottom-desc">Пошаговая инструкция по обновлению ПО и драйверов для мониторов E-D. Узнайте, как исправить мерцание</span></a><a href="/articles/k/ka/kak-otkryt-monitor-porta.html" class="related-bottom-card"><span class="related-bottom-title">Как открыть монитор порта в Windows: пошаговая инструкция</span><span class="related-bottom-desc">Пошаговая инструкция по запуску Монитора порта в Windows. Узнайте, как диагностировать сетевые пробл</span></a></div>
+        </div>
+    </section>
+    <!--#include virtual="/ssi/after_related_bottom.html" -->
+
+    <footer class="site-footer-premium">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-col">
+                    <div class="footer-brand">🖥️ Мониторум</div>
+                    <p class="footer-about">Полный справочник по настройке, ремонту и выбору компьютерных мониторов для любых задач.</p>
+                </div>
+                <div class="footer-col">
+                    <h4>Разделы</h4>
+                    <ul><li><a href="/category/nastrojka-ekrana/">⚙️ Настройка экрана</a></li>
+<li><a href="/category/podklyuchenie-ustrojstv/">🔌 Подключение устройств</a></li>
+<li><a href="/category/mnozhestvennye-ekrany/">🖥️🖥️ Множественные экраны</a></li>
+<li><a href="/category/zvuk-i-audio/">🔊 Звук и аудио</a></li>
+<li><a href="/category/remont-i-polomki/">🔧 Ремонт и поломки</a></li>
+<li><a href="/category/ukhod-i-chistka/">🧼 Уход и чистка</a></li></ul>
+                </div>
+                <div class="footer-col">
+                    <h4>Информация</h4>
+                    <ul>
+                        <li><a href="/">Главная</a></li>
+                        <li><a href="/about.html">О проекте</a></li>
+                        <li><a href="/categories.html">Все разделы</a></li>
+                        <li><a href="/contact.html">Контакты</a></li>
+                        <li><a href="/privacy.html">Конфиденциальность</a></li>
+                        <li><a href="/sitemap.xml">Карта сайта</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>© Мониторум. Все права защищены.</p>
+                <!--LiveInternet counter--><div style="margin-top:10px;"><a href="https://www.liveinternet.ru/click"
+                target="_blank"><img id="licnt06C4" width="88" height="15" style="border:0" 
+                title="LiveInternet: показано число посетителей за сегодня"
+                src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAEALAAAAAABAAEAAAIBTAA7"
+                alt=""/></a><script>(function(d,s){d.getElementById("licnt06C4").src=
+                "https://counter.yadro.ru/hit?t26.5;r"+escape(d.referrer)+
+                ((typeof(s)=="undefined")?"":";s"+s.width+"*"+s.height+"*"+
+                (s.colorDepth?s.colorDepth:s.pixelDepth))+";u"+escape(d.URL)+
+                ";h"+escape(d.title.substring(0,150))+";"+Math.random()})(document,screen)</script></div><!--/LiveInternet-->
+            </div>
+        </div>
+    </footer>
+    <div id="cookie-consent" class="cookie-popup">
+        <div class="cookie-inner">
+            <span>🍪 Мы используем файлы cookie для улучшения работы сайта.</span>
+            <button id="cookie-accept" class="cookie-btn">Принять</button>
+        </div>
+    </div>
+    <script src="/static/js/main.js"></script>
+    <script>
+    (function() {
+        const popup = document.getElementById('cookie-consent');
+        const btn = document.getElementById('cookie-accept');
+        if (popup && btn && !localStorage.getItem('cookie-accepted')) {
+            popup.classList.add('visible');
+            btn.onclick = () => {
+                localStorage.setItem('cookie-accepted', 'true');
+                popup.classList.remove('visible');
+            };
+        }
+    })();
+    </script>
+    <script>
+    function pbPollVote(el) {
+        var poll = el.closest('.poll-widget');
+        if (poll.classList.contains('voted')) return;
+        poll.classList.add('voted');
+        el.classList.add('selected');
+        var opts = poll.querySelectorAll('.poll-widget-option');
+        var n = opts.length;
+        var raw = [];
+        var sum = 0;
+        for (var i = 0; i < n; i++) {
+            var v = Math.random() * 50 + 5;
+            if (opts[i] === el) v += 30;
+            raw.push(v);
+            sum += v;
+        }
+        var pcts = raw.map(function(v) { return Math.round(v / sum * 100); });
+        var diff = 100 - pcts.reduce(function(a,b){ return a+b; }, 0);
+        pcts[Array.from(opts).indexOf(el)] += diff;
+        setTimeout(function() {
+            opts.forEach(function(opt, i) {
+                opt.querySelector('.poll-widget-bar').style.width = pcts[i] + '%';
+                opt.querySelector('.poll-widget-pct').textContent = pcts[i] + '%';
+            });
+        }, 50);
+    }
+    </script>
+    <!--#include virtual="/ssi/body_bottom.html" -->
+    <script src="/static/js/inject.js" defer></script>
+</body>
+</html>

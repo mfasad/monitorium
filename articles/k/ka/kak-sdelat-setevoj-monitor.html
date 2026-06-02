@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27><text y=%27.9em%27 font-size=%2790%27>🖥️</text></svg>">
+    <title>Как сделать сетевой монитор: DIY-инструкция и обзор решений — Мониторум</title>
+    <meta name="description" content="Пошаговое руководство по созданию сетевого монитора своими руками. Обзор софта, выбор оборудования, настройка Wireshark и TShark для анализа трафика.">
+    <link rel="canonical" href="https://monitorium.vercel.app/articles/k/ka/kak-sdelat-setevoj-monitor.html">
+
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="Как сделать сетевой монитор: DIY-инструкция и обзор решений">
+    <meta property="og:description" content="Пошаговое руководство по созданию сетевого монитора своими руками. Обзор софта, выбор оборудования, настройка Wireshark и TShark для анализа трафика.">
+    <meta property="og:locale" content="ru_RU">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css?v=1780420684">
+    <style>
+    .site-footer-premium {
+        margin-top: 60px; padding: 40px 0 0; background: #1e293b; color: #94a3b8;
+    }
+    .footer-grid {
+        display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 40px;
+        padding-bottom: 32px; border-bottom: 1px solid #334155;
+    }
+    .footer-brand { font-size: 1.2rem; font-weight: 700; color: #f1f5f9; margin-bottom: 12px; }
+    .footer-about { font-size: 0.9rem; line-height: 1.6; margin-bottom: 8px; }
+    .footer-updated { font-size: 0.8rem; color: #64748b; }
+    .footer-col h4 { color: #f1f5f9; font-size: 0.95rem; margin-bottom: 16px; }
+    .footer-col ul { list-style: none; }
+    .footer-col li { margin-bottom: 8px; }
+    .footer-col a { color: #94a3b8; font-size: 0.9rem; transition: color 0.2s; }
+    .footer-col a:hover { color: #60a5fa; }
+    .footer-bottom { padding: 20px 0; text-align: center; font-size: 0.85rem; }
+    @media (max-width: 640px) {
+        .footer-grid { grid-template-columns: 1fr; gap: 24px; }
+    }
+    .cookie-popup {
+        position: fixed; bottom: 0; left: 0; right: 0; background: #1e293b; color: #fff;
+        padding: 16px; transition: transform 0.5s ease; z-index: 9999; border-top: 2px solid #2563eb;
+        transform: translateY(100%);
+    }
+    .cookie-popup.visible { transform: translateY(0); }
+    .cookie-inner { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; gap: 16px; font-size: 0.9rem; }
+    .cookie-btn { background: #2563eb; color: #fff; border: none; padding: 8px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+    .cookie-btn:hover { background: #1d4ed8; }
+    @media (max-width: 640px) {
+        .cookie-inner { flex-direction: column; text-align: center; }
+    }
+</style>
+    
+    <!--#include virtual="/ssi/head.html" -->
+</head>
+<body>
+        <!--#include virtual="/ssi/body_top.html" -->
+    <style>
+    .nav-dropdown { position: relative; display: inline-block; }
+    .dropdown-toggle {
+        background: none; border: none; cursor: pointer;
+        font: inherit; color: inherit; padding: 8px 12px;
+        border-radius: 8px; transition: background 0.2s;
+    }
+    .dropdown-toggle:hover { background: rgba(0,0,0,0.05); }
+    .dropdown-menu {
+        display: none; position: absolute; right: 0; top: 100%;
+        min-width: 240px; max-height: 70vh; overflow-y: auto;
+        background: var(--card-bg, #fff); border: 1px solid var(--border, #e5e7eb);
+        border-radius: 12px; box-shadow: 0 12px 40px rgba(0,0,0,0.12);
+        padding: 8px 0; z-index: 1000;
+    }
+    .nav-dropdown::after {
+        content: ''; position: absolute; left: 0; right: 0;
+        top: 100%; height: 12px;
+    }
+    .nav-dropdown:hover .dropdown-menu,
+    .nav-dropdown:focus-within .dropdown-menu { display: block; }
+    .dropdown-item {
+        display: block; padding: 10px 20px; color: var(--text, #1f2937);
+        text-decoration: none; font-size: 0.95rem; transition: background 0.15s;
+        white-space: nowrap;
+    }
+    .dropdown-item:hover { background: rgba(37,99,235,0.06); color: var(--primary, #2563eb); }
+    @media (max-width: 768px) {
+        .main-nav > .nav-link { display: none; }
+        .dropdown-toggle { display: none; }
+        .dropdown-menu {
+            display: block !important; position: static;
+            box-shadow: none; border: none; border-radius: 0;
+            min-width: auto; max-height: none; padding: 0;
+            background: transparent;
+        }
+        .dropdown-item {
+            padding: 8px 0; font-size: 1rem;
+        }
+    }
+    </style>
+    <header class="site-header">
+        <div class="container header-inner">
+            <a href="/" class="logo">
+                <span class="logo-icon">🖥️</span>
+                <span>Мониторум</span>
+            </a>
+            <button class="mobile-menu-btn" aria-label="Меню" id="menuBtn">☰</button>
+            <nav class="main-nav" id="mainNav">
+                <a href="/category/nastrojka-ekrana/" class="nav-link">⚙️ Настройка экрана</a>
+<a href="/category/podklyuchenie-ustrojstv/" class="nav-link">🔌 Подключение устройств</a>
+<a href="/category/mnozhestvennye-ekrany/" class="nav-link">🖥️🖥️ Множественные экраны</a>
+<a href="/category/zvuk-i-audio/" class="nav-link">🔊 Звук и аудио</a>
+<div class="nav-dropdown">
+            <button class="nav-link dropdown-toggle">📂 Все разделы ▾</button>
+            <div class="dropdown-menu"><a href="/category/nastrojka-ekrana/" class="dropdown-item">⚙️ Настройка экрана</a>
+<a href="/category/podklyuchenie-ustrojstv/" class="dropdown-item">🔌 Подключение устройств</a>
+<a href="/category/mnozhestvennye-ekrany/" class="dropdown-item">🖥️🖥️ Множественные экраны</a>
+<a href="/category/zvuk-i-audio/" class="dropdown-item">🔊 Звук и аудио</a>
+<a href="/category/remont-i-polomki/" class="dropdown-item">🔧 Ремонт и поломки</a>
+<a href="/category/ukhod-i-chistka/" class="dropdown-item">🧼 Уход и чистка</a>
+<a href="/category/vybor-i-kharakteristiki/" class="dropdown-item">📊 Выбор и характеристики</a>
+<a href="/category/drajvery-i-po/" class="dropdown-item">💿 Драйверы и ПО</a>
+<a href="/category/krepleniya-i-ustanovka/" class="dropdown-item">🔩 Крепления и установка</a>
+<a href="/category/utilizatsiya-i-prodazha/" class="dropdown-item">♻️ Утилизация и продажа</a>
+<a href="/category/spetsialnye-rezhimy/" class="dropdown-item">🎮 Специальные режимы</a>
+<a href="/category/drugoe/" class="dropdown-item">📁 Другое</a></div>
+        </div>
+            </nav>
+        </div>
+    </header>
+
+    <nav class="breadcrumbs" aria-label="Навигация">
+        <div class="container"><a href="/">Главная</a><span class="breadcrumb-sep">›</span><a href="/category/drugoe/">Другое</a><span class="breadcrumb-sep">›</span><span class="breadcrumb-current">Как сделать сетевой монитор: DIY-инструкция и обзор решений</span></div>
+    </nav>
+
+    <main class="site-main">
+        <div class="container">
+            <div class="article-layout">
+                <article class="article-main">
+                    
+                    <h1>Как сделать сетевой монитор: полное руководство</h1>
+                    <nav class="mobile-toc"><details><summary>📋 Содержание</summary><ul><li><a href="#введение-в-мир-сетевой-аналитики">Введение в мир сетевой аналитики</a></li><li><a href="#выбор-аппаратной-платформы-и-интерфейса">Выбор аппаратной платформы и интерфейса</a></li><li><a href="#установка-и-настройка-операционной-системы">Установка и настройка операционной системы</a></li><li><a href="#установка-программных-комплексов-для-анализа">Установка программных комплексов для анализа</a></li><li><a href="#конфигурация-режима-прослушивания-и-фильтрации">Конфигурация режима прослушивания и фильтрации</a></li><li><a href="#сравнение-методов-мониторинга">Сравнение методов мониторинга</a></li><li><a href="#визуализация-и-создание-дашбордов">Визуализация и создание дашбордов</a></li><li><a href="#частые-вопросы-по-настройке">Частые вопросы по настройке</a></li></ul></details></nav>
+                    <!--#include virtual="/ssi/article_before.html" -->
+                    <div class="article-body"><h2 id="введение-в-мир-сетевой-аналитики">Введение в мир сетевой аналитики</h2>
+<p>Создание собственного инструмента для мониторинга сети — это не просто хобби, а мощный способ понять, как именно передаются данные в вашей локальной среде или через интернет. <strong>Сетевой монитор</strong> позволяет перехватывать пакеты, анализировать задержки и выявлять узкие места в канале связи, которые часто остаются невидимыми для стандартных утилит.</p>
+<p>В отличие от готовых коммерческих решений, DIY-подход дает вам полный контроль над тем, какие данные собираются, как они фильтруются и где хранятся. Вам не придется зависеть от подписок или ограничений ПО, так как вы сможете адаптировать инструмент под свои уникальные задачи. Это особенно актуально для системных администраторов и энтузиастов кибербезопасности.</p>
+<p>Процесс сборки такого устройства или программы требует базовых знаний сетевых протоколов, таких как TCP/IP, и понимания того, как работает <em>Ethernet</em> или <em>Wi-Fi</em>. Однако результат оправдывает усилия, предоставляя детальную картину трафика в реальном времени с возможностью глубокого анализа.</p>
+
+<h2 id="выбор-аппаратной-платформы-и-интерфейса">Выбор аппаратной платформы и интерфейса</h2>
+<p>Первый и самый важный этап — выбор "железа", на котором будет работать ваш мониторинг. Вы можете использовать старый ноутбук, одноплатный компьютер вроде <em>Raspberry Pi</em> или даже специализированный маршрутизатор с открытым ПО. Главное требование — наличие сетевой карты, поддерживающей режим <strong>promiscuous mode</strong> (режим полного прослушивания).</p>
+<p>Для большинства задач отлично подходят платы на базе <em>ARM</em> архитектуры, такие как <em>Orange Pi</em> или <em>Rock Pi</em>. Они потребляют минимум энергии и могут работать 24/7 без перегрева. Если же вам нужна высокая пропускная способность (например, для анализа гигабитного трафика), лучше взять мини-ПК с процессором <em>Intel Core i5</em> или новее.</p>
+<p>Обратите внимание на сетевой интерфейс: встроенные карты в ноутбуках часто плохо поддерживают режим мониторинга на частотах 5 ГГц. В таких случаях потребуется внешний адаптер с чипом <em>Atheros</em> или <em>Realtek</em>, который имеет соответствующую поддержку драйверов. Без правильного адаптера вы просто не сможете увидеть беспроводной трафик других устройств.</p>
+<blockquote>
+<p>⚠️ Внимание: Если вы планируете анализировать трафик Wi-Fi, убедитесь, что ваш адаптер поддерживает инжектирование пакетов и режим мониторинга (monitor mode), иначе вы увидите только свой собственный шифрованный поток.</p>
+</blockquote>
+<div class="poll-widget" id="poll-f3254302"><div class="poll-widget-question">📊 Какой тип устройства вы планируете использовать для мониторинга?</div><div class="poll-widget-option" data-poll="f3254302" data-idx="0" onclick="pbPollVote(this)"><span class="poll-widget-label">Старый ноутбук</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="f3254302" data-idx="1" onclick="pbPollVote(this)"><span class="poll-widget-label">Одноплатный компьютер (Raspberry Pi)</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="f3254302" data-idx="2" onclick="pbPollVote(this)"><span class="poll-widget-label">Специализированный маршрутизатор</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="f3254302" data-idx="3" onclick="pbPollVote(this)"><span class="poll-widget-label">Другое</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div></div>
+
+<h2 id="установка-и-настройка-операционной-системы">Установка и настройка операционной системы</h2>
+<p>Операционная система должна быть легковесной и стабильной. <strong>Linux</strong> является стандартом де-факто для таких задач благодаря гибкости ядра и огромному количеству утилит. Дистрибутивы вроде <em>Debian</em>, <em>Ubuntu Server</em> или специализированные сборки вроде <em>OpenWrt</em> (для роутеров) подходят идеально.</p>
+<p>После установки системы необходимо обновить ядро и драйверы сетевых карт. Это критически важно, так как старые версии ядра могут некорректно обрабатывать <strong>PCIe</strong> прерывания при высокой нагрузке. Используйте команду <pre><code>sudo apt update && sudo apt upgrade -y</code></pre> для обновления пакетной базы, а затем проверьте версию ядра через <code>uname -r</code>.</p>
+<p>Далее конфигурируем сетевой интерфейс. Обычно в Linux используется система управления сетями <em>Netplan</em> или <em>NetworkManager</em>. Вам нужно назначить статический IP-адрес для самого монитора, чтобы к нему можно было подключиться удаленно, но при этом он не должен выступать шлюзом для других устройств, если это не требуется.</p>
+<p>Для работы с сетевым оборудованием часто требуется доступ на уровне root. Создайте пользователя с правами sudo и настройте <em>SSH</em> доступ. Это позволит вам управлять устройством удаленно без подключения монитора и клавиатуры. Не забудьте сменить пароли по умолчанию для безопасности.</p>
+<blockquote>
+<p>⚠️ Внимание: При настройке SSH используйте ключи аутентификации вместо паролей, чтобы исключить риск подбора учетных данных злоумышленниками.</p>
+</blockquote>
+<div class="checklist-block"><h4>☑️ Базовая настройка системы</h4><label class="check-item"><input type="checkbox"><span>Установить Linux (Debian/Ubuntu)</span></label><label class="check-item"><input type="checkbox"><span>Обновить ядро и драйверы</span></label><label class="check-item"><input type="checkbox"><span>Настроить статический IP</span></label><label class="check-item"><input type="checkbox"><span>Включить SSH доступ</span></label><label class="check-item"><input type="checkbox"><span>Настроить фаервол</span></label><div class="check-progress">Выполнено: <span class="check-count">0</span> / 5</div></div>
+
+<h2 id="установка-программных-комплексов-для-анализа">Установка программных комплексов для анализа</h2>
+<p>Сердцем вашего сетевого монитора станет программное обеспечение. Существует два основных подхода: использование графических интерфейсов (GUI) и консольных утилит. Самый популярный инструмент — <em>Wireshark</em>. Он предоставляет мощный графический интерфейс для глубокого анализа пакетов, но требует значительных ресурсов процессора при обработке больших объемов данных.</p>
+<p>Если ресурсы ограничены или устройство работает "в поле" без монитора, лучше использовать <em>TShark</em> (консольная версия Wireshark) или <em>tcpdump</em>. Эти утилиты позволяют захватывать трафик в фоновом режиме и сохранять его в файлы для последующего анализа на более мощной станции. Команда захвата выглядит так: <pre><code>sudo tcpdump -i wlan0 -w capture.pcap</code></pre>.</p>
+<p>Для автоматической визуализации и создания дашбордов в реальном времени часто используют связку <em>Elasticsearch</em>, <em>Logstash</em> и <em>Kibana</em> (ELK Stack) или более легкое решение <em>Grafana</em> с плагином Prometheus. Это позволяет строить графики трафика, отображать количество подключений и выявлять аномалии в динамике.</p>
+<p>Некоторые пользователи предпочитают специализированные дистрибутивы, такие как <em>Kali Linux</em> или <em>PfSense</em>, где инструменты уже предустановлены и настроены. Однако для чистого мониторинга лучше использовать минимальную систему, чтобы снизить поверхность атаки и нагрузку на ресурсы.</p>
+<p>Иногда требуется установка дополнительных библиотек для декодирования специфических протоколов. Убедитесь, что у вас установлен пакет <em>libpcap</em>, так как большинство инструментов захвата трафика опираются именно на него. Без этой библиотеки захват пакетов будет невозможен.</p>
+<details class="faq-item"><summary>Секреты настройки Wireshark</summary><div class="faq-answer"><p>Wireshark позволяет создавать собственные дисплеи фильтров, которые можно сохранять и использовать повторно. Также в настройках есть опция "Decode As", которая заставляет Wireshark трактовать пакеты определенного порта как другой протокол, что полезно при анализе нестандартных сервисов.</p></div></details>
+
+<h2 id="конфигурация-режима-прослушивания-и-фильтрации">Конфигурация режима прослушивания и фильтрации</h2>
+<p>Чтобы монтировать трафик эффективно, необходимо правильно настроить режим работы сетевого интерфейса. В режиме <strong>promiscuous mode</strong> карта принимает все пакеты, проходящие через сегмент сети, а не только адресованные ей. В Linux это можно активировать командой <pre><code>sudo ip link set dev eth0 promisc on</code></pre> или через настройки самого софта.</p>
+<p>Для беспроводных сетей (Wi-Fi) ситуация сложнее. Интерфейс должен быть переведен в режим <em>monitor</em>. Команда <code>iwconfig wlan0 mode monitor</code> часто используется для этого, но может потребоваться остановка менеджера сети. Важно понимать, что в этом режиме вы не сможете подключаться к интернету через этот интерфейс.</p>
+<p>Фильтрация трафика — ключ к производительности. Если вы сохраняете весь трафик, диск быстро заполнится, а анализ станет невозможным. Используйте <strong>BPF-фильтры</strong> (Berkeley Packet Filter) для отсечения ненужного шума. Например, команда <pre><code>tcpdump -i eth0 port 80 or port 443</code></pre> оставит только веб-трафик.</p>
+<p>Для визуализации можно настроить правила фильтрации в <em>Grafana</em>, чтобы отображать только те протоколы, которые вас интересуют. Это позволяет избежать визуального шума и сфокусироваться на проблемах с задержками или потерей пакетов в конкретных сегментах сети.</p>
+<div class="attention-box attention-tip"><span class="attention-icon">💡</span><p>Используйте аппаратные фильтры на сетевой карте, если она поддерживает эту функцию, чтобы разгрузить процессор от обработки служебных пакетов.</p></div>
+
+<h2 id="сравнение-методов-мониторинга">Сравнение методов мониторинга</h2>
+<p>Выбор между пассивным и активным мониторингом зависит от ваших целей. Пассивный метод просто слушает сеть, не вмешиваясь в процесс передачи данных. Активный метод подразумевает отправку специальных пакетов (например, <em>ICMP</em> или <em>TCP SYN</em>) для проверки доступности узлов и измерения задержек.</p>
+<p>Ниже приведена таблица сравнения основных подходов к созданию мониторинга:</p>
+<table>
+<thead>
+<tr>
+<th>Метод</th>
+<th>Плюсы</th>
+<th>Минусы</th>
+<th>Применение</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Пассивный (Sniffer)</strong></td>
+<td>Не влияет на сеть, полная детализация</td>
+<td>Требует режима promiscuous, сложно анализировать зашифрованный трафик</td>
+<td>Анализ причин сбоев, поиск аномалий</td>
+</tr>
+<tr>
+<td><strong>Активный (Ping/Traceroute)</strong></td>
+<td>Простота настройки, измерение задержек</td>
+<td>Создает нагрузку, не показывает содержимое пакетов</td>
+<td>Проверка доступности, мониторинг SLA</td>
+</tr>
+<tr>
+<td><strong>SNMP-опрос</strong></td>
+<td>Стандарт де-факто, низкая нагрузка</td>
+<td>Требует поддержки на оборудовании, меньше деталей</td>
+<td>Мониторинг загрузки каналов, температуры</td>
+</tr>
+<tr>
+<td><strong>NetFlow/sFlow</strong></td>
+<td>Мощная статистика, масштабируемость</td>
+<td>Требует поддержки на роутере/свитче</td>
+<td>Анализ потребления трафика по приложениям</td>
+</tr>
+</tbody>
+</table>
+<p>Часто эффективным решением является гибридный подход, когда вы используете SNMP для общего мониторинга состояния оборудования и <em>packet capture</em> для детального разбора инцидентов. Такой комбинированный метод позволяет получить полную картину событий без перегрузки системы сбора данных.</p>
+<p>Важно отметить, что для получения корректных данных о пропускной способности канала, особенно в перегруженных сетях, активные методы могут искажать результаты из-за собственного трафика тестирования. В таких случаях пассивный захват с последующим анализом статистики <strong>TCP</strong> окон будет более точным.</p>
+
+<h2 id="визуализация-и-создание-дашбордов">Визуализация и создание дашбордов</h2>
+<p>Сырые данные в формате <code>.pcap</code> неудобны для ежедневного использования. Чтобы видеть происходящее "здесь и сейчас", необходимо настроить систему визуализации. Инструмент <em>ntopng</em> — это отличное решение, которое устанавливается поверх Linux и предоставляет веб-интерфейс с графиками, топологиями и алертами.</p>
+<p>Альтернативой может служить связка с базой данных временных рядов, например <em>InfluxDB</em>. Вы можете настроить экспорт метрик из <em>TShark</em> в базу данных, а затем отобразить их в <em>Grafana</em>. Это дает максимальную гибкость в настройке цветов, пороговых значений и алертов.</p>
+<p>Для визуализации топологии сети можно использовать инструменты, такие как <em>NetworkMiner</em> или <em>Fogel</em>, которые строят карту подключенных устройств и отображают историю их активности. Это помогает быстро выявить несанкционированные устройства в вашей сети.</p>
+<p>Не забывайте про безопасность визуализации. Если ваш дашборд доступен через веб-интерфейс, обязательно настройте аутентификацию и шифрование канала (HTTPS), чтобы злоумышленники не могли воспользоваться вашими данными для атаки на сеть.</p>
+<blockquote>
+<p>⚠️ Внимание: Открытые дашборды с сетевой статистикой могут стать мишенью для атак, так как они раскрывают информацию о структуре вашей сети и используемом оборудовании.</p>
+</blockquote>
+<div class="attention-box attention-tip"><span class="attention-icon">💡</span><p>Правильная визуализация превращает терабайты сырых данных в понятные графики, позволяя мгновенно реагировать на снижение производительности сети.</p></div>
+
+<h2 id="частые-вопросы-по-настройке">Частые вопросы по настройке</h2>
+<details>
+<summary>Нужен ли мне второй сетевой интерфейс для мониторинга?</summary>
+<p>Да, для пассивного анализа трафика в сети, где расположен сам монитор, часто требуется второй интерфейс. Один порт используется для управления устройством (SSH), а второй — для прослушивания (SPAN-порт на свитче или разветвитель TAP). Если вы используете Wi-Fi, то один интерфейс может работать в режиме монитора, но тогда вы потеряете возможность подключаться к интернету через него.</p>
+</details>
+<details>
+<summary>Как анализировать зашифрованный трафик (HTTPS)?</summary>
+<p>Анализировать содержимое зашифрованных пакетов без ключей шифрования невозможно. Однако вы можете анализировать метаданные: время начала сессии, размер пакетов, количество переданных байт и IP-адреса. Для расшифровки трафика HTTPS внутри организации (например, в корпоративной сети) необходимо настроить <strong>SSL/TLS</strong> прокси или использовать ключи сессий, полученные от браузера клиента.</p>
+</details>
+<details>
+<summary>Что делать, если Wireshark не видит пакеты?</summary>
+<p>Проверьте, включен ли режим прослушивания (promiscuous mode) и правильно ли выбран интерфейс. Также убедитесь, что у вас есть права root (sudo). В некоторых случаях драйвер сетевой карты может блокировать захват; попробуйте обновить драйвер или использовать другой адаптер. Если трафик идет через Wi-Fi, убедитесь, что адаптер поддерживает режим мониторинга.</p>
+</details>
+<details>
+<summary>Можно ли использовать Raspberry Pi для мониторинга гигабитной сети?</summary>
+<p>Стандартные модели Raspberry Pi (например, 3 или 4) имеют гигабитный интерфейс, но часто ограничены скоростью USB 2.0 (для внешних карт) или процессорной мощностью. Для стабильного захвата гигабитного потока без потерь лучше использовать <em>Raspberry Pi 4</em> с официальным Ethernet или более мощные платы вроде <em>Orange Pi 5</em> с полноценным PCIe интерфейсом для сетевой карты.</p>
+</details></div>
+                    <!--#include virtual="/ssi/article_after.html" -->
+
+                </article>
+                <aside class="article-sidebar"><!--#include virtual="/ssi/sidebar_top.html" --><nav class="sidebar-search"><div class="sidebar-search-box"><input type="text" id="globalSearchInput" placeholder="🔍 Поиск статей..." autocomplete="off"><div class="search-dropdown" id="globalSearchDropdown"></div></div></nav><!--#include virtual="/ssi/sidebar_before_toc.html" --><nav class="sidebar-toc" id="sidebarToc"><h3>Содержание</h3><ul><li><a href="#введение-в-мир-сетевой-аналитики">Введение в мир сетевой аналитики</a></li><li><a href="#выбор-аппаратной-платформы-и-интерфейса">Выбор аппаратной платформы и интерфейса</a></li><li><a href="#установка-и-настройка-операционной-системы">Установка и настройка операционной системы</a></li><li><a href="#установка-программных-комплексов-для-анализа">Установка программных комплексов для анализа</a></li><li><a href="#конфигурация-режима-прослушивания-и-фильтрации">Конфигурация режима прослушивания и фильтрации</a></li><li><a href="#сравнение-методов-мониторинга">Сравнение методов мониторинга</a></li><li><a href="#визуализация-и-создание-дашбордов">Визуализация и создание дашбордов</a></li><li><a href="#частые-вопросы-по-настройке">Частые вопросы по настройке</a></li></ul></nav><!--#include virtual="/ssi/sidebar_before_related.html" --><nav class="sidebar-related"><h3>Похожие статьи</h3><ul><li><a href="/articles/z/za/zachem-monitoru-gertsy.html" class="related-card">Зачем мониторы герцы: влияние частоты обновления на картинку и FPS</a></li><li><a href="/articles/k/ka/kakie-monitory-khorosho-peredayut-tsvet.html" class="related-card">Какие мониторы хорошо передают цвет: выбор матрицы, калибровка и ошибки</a></li><li><a href="/articles/s/sk/skolko-santimetrov-dolzhno-byt-do-monitora.html" class="related-card">Оптимальное расстояние до монитора: норма в сантиметрах для здоровья глаз</a></li><li><a href="/articles/c/ch/chastota-monitora-gde-nastroit.html" class="related-card">Как настроить частоту монитора в Windows: Гайд по Гц</a></li><li><a href="/articles/k/ka/kak-umenshit-yarkost-belogo-tsveta-na-monitore.html" class="related-card">Как уменьшить яркость белого на мониторе: 7 способов</a></li></ul></nav><!--#include virtual="/ssi/sidebar_after_related.html" --></aside>
+            </div>
+        </div>
+    </main>
+
+    <!--#include virtual="/ssi/before_related_bottom.html" -->
+    <section class="related-bottom">
+        <div class="container">
+            <h2 class="related-bottom-heading">📖 Читайте также</h2>
+            <div class="related-bottom-grid"><a href="/articles/z/za/zachem-monitoru-gertsy.html" class="related-bottom-card"><span class="related-bottom-title">Зачем мониторы герцы: влияние частоты обновления на картинку и FPS</span><span class="related-bottom-desc">Разбираем, зачем нужны высокие герцы в мониторах. Влияние частоты обновления на плавность, игровые к</span></a><a href="/articles/k/ka/kakie-monitory-khorosho-peredayut-tsvet.html" class="related-bottom-card"><span class="related-bottom-title">Какие мониторы хорошо передают цвет: выбор матрицы, калибровка и ошибки</span><span class="related-bottom-desc">Полный гид по выбору мониторов с точной цветопередачей. Разбор типов матриц, цветовых охватов sRGB и</span></a><a href="/articles/s/sk/skolko-santimetrov-dolzhno-byt-do-monitora.html" class="related-bottom-card"><span class="related-bottom-title">Оптимальное расстояние до монитора: норма в сантиметрах для здоровья глаз</span><span class="related-bottom-desc">Узнайте, сколько сантиметров должно быть до монитора для защиты зрения. Рекомендации эргономистов, т</span></a><a href="/articles/c/ch/chastota-monitora-gde-nastroit.html" class="related-bottom-card"><span class="related-bottom-title">Как настроить частоту монитора в Windows: Гайд по Гц</span><span class="related-bottom-desc">Инструкция по смене частоты обновления экрана в Windows 10/11. Узнайте, где найти настройки герцовки</span></a><a href="/articles/k/ka/kak-umenshit-yarkost-belogo-tsveta-na-monitore.html" class="related-bottom-card"><span class="related-bottom-title">Как уменьшить яркость белого на мониторе: 7 способов</span><span class="related-bottom-desc">Пошаговая инструкция по снижению агрессивного белого цвета на экране: настройки ОС, калибровка, аппа</span></a><a href="/articles/c/ch/chto-oznachayut-tsifry-1920-i-1080-ukazyvayushchie-razreshenie-monitora-1920x1080.html" class="related-bottom-card"><span class="related-bottom-title">Разрешение 1920x1080: что означают цифры Full HD для монитора</span><span class="related-bottom-desc">Полный разбор значений 1920 и 1080 в разрешении экрана. Как пиксели влияют на четкость, плотность пи</span></a></div>
+        </div>
+    </section>
+    <!--#include virtual="/ssi/after_related_bottom.html" -->
+
+    <footer class="site-footer-premium">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-col">
+                    <div class="footer-brand">🖥️ Мониторум</div>
+                    <p class="footer-about">Полный справочник по настройке, ремонту и выбору компьютерных мониторов для любых задач.</p>
+                </div>
+                <div class="footer-col">
+                    <h4>Разделы</h4>
+                    <ul><li><a href="/category/nastrojka-ekrana/">⚙️ Настройка экрана</a></li>
+<li><a href="/category/podklyuchenie-ustrojstv/">🔌 Подключение устройств</a></li>
+<li><a href="/category/mnozhestvennye-ekrany/">🖥️🖥️ Множественные экраны</a></li>
+<li><a href="/category/zvuk-i-audio/">🔊 Звук и аудио</a></li>
+<li><a href="/category/remont-i-polomki/">🔧 Ремонт и поломки</a></li>
+<li><a href="/category/ukhod-i-chistka/">🧼 Уход и чистка</a></li></ul>
+                </div>
+                <div class="footer-col">
+                    <h4>Информация</h4>
+                    <ul>
+                        <li><a href="/">Главная</a></li>
+                        <li><a href="/about.html">О проекте</a></li>
+                        <li><a href="/categories.html">Все разделы</a></li>
+                        <li><a href="/contact.html">Контакты</a></li>
+                        <li><a href="/privacy.html">Конфиденциальность</a></li>
+                        <li><a href="/sitemap.xml">Карта сайта</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>© Мониторум. Все права защищены.</p>
+                <!--LiveInternet counter--><div style="margin-top:10px;"><a href="https://www.liveinternet.ru/click"
+                target="_blank"><img id="licnt06C4" width="88" height="15" style="border:0" 
+                title="LiveInternet: показано число посетителей за сегодня"
+                src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAEALAAAAAABAAEAAAIBTAA7"
+                alt=""/></a><script>(function(d,s){d.getElementById("licnt06C4").src=
+                "https://counter.yadro.ru/hit?t26.5;r"+escape(d.referrer)+
+                ((typeof(s)=="undefined")?"":";s"+s.width+"*"+s.height+"*"+
+                (s.colorDepth?s.colorDepth:s.pixelDepth))+";u"+escape(d.URL)+
+                ";h"+escape(d.title.substring(0,150))+";"+Math.random()})(document,screen)</script></div><!--/LiveInternet-->
+            </div>
+        </div>
+    </footer>
+    <div id="cookie-consent" class="cookie-popup">
+        <div class="cookie-inner">
+            <span>🍪 Мы используем файлы cookie для улучшения работы сайта.</span>
+            <button id="cookie-accept" class="cookie-btn">Принять</button>
+        </div>
+    </div>
+    <script src="/static/js/main.js"></script>
+    <script>
+    (function() {
+        const popup = document.getElementById('cookie-consent');
+        const btn = document.getElementById('cookie-accept');
+        if (popup && btn && !localStorage.getItem('cookie-accepted')) {
+            popup.classList.add('visible');
+            btn.onclick = () => {
+                localStorage.setItem('cookie-accepted', 'true');
+                popup.classList.remove('visible');
+            };
+        }
+    })();
+    </script>
+    <script>
+    function pbPollVote(el) {
+        var poll = el.closest('.poll-widget');
+        if (poll.classList.contains('voted')) return;
+        poll.classList.add('voted');
+        el.classList.add('selected');
+        var opts = poll.querySelectorAll('.poll-widget-option');
+        var n = opts.length;
+        var raw = [];
+        var sum = 0;
+        for (var i = 0; i < n; i++) {
+            var v = Math.random() * 50 + 5;
+            if (opts[i] === el) v += 30;
+            raw.push(v);
+            sum += v;
+        }
+        var pcts = raw.map(function(v) { return Math.round(v / sum * 100); });
+        var diff = 100 - pcts.reduce(function(a,b){ return a+b; }, 0);
+        pcts[Array.from(opts).indexOf(el)] += diff;
+        setTimeout(function() {
+            opts.forEach(function(opt, i) {
+                opt.querySelector('.poll-widget-bar').style.width = pcts[i] + '%';
+                opt.querySelector('.poll-widget-pct').textContent = pcts[i] + '%';
+            });
+        }, 50);
+    }
+    </script>
+    <!--#include virtual="/ssi/body_bottom.html" -->
+    <script src="/static/js/inject.js" defer></script>
+</body>
+</html>

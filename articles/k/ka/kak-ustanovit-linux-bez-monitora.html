@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27><text y=%27.9em%27 font-size=%2790%27>🖥️</text></svg>">
+    <title>Установка Linux без монитора: Headless сервер и настройка SSH — Мониторум</title>
+    <meta name="description" content="Полное руководство по установке Linux на сервер без видеовыхода. Настройка headless режима, SSH, сети и автоматического запуска через SSH-клиенты.">
+    <link rel="canonical" href="https://monitorium.vercel.app/articles/k/ka/kak-ustanovit-linux-bez-monitora.html">
+
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="Установка Linux без монитора: Headless сервер и настройка SSH">
+    <meta property="og:description" content="Полное руководство по установке Linux на сервер без видеовыхода. Настройка headless режима, SSH, сети и автоматического запуска через SSH-клиенты.">
+    <meta property="og:locale" content="ru_RU">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css?v=1780420684">
+    <style>
+    .site-footer-premium {
+        margin-top: 60px; padding: 40px 0 0; background: #1e293b; color: #94a3b8;
+    }
+    .footer-grid {
+        display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 40px;
+        padding-bottom: 32px; border-bottom: 1px solid #334155;
+    }
+    .footer-brand { font-size: 1.2rem; font-weight: 700; color: #f1f5f9; margin-bottom: 12px; }
+    .footer-about { font-size: 0.9rem; line-height: 1.6; margin-bottom: 8px; }
+    .footer-updated { font-size: 0.8rem; color: #64748b; }
+    .footer-col h4 { color: #f1f5f9; font-size: 0.95rem; margin-bottom: 16px; }
+    .footer-col ul { list-style: none; }
+    .footer-col li { margin-bottom: 8px; }
+    .footer-col a { color: #94a3b8; font-size: 0.9rem; transition: color 0.2s; }
+    .footer-col a:hover { color: #60a5fa; }
+    .footer-bottom { padding: 20px 0; text-align: center; font-size: 0.85rem; }
+    @media (max-width: 640px) {
+        .footer-grid { grid-template-columns: 1fr; gap: 24px; }
+    }
+    .cookie-popup {
+        position: fixed; bottom: 0; left: 0; right: 0; background: #1e293b; color: #fff;
+        padding: 16px; transition: transform 0.5s ease; z-index: 9999; border-top: 2px solid #2563eb;
+        transform: translateY(100%);
+    }
+    .cookie-popup.visible { transform: translateY(0); }
+    .cookie-inner { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; gap: 16px; font-size: 0.9rem; }
+    .cookie-btn { background: #2563eb; color: #fff; border: none; padding: 8px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+    .cookie-btn:hover { background: #1d4ed8; }
+    @media (max-width: 640px) {
+        .cookie-inner { flex-direction: column; text-align: center; }
+    }
+</style>
+    
+    <!--#include virtual="/ssi/head.html" -->
+</head>
+<body>
+        <!--#include virtual="/ssi/body_top.html" -->
+    <style>
+    .nav-dropdown { position: relative; display: inline-block; }
+    .dropdown-toggle {
+        background: none; border: none; cursor: pointer;
+        font: inherit; color: inherit; padding: 8px 12px;
+        border-radius: 8px; transition: background 0.2s;
+    }
+    .dropdown-toggle:hover { background: rgba(0,0,0,0.05); }
+    .dropdown-menu {
+        display: none; position: absolute; right: 0; top: 100%;
+        min-width: 240px; max-height: 70vh; overflow-y: auto;
+        background: var(--card-bg, #fff); border: 1px solid var(--border, #e5e7eb);
+        border-radius: 12px; box-shadow: 0 12px 40px rgba(0,0,0,0.12);
+        padding: 8px 0; z-index: 1000;
+    }
+    .nav-dropdown::after {
+        content: ''; position: absolute; left: 0; right: 0;
+        top: 100%; height: 12px;
+    }
+    .nav-dropdown:hover .dropdown-menu,
+    .nav-dropdown:focus-within .dropdown-menu { display: block; }
+    .dropdown-item {
+        display: block; padding: 10px 20px; color: var(--text, #1f2937);
+        text-decoration: none; font-size: 0.95rem; transition: background 0.15s;
+        white-space: nowrap;
+    }
+    .dropdown-item:hover { background: rgba(37,99,235,0.06); color: var(--primary, #2563eb); }
+    @media (max-width: 768px) {
+        .main-nav > .nav-link { display: none; }
+        .dropdown-toggle { display: none; }
+        .dropdown-menu {
+            display: block !important; position: static;
+            box-shadow: none; border: none; border-radius: 0;
+            min-width: auto; max-height: none; padding: 0;
+            background: transparent;
+        }
+        .dropdown-item {
+            padding: 8px 0; font-size: 1rem;
+        }
+    }
+    </style>
+    <header class="site-header">
+        <div class="container header-inner">
+            <a href="/" class="logo">
+                <span class="logo-icon">🖥️</span>
+                <span>Мониторум</span>
+            </a>
+            <button class="mobile-menu-btn" aria-label="Меню" id="menuBtn">☰</button>
+            <nav class="main-nav" id="mainNav">
+                <a href="/category/nastrojka-ekrana/" class="nav-link">⚙️ Настройка экрана</a>
+<a href="/category/podklyuchenie-ustrojstv/" class="nav-link">🔌 Подключение устройств</a>
+<a href="/category/mnozhestvennye-ekrany/" class="nav-link">🖥️🖥️ Множественные экраны</a>
+<a href="/category/zvuk-i-audio/" class="nav-link">🔊 Звук и аудио</a>
+<div class="nav-dropdown">
+            <button class="nav-link dropdown-toggle">📂 Все разделы ▾</button>
+            <div class="dropdown-menu"><a href="/category/nastrojka-ekrana/" class="dropdown-item">⚙️ Настройка экрана</a>
+<a href="/category/podklyuchenie-ustrojstv/" class="dropdown-item">🔌 Подключение устройств</a>
+<a href="/category/mnozhestvennye-ekrany/" class="dropdown-item">🖥️🖥️ Множественные экраны</a>
+<a href="/category/zvuk-i-audio/" class="dropdown-item">🔊 Звук и аудио</a>
+<a href="/category/remont-i-polomki/" class="dropdown-item">🔧 Ремонт и поломки</a>
+<a href="/category/ukhod-i-chistka/" class="dropdown-item">🧼 Уход и чистка</a>
+<a href="/category/vybor-i-kharakteristiki/" class="dropdown-item">📊 Выбор и характеристики</a>
+<a href="/category/drajvery-i-po/" class="dropdown-item">💿 Драйверы и ПО</a>
+<a href="/category/krepleniya-i-ustanovka/" class="dropdown-item">🔩 Крепления и установка</a>
+<a href="/category/utilizatsiya-i-prodazha/" class="dropdown-item">♻️ Утилизация и продажа</a>
+<a href="/category/spetsialnye-rezhimy/" class="dropdown-item">🎮 Специальные режимы</a>
+<a href="/category/drugoe/" class="dropdown-item">📁 Другое</a></div>
+        </div>
+            </nav>
+        </div>
+    </header>
+
+    <nav class="breadcrumbs" aria-label="Навигация">
+        <div class="container"><a href="/">Главная</a><span class="breadcrumb-sep">›</span><a href="/category/drajvery-i-po/">Драйверы и ПО</a><span class="breadcrumb-sep">›</span><span class="breadcrumb-current">Установка Linux без монитора: Headless сервер и настройка SSH</span></div>
+    </nav>
+
+    <main class="site-main">
+        <div class="container">
+            <div class="article-layout">
+                <article class="article-main">
+                    
+                    <h1>Как установить Linux без монитора: Полное руководство по Headless настройке</h1>
+                    <nav class="mobile-toc"><details><summary>📋 Содержание</summary><ul><li><a href="#подготовка-образа-iso-и-настройка-автоконфигурации">Подготовка образа ISO и настройка автоконфигурации</a></li><li><a href="#создание-загрузочного-usb-носителя-с-конфигурацией">Создание загрузочного USB-носителя с конфигурацией</a></li><li><a href="#настройка-bios-и-сетевых-параметров-до-загрузки">Настройка BIOS и сетевых параметров до загрузки</a></li><li><a href="#процесс-установки-и-первоначальный-доступ">Процесс установки и первоначальный доступ</a></li><li><a href="#подключение-по-ssh-и-настройка-удаленного-доступа">Подключение по SSH и настройка удаленного доступа</a></li><li><a href="#настройка-последовательного-порта-для-отладки">Настройка последовательного порта для отладки</a></li><li><a href="#решение-типичных-проблем-при-установке">Решение типичных проблем при установке</a></li><li><a href="#faq-часто-задаваемые-вопросы">FAQ: Часто задаваемые вопросы</a></li></ul></details></nav>
+                    <!--#include virtual="/ssi/article_before.html" -->
+                    <div class="article-body"><p>Развертывание операционной системы на оборудовании, не оснащенном видеовыходом или подключенным к нему монитором, является стандартной практикой при администрировании серверов. <strong>Headless</strong> режим подразумевает управление устройством исключительно через сетевые протоколы, что требует предварительной подготовки образа системы и настройки сети еще до физического запуска.</p>
+
+<p>Вам необходимо понимать, что процесс установки в таких условиях кардинально отличается от привычной работы с графическим интерфейсом. Вместо визуального выбора опций в меню загрузчика необходимо угадать или заранее прописать правильные параметры ядра, чтобы система корректно инициализировала сетевой адаптер и предоставила удаленный доступ.</p>
+
+<p>Современные дистрибутивы, такие как <em>Ubuntu Server</em>, <em>Debian</em> или <em>AlmaLinux</em>, обладают встроенными механизмами для работы без периферии, но их активация зависит от корректности конфигурационных файлов на этапе создания загрузочного носителя. Ошибки на этом этапе могут привести к тому, что устройство загрузится, но останется недоступным для сетевых подключений.</p>
+
+<h2 id="подготовка-образа-iso-и-настройка-автоконфигурации">Подготовка образа ISO и настройка автоконфигурации</h2>
+
+<p>Первым критическим этапом является модификация установочного образа. Стандартные ISO-образы часто ожидают взаимодействия с пользователем через клавиатуру и экран, что невозможно в <strong>headless</strong> сценарии. Вам потребуется изменить параметры загрузки ядра, чтобы исключить ожидание ввода и принудительно включить сетевую загрузку.</p>
+
+<p>Для этого необходимо смонтировать образ ISO на вашем рабочем компьютере или распаковать его содержимое. Найдите файл конфигурации загрузчика, обычно это <code>isolinux/isolinux.cfg</code> или <code>grub/grub.cfg</code>. В строке загрузки ядра добавьте параметр <code>console=ttyS0,115200n8</code> для вывода логов в последовательный порт или <code>console=tty0</code> для эмуляции монитора, если система пытается вывести текст на несуществующий VGA-адаптер.</p>
+
+<p>Ключевым моментом является автоматизация установки. В дистрибутивах на базе Debian используется <strong>preseed</strong> — файл ответов, который содержит все необходимые настройки: язык, пароль пользователя, разметку диска и настройку сети. Без этого файла система остановится на этапе запроса имени хоста или выбора клавиатуры.</p>
+
+<p>Используйте утилиты типа <em>mkisofs</em> или <em>xorriso</em> для повторной упаковки образа с внедренным конфигурационным файлом. Это позволит при загрузке с флешки или системе автоматически считать ответы и продолжить процесс без вмешательства человека.</p>
+
+<div class="poll-widget" id="poll-be6e957e"><div class="poll-widget-question">📊 Какую ОС вы планируете установить без монитора?</div><div class="poll-widget-option" data-poll="be6e957e" data-idx="0" onclick="pbPollVote(this)"><span class="poll-widget-label">Ubuntu Server</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="be6e957e" data-idx="1" onclick="pbPollVote(this)"><span class="poll-widget-label">Debian</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="be6e957e" data-idx="2" onclick="pbPollVote(this)"><span class="poll-widget-label">CentOS/Rocky Linux</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="be6e957e" data-idx="3" onclick="pbPollVote(this)"><span class="poll-widget-label">Arch Linux</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div></div>
+
+<h2 id="создание-загрузочного-usb-носителя-с-конфигурацией">Создание загрузочного USB-носителя с конфигурацией</h2>
+
+<p>После модификации образа важно корректно записать его на физический носитель. Использование стандартных графических записчиков может нарушить структуру загрузочных секторов. Рекомендуется использовать <em>Etcher</em> или консольную утилиту <code>dd</code> в Linux/macOS для гарантированной записи побитового образа.</p>
+
+<p>Если вы используете <em>Rufus</em> на Windows, убедитесь, что выбран режим записи в режиме <strong>DD Image</strong>, а не ISO-режим. ISO-режим часто модифицирует структуру загрузчика, что может привести к невозможности считания внедренных вами файлов конфигурации при попытке установки.</p>
+
+<p>Проверьте, что на носителе присутствуют все необходимые ресурсы для автономной установки. Это включает в себя сам дистрибутив, файл <code>preseed.cfg</code> (или аналогичный для вашего дистрибутива) и скрипты пост-установки, которые могут быть нужны для установки дополнительных драйверов.</p>
+
+<blockquote>⚠️ Внимание: Неправильный режим записи образа на флешку может привести к тому, что BIOS не увидит загрузочное устройство, даже если файлы внутри записаны корректно. Всегда проверяйте контрольную сумму образа после записи.</blockquote>
+
+<h2 id="настройка-bios-и-сетевых-параметров-до-загрузки">Настройка BIOS и сетевых параметров до загрузки</h2>
+
+<p>Прежде чем подключать сервер, необходимо войти в BIOS/UEFI. Даже без монитора это возможно, если у вас есть доступ к <strong>IPMI</strong> или <strong>iDRAC</strong> интерфейсу, либо если вы подключите монитор только на пару минут для первичной настройки. В параметрах BIOS отключите <code>Fast Boot</code> и установите приоритет загрузки с USB.</p>
+
+<p>Критически важным является настройка сети. Установите статический <strong>IP-адрес</strong> или убедитесь, что ваш DHCP-сервер зарезервирован адрес для MAC-адреса сервера. Если система не получит IP-адрес, вы не сможете подключиться к ней по сети после установки.</p>
+
+<p>В некоторых случаях требуется отключить <code>Secure Boot</code>, так как он может блокировать загрузку кастомных ядер или драйверов, не подписанных цифровыми ключами производителя. Это часто случается при использовании специфических сетевых адаптеров.</p>
+
+<table>
+ <thead>
+ <tr>
+ <th>Параметр BIOS</th>
+ <th>Рекомендуемое значение</th>
+ <th>Назначение</th>
+ </tr>
+ </thead>
+ <tbody>
+ <tr>
+ <td>Boot Order</td>
+ <td>USB/Network</td>
+ <td>Приоритет загрузки с носителя</td>
+ </tr>
+ <tr>
+ <td>Secure Boot</td>
+ <td>Disabled</td>
+ <td>Загрузка кастомных модулей</td>
+ </tr>
+ <tr>
+ <td>Network Stack</td>
+ <td>Enabled</td>
+ <td>Инициализация сетевой карты</td>
+ </tr>
+ <tr>
+ <td>Console Redirection</td>
+ <td>Serial/COM</td>
+ <td>Вывод логов на консоль</td>
+ </tr>
+ </tbody>
+</table>
+
+<div class="checklist-block"><h4>☑️ Проверка перед запуском</h4><label class="check-item"><input type="checkbox"><span>Проверена резервация IP в DHCP</span></label><label class="check-item"><input type="checkbox"><span>Отключен Fast Boot</span></label><label class="check-item"><input type="checkbox"><span>Подготовлен файл preseed</span></label><label class="check-item"><input type="checkbox"><span>Проверен режим записи USB</span></label><div class="check-progress">Выполнено: <span class="check-count">0</span> / 4</div></div>
+
+<h2 id="процесс-установки-и-первоначальный-доступ">Процесс установки и первоначальный доступ</h2>
+
+<p>После включения питания и начала загрузки системы вам необходимо быть готовым к подключению через сеть. Процесс установки может занять от 5 до 30 минут в зависимости от скорости диска и объема пакетов. В этот момент система работает в <strong>текстовом режиме</strong> и не требует визуального контроля.</p>
+
+<p>Для мониторинга процесса установки используйте консольный протокол. Если вы настраивали вывод в <code>ttyS0</code>, подключитесь к последовательному порту через <em>PuTTY</em> или <em>screen</em>. Это позволит увидеть, на каком этапе происходит установка и не возникло ли ошибок с разделами диска.</p>
+
+<p>Если вы выбрали автоматическую установку через <strong>preseed</strong>, система сама завершит копирование файлов, настроит загрузчик GRUB и перезагрузится. Как только система перезагрузится, она попытается подняться по сети.</p>
+
+<p>Вам потребуется узнать IP-адрес сервера. Это можно сделать через веб-интерфейс вашего роутера (раздел DHCP Clients List) или с помощью сканеров сети, таких как <code>nmap</code> или <em>Advanced IP Scanner</em>. Найдите устройство по имени хоста, который вы задали в конфигурации.</p>
+
+<details class="faq-item"><summary>Что делать, если IP адрес не назначен?Если система не получила IP, попробуйте подключиться к ней по умолчанию (часто это 192.168.0.x или 10.0.0.x) или проверьте физическое подключение кабеля. Иногда требуется перезагрузка DHCP-сервера для сброса аренды адресов.-->
+
+<h2 id="подключение-по-ssh-и-настройка-удаленного-доступа">Подключение по SSH и настройка удаленного доступа</h2>
+
+<p>Как только вы определили IP-адрес, следующим шагом является подключение по протоколу <strong>SSH</strong>. Введите команду <code>ssh username@ip_address</code> в вашем терминале. Если установка прошла успешно, вас попросят ввести пароль пользователя, созданного в процессе установки.</p>
+
+<p>После входа в систему рекомендуется сразу сменить настройки SSH-демона для повышения безопасности. Откройте файл <code>/etc/ssh/sshd_config</code> и измените порт, если это необходимо, или отключите вход под пользователем <code>root</code>. Это стандартная практика для защиты сервера от автоматических брутфорс-атак.</p>
+
+<p>Если подключение не удается, проверьте, запущен ли сервис SSH. Введите команду <code>sudo systemctl status ssh</code> или <code>sudo systemctl status sshd</code>. Если сервис остановлен, его нужно запустить и добавить в автозагрузку.</p>
+
+<blockquote>⚠️ Внимание</summary><div class="faq-answer"><p> Убедитесь, что межсетевой экран (Firewall) не блокирует SSH-порт. В некоторых дистрибутивах по умолчанию заблокированы входящие соединения, и доступ можно получить только через физический доступ или консоль сервера.</blockquote>
+
+
+
+<h2 id="настройка-последовательного-порта-для-отладки">Настройка последовательного порта для отладки</h2>
+
+<p>В профессиональных сценариях, когда сервер находится в стойке, подключение по сети может быть недоступно на этапе загрузки ядра. В таких случаях незаменимым инструментом становится <strong>serial console</strong> (последовательный порт).</p>
+
+<p>Для этого необходимо подключить <em>USB-serial конвертер</em> к серверу и настроить параметры BIOS на вывод консоли в COM-порт. Обычно это порт <code>COM1</code> или <code>COM2</code> с настройками <code>115200 8N1</code>. Это позволит вам видеть все сообщения ядра, включая критические ошибки, которые обычно скрыты за экраном загрузки.</p>
+
+<p>В Linux для перенаправления консоли используйте параметр ядра <code>console=ttyS0,115200</code> в файле <code>/etc/default/grub</code>. После изменения файла выполните команду <code>sudo update-grub</code> (для Debian/Ubuntu) или <code>grub2-mkconfig -o /boot/grub2/grub.cfg</code> (для RHEL/CentOS).</p>
+
+<p>Подключитесь к порту через терминальную программу, настроив baud rate (скорость передачи) в точности так же, как в параметрах ядра. Это обеспечит корректное отображение текста без"кракозябр".</p>
+
+<div class="attention-box attention-tip"><span class="attention-icon">💡</span><p>Настройка последовательного порта — это страховка, позволяющая получить доступ к системе даже при полной потере сетевого соединения или сбоях в работе сети.</p></div>
+
+<h2 id="решение-типичных-проблем-при-установке">Решение типичных проблем при установке</h2>
+
+<p>Иногда система загружается, но не отображает экран даже при подключении монитора. Это может быть связано с тем, что ядро пытается использовать графический адаптер, который не поддерживается или не инициализируется в headless режиме. Попробуйте добавить параметр <code>nomodeset</code> в загрузочные опции.</p>
+
+<p>Другая частая проблема — отсутствие сетевого драйвера. Если после установки вы не видите сетевого интерфейса, возможно, в образе не были включены проприетарные драйверы для вашей сетевой карты. В таком случае потребуется загрузить образ с расширенным набором драйверов (например, <em>netinst</em> с дополнительными репозиториями) или подключить сервер через другой ПК для скачивания драйверов.</p>
+
+<p>В случае сбоя установки система может зависнуть на этапе форматирования диска. Если у вас нет физического доступа, это может стать фатальной проблемой. Всегда используйте <strong>удаленное управление питанием</strong> (IPMI, iDRAC, APC UPS) для перезагрузки зависшего сервера.</p>
+
+<blockquote>⚠️ Важно: Не игнорируйте логи ядра. Ошибки в разделе <code>dmesg</code> часто содержат информацию о причинах сбоя драйверов или конфликтах ресурсов, которые невозможно увидеть без доступа к консоли.</blockquote>
+
+
+
+<h2 id="faq-часто-задаваемые-вопросы">FAQ: Часто задаваемые вопросы</h2>
+
+<details>
+ <summary>Можно ли установить Linux без монитора через PXE?</summary>
+ <p>Да, это самый профессиональный способ. Вы настраиваете DHCP и TFTP сервер, через которые сервер загружает ядро и инициал-диск прямо в оперативную память, а затем скачивает систему по сети. Это полностью исключает необходимость в USB-накопителях.</p>
+</details>
+
+<details>
+ <summary>Что делать, если я забыл пароль пользователя?</summary>
+ <p>В headless режиме это сложно. Вам потребуется физический доступ к серверу для загрузки с Live-CD или изменения параметров ядра в GRUB (добавление <code>init=/bin/bash</code>), чтобы сбросить пароль. Если доступ к BIOS заблокирован, это может стать серьезной проблемой.</p>
+</details>
+
+<details>
+ <summary>Нужен ли монитор хотя бы для первой настройки BIOS?</summary>
+ <p>Желательно, но не обязательно. Если у вас есть <em>IPMI</em> или <em>iDRAC</em> карта с поддержкой виртуальной консоли, вы можете настроить BIOS удаленно через браузер, не подключая монитор к серверу.</p>
+</details>
+
+<details>
+ <summary>Как проверить, что установка прошла успешно?</summary>
+ <p>Самый надежный способ — пинговать IP-адрес сервера и попытаться установить SSH-соединение. Если сервер отвечает на ICMP-запросы и принимает SSH-подключения, установка прошла успешно.</p>
+</details></div>
+                    <!--#include virtual="/ssi/article_after.html" -->
+
+                </article>
+                <aside class="article-sidebar"><!--#include virtual="/ssi/sidebar_top.html" --><nav class="sidebar-search"><div class="sidebar-search-box"><input type="text" id="globalSearchInput" placeholder="🔍 Поиск статей..." autocomplete="off"><div class="search-dropdown" id="globalSearchDropdown"></div></div></nav><!--#include virtual="/ssi/sidebar_before_toc.html" --><nav class="sidebar-toc" id="sidebarToc"><h3>Содержание</h3><ul><li><a href="#подготовка-образа-iso-и-настройка-автоконфигурации">Подготовка образа ISO и настройка автоконфигурации</a></li><li><a href="#создание-загрузочного-usb-носителя-с-конфигурацией">Создание загрузочного USB-носителя с конфигурацией</a></li><li><a href="#настройка-bios-и-сетевых-параметров-до-загрузки">Настройка BIOS и сетевых параметров до загрузки</a></li><li><a href="#процесс-установки-и-первоначальный-доступ">Процесс установки и первоначальный доступ</a></li><li><a href="#подключение-по-ssh-и-настройка-удаленного-доступа">Подключение по SSH и настройка удаленного доступа</a></li><li><a href="#настройка-последовательного-порта-для-отладки">Настройка последовательного порта для отладки</a></li><li><a href="#решение-типичных-проблем-при-установке">Решение типичных проблем при установке</a></li><li><a href="#faq-часто-задаваемые-вопросы">FAQ: Часто задаваемые вопросы</a></li></ul></nav><!--#include virtual="/ssi/sidebar_before_related.html" --><nav class="sidebar-related"><h3>Похожие статьи</h3><ul><li><a href="/articles/k/ka/kak-otkatit-drajvera-na-monitor.html" class="related-card">Как откатить драйвера монитора: инструкция по возврату старой версии</a></li><li><a href="/articles/k/ka/kak-posmotret-model-monitora-cherez-vindovs.html" class="related-card">Как узнать модель монитора в Windows: 5 проверенных способов</a></li><li><a href="/articles/k/ka/kak-podklyuchitsya-k-kompyuteru-bez-monitora.html" class="related-card">Как подключить компьютер без монитора: 5 проверенных способов</a></li><li><a href="/articles/k/ka/kak-obnovit-drajvery-monitora-vindovs-10.html" class="related-card">Как обновить драйверы монитора в Windows 10: полная инструкция</a></li><li><a href="/articles/k/ka/kak-obnovit-drajver-monitora.html" class="related-card">Как обновить драйвер монитора: пошаговая инструкция 2026</a></li></ul></nav><!--#include virtual="/ssi/sidebar_after_related.html" --></aside>
+            </div>
+        </div>
+    </main>
+
+    <!--#include virtual="/ssi/before_related_bottom.html" -->
+    <section class="related-bottom">
+        <div class="container">
+            <h2 class="related-bottom-heading">📖 Читайте также</h2>
+            <div class="related-bottom-grid"><a href="/articles/k/ka/kak-otkatit-drajvera-na-monitor.html" class="related-bottom-card"><span class="related-bottom-title">Как откатить драйвера монитора: инструкция по возврату старой версии</span><span class="related-bottom-desc">Пошаговое руководство: как вернуть старые драйверы монитора через Диспетчер устройств и Панель управ</span></a><a href="/articles/k/ka/kak-posmotret-model-monitora-cherez-vindovs.html" class="related-bottom-card"><span class="related-bottom-title">Как узнать модель монитора в Windows: 5 проверенных способов</span><span class="related-bottom-desc">Пошаговые инструкции для определения модели монитора через Windows 10/11: от системных утилит до сто</span></a><a href="/articles/k/ka/kak-podklyuchitsya-k-kompyuteru-bez-monitora.html" class="related-bottom-card"><span class="related-bottom-title">Как подключить компьютер без монитора: 5 проверенных способов</span><span class="related-bottom-desc">Полное руководство по управлению ПК без экрана. Настройка RDP, VNC, IPMI и BIOS для серверов и домаш</span></a><a href="/articles/k/ka/kak-obnovit-drajvery-monitora-vindovs-10.html" class="related-bottom-card"><span class="related-bottom-title">Как обновить драйверы монитора в Windows 10: полная инструкция</span><span class="related-bottom-desc">Пошаговое руководство по обновлению драйверов монитора в Windows 10. Узнайте, как проверить версию, </span></a><a href="/articles/k/ka/kak-obnovit-drajver-monitora.html" class="related-bottom-card"><span class="related-bottom-title">Как обновить драйвер монитора: пошаговая инструкция 2026</span><span class="related-bottom-desc">Пошаговое руководство по обновлению драйвера монитора. Узнайте, зачем это нужно, как скачать INF-фай</span></a><a href="/articles/k/ka/kak-nazyvaetsya-strelka-na-ekrane-monitora.html" class="related-bottom-card"><span class="related-bottom-title">Как называется стрелка на экране монитора: курсор, указатель и типы</span><span class="related-bottom-desc">Узнайте точное название стрелки на экране. Разбор терминов курсор и указатель, виды иконок, настройк</span></a></div>
+        </div>
+    </section>
+    <!--#include virtual="/ssi/after_related_bottom.html" -->
+
+    <footer class="site-footer-premium">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-col">
+                    <div class="footer-brand">🖥️ Мониторум</div>
+                    <p class="footer-about">Полный справочник по настройке, ремонту и выбору компьютерных мониторов для любых задач.</p>
+                </div>
+                <div class="footer-col">
+                    <h4>Разделы</h4>
+                    <ul><li><a href="/category/nastrojka-ekrana/">⚙️ Настройка экрана</a></li>
+<li><a href="/category/podklyuchenie-ustrojstv/">🔌 Подключение устройств</a></li>
+<li><a href="/category/mnozhestvennye-ekrany/">🖥️🖥️ Множественные экраны</a></li>
+<li><a href="/category/zvuk-i-audio/">🔊 Звук и аудио</a></li>
+<li><a href="/category/remont-i-polomki/">🔧 Ремонт и поломки</a></li>
+<li><a href="/category/ukhod-i-chistka/">🧼 Уход и чистка</a></li></ul>
+                </div>
+                <div class="footer-col">
+                    <h4>Информация</h4>
+                    <ul>
+                        <li><a href="/">Главная</a></li>
+                        <li><a href="/about.html">О проекте</a></li>
+                        <li><a href="/categories.html">Все разделы</a></li>
+                        <li><a href="/contact.html">Контакты</a></li>
+                        <li><a href="/privacy.html">Конфиденциальность</a></li>
+                        <li><a href="/sitemap.xml">Карта сайта</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>© Мониторум. Все права защищены.</p>
+                <!--LiveInternet counter--><div style="margin-top:10px;"><a href="https://www.liveinternet.ru/click"
+                target="_blank"><img id="licnt06C4" width="88" height="15" style="border:0" 
+                title="LiveInternet: показано число посетителей за сегодня"
+                src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAEALAAAAAABAAEAAAIBTAA7"
+                alt=""/></a><script>(function(d,s){d.getElementById("licnt06C4").src=
+                "https://counter.yadro.ru/hit?t26.5;r"+escape(d.referrer)+
+                ((typeof(s)=="undefined")?"":";s"+s.width+"*"+s.height+"*"+
+                (s.colorDepth?s.colorDepth:s.pixelDepth))+";u"+escape(d.URL)+
+                ";h"+escape(d.title.substring(0,150))+";"+Math.random()})(document,screen)</script></div><!--/LiveInternet-->
+            </div>
+        </div>
+    </footer>
+    <div id="cookie-consent" class="cookie-popup">
+        <div class="cookie-inner">
+            <span>🍪 Мы используем файлы cookie для улучшения работы сайта.</span>
+            <button id="cookie-accept" class="cookie-btn">Принять</button>
+        </div>
+    </div>
+    <script src="/static/js/main.js"></script>
+    <script>
+    (function() {
+        const popup = document.getElementById('cookie-consent');
+        const btn = document.getElementById('cookie-accept');
+        if (popup && btn && !localStorage.getItem('cookie-accepted')) {
+            popup.classList.add('visible');
+            btn.onclick = () => {
+                localStorage.setItem('cookie-accepted', 'true');
+                popup.classList.remove('visible');
+            };
+        }
+    })();
+    </script>
+    <script>
+    function pbPollVote(el) {
+        var poll = el.closest('.poll-widget');
+        if (poll.classList.contains('voted')) return;
+        poll.classList.add('voted');
+        el.classList.add('selected');
+        var opts = poll.querySelectorAll('.poll-widget-option');
+        var n = opts.length;
+        var raw = [];
+        var sum = 0;
+        for (var i = 0; i < n; i++) {
+            var v = Math.random() * 50 + 5;
+            if (opts[i] === el) v += 30;
+            raw.push(v);
+            sum += v;
+        }
+        var pcts = raw.map(function(v) { return Math.round(v / sum * 100); });
+        var diff = 100 - pcts.reduce(function(a,b){ return a+b; }, 0);
+        pcts[Array.from(opts).indexOf(el)] += diff;
+        setTimeout(function() {
+            opts.forEach(function(opt, i) {
+                opt.querySelector('.poll-widget-bar').style.width = pcts[i] + '%';
+                opt.querySelector('.poll-widget-pct').textContent = pcts[i] + '%';
+            });
+        }, 50);
+    }
+    </script>
+    <!--#include virtual="/ssi/body_bottom.html" -->
+    <script src="/static/js/inject.js" defer></script>
+</body>
+</html>

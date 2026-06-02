@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27><text y=%27.9em%27 font-size=%2790%27>🖥️</text></svg>">
+    <title>Как установить Linux без монитора: полный гайд по Headless-режиму — Мониторум</title>
+    <meta name="description" content="Пошаговая инструкция по установке Linux на сервер без видеовыхода. Настройка сети, SSH, KVM и запуск системы в режиме headless.">
+    <link rel="canonical" href="https://monitorium.vercel.app/articles/k/ka/kak-ustanovit-linuks-bez-monitora.html">
+
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="Как установить Linux без монитора: полный гайд по Headless-режиму">
+    <meta property="og:description" content="Пошаговая инструкция по установке Linux на сервер без видеовыхода. Настройка сети, SSH, KVM и запуск системы в режиме headless.">
+    <meta property="og:locale" content="ru_RU">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css?v=1780420684">
+    <style>
+    .site-footer-premium {
+        margin-top: 60px; padding: 40px 0 0; background: #1e293b; color: #94a3b8;
+    }
+    .footer-grid {
+        display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 40px;
+        padding-bottom: 32px; border-bottom: 1px solid #334155;
+    }
+    .footer-brand { font-size: 1.2rem; font-weight: 700; color: #f1f5f9; margin-bottom: 12px; }
+    .footer-about { font-size: 0.9rem; line-height: 1.6; margin-bottom: 8px; }
+    .footer-updated { font-size: 0.8rem; color: #64748b; }
+    .footer-col h4 { color: #f1f5f9; font-size: 0.95rem; margin-bottom: 16px; }
+    .footer-col ul { list-style: none; }
+    .footer-col li { margin-bottom: 8px; }
+    .footer-col a { color: #94a3b8; font-size: 0.9rem; transition: color 0.2s; }
+    .footer-col a:hover { color: #60a5fa; }
+    .footer-bottom { padding: 20px 0; text-align: center; font-size: 0.85rem; }
+    @media (max-width: 640px) {
+        .footer-grid { grid-template-columns: 1fr; gap: 24px; }
+    }
+    .cookie-popup {
+        position: fixed; bottom: 0; left: 0; right: 0; background: #1e293b; color: #fff;
+        padding: 16px; transition: transform 0.5s ease; z-index: 9999; border-top: 2px solid #2563eb;
+        transform: translateY(100%);
+    }
+    .cookie-popup.visible { transform: translateY(0); }
+    .cookie-inner { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; gap: 16px; font-size: 0.9rem; }
+    .cookie-btn { background: #2563eb; color: #fff; border: none; padding: 8px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+    .cookie-btn:hover { background: #1d4ed8; }
+    @media (max-width: 640px) {
+        .cookie-inner { flex-direction: column; text-align: center; }
+    }
+</style>
+    
+    <!--#include virtual="/ssi/head.html" -->
+</head>
+<body>
+        <!--#include virtual="/ssi/body_top.html" -->
+    <style>
+    .nav-dropdown { position: relative; display: inline-block; }
+    .dropdown-toggle {
+        background: none; border: none; cursor: pointer;
+        font: inherit; color: inherit; padding: 8px 12px;
+        border-radius: 8px; transition: background 0.2s;
+    }
+    .dropdown-toggle:hover { background: rgba(0,0,0,0.05); }
+    .dropdown-menu {
+        display: none; position: absolute; right: 0; top: 100%;
+        min-width: 240px; max-height: 70vh; overflow-y: auto;
+        background: var(--card-bg, #fff); border: 1px solid var(--border, #e5e7eb);
+        border-radius: 12px; box-shadow: 0 12px 40px rgba(0,0,0,0.12);
+        padding: 8px 0; z-index: 1000;
+    }
+    .nav-dropdown::after {
+        content: ''; position: absolute; left: 0; right: 0;
+        top: 100%; height: 12px;
+    }
+    .nav-dropdown:hover .dropdown-menu,
+    .nav-dropdown:focus-within .dropdown-menu { display: block; }
+    .dropdown-item {
+        display: block; padding: 10px 20px; color: var(--text, #1f2937);
+        text-decoration: none; font-size: 0.95rem; transition: background 0.15s;
+        white-space: nowrap;
+    }
+    .dropdown-item:hover { background: rgba(37,99,235,0.06); color: var(--primary, #2563eb); }
+    @media (max-width: 768px) {
+        .main-nav > .nav-link { display: none; }
+        .dropdown-toggle { display: none; }
+        .dropdown-menu {
+            display: block !important; position: static;
+            box-shadow: none; border: none; border-radius: 0;
+            min-width: auto; max-height: none; padding: 0;
+            background: transparent;
+        }
+        .dropdown-item {
+            padding: 8px 0; font-size: 1rem;
+        }
+    }
+    </style>
+    <header class="site-header">
+        <div class="container header-inner">
+            <a href="/" class="logo">
+                <span class="logo-icon">🖥️</span>
+                <span>Мониторум</span>
+            </a>
+            <button class="mobile-menu-btn" aria-label="Меню" id="menuBtn">☰</button>
+            <nav class="main-nav" id="mainNav">
+                <a href="/category/nastrojka-ekrana/" class="nav-link">⚙️ Настройка экрана</a>
+<a href="/category/podklyuchenie-ustrojstv/" class="nav-link">🔌 Подключение устройств</a>
+<a href="/category/mnozhestvennye-ekrany/" class="nav-link">🖥️🖥️ Множественные экраны</a>
+<a href="/category/zvuk-i-audio/" class="nav-link">🔊 Звук и аудио</a>
+<div class="nav-dropdown">
+            <button class="nav-link dropdown-toggle">📂 Все разделы ▾</button>
+            <div class="dropdown-menu"><a href="/category/nastrojka-ekrana/" class="dropdown-item">⚙️ Настройка экрана</a>
+<a href="/category/podklyuchenie-ustrojstv/" class="dropdown-item">🔌 Подключение устройств</a>
+<a href="/category/mnozhestvennye-ekrany/" class="dropdown-item">🖥️🖥️ Множественные экраны</a>
+<a href="/category/zvuk-i-audio/" class="dropdown-item">🔊 Звук и аудио</a>
+<a href="/category/remont-i-polomki/" class="dropdown-item">🔧 Ремонт и поломки</a>
+<a href="/category/ukhod-i-chistka/" class="dropdown-item">🧼 Уход и чистка</a>
+<a href="/category/vybor-i-kharakteristiki/" class="dropdown-item">📊 Выбор и характеристики</a>
+<a href="/category/drajvery-i-po/" class="dropdown-item">💿 Драйверы и ПО</a>
+<a href="/category/krepleniya-i-ustanovka/" class="dropdown-item">🔩 Крепления и установка</a>
+<a href="/category/utilizatsiya-i-prodazha/" class="dropdown-item">♻️ Утилизация и продажа</a>
+<a href="/category/spetsialnye-rezhimy/" class="dropdown-item">🎮 Специальные режимы</a>
+<a href="/category/drugoe/" class="dropdown-item">📁 Другое</a></div>
+        </div>
+            </nav>
+        </div>
+    </header>
+
+    <nav class="breadcrumbs" aria-label="Навигация">
+        <div class="container"><a href="/">Главная</a><span class="breadcrumb-sep">›</span><a href="/category/drajvery-i-po/">Драйверы и ПО</a><span class="breadcrumb-sep">›</span><span class="breadcrumb-current">Как установить Linux без монитора: полный гайд по Headless-режиму</span></div>
+    </nav>
+
+    <main class="site-main">
+        <div class="container">
+            <div class="article-layout">
+                <article class="article-main">
+                    
+                    <h1>Установка Linux без монитора: полное руководство по настройке Headless-сервера</h1>
+                    <nav class="mobile-toc"><details><summary>📋 Содержание</summary><ul><li><a href="#подготовка-загрузочного-образа-и-настройки-сети">Подготовка загрузочного образа и настройки сети</a></li><li><a href="#настройка-biosuefi-для-режима-headless">Настройка BIOS/UEFI для режима Headless</a></li><li><a href="#методы-удаленного-доступа-и-настройки-ipmi">Методы удаленного доступа и настройки IPMI</a></li><li><a href="#процесс-установки-через-ssh-и-консоль">Процесс установки через SSH и консоль</a></li><li><a href="#использование-hdmi-эмуляторов-как-запасной-вариант">Использование HDMI-эмуляторов как запасной вариант</a></li><li><a href="#решение-проблем-с-отсутствием-видеосигнала">Решение проблем с отсутствием видеосигнала</a></li><li><a href="#faq-часто-задаваемые-вопросы">FAQ: Часто задаваемые вопросы</a></li></ul></details></nav>
+                    <!--#include virtual="/ssi/article_before.html" -->
+                    <div class="article-body"><p>Многие администраторы сталкиваются с необходимостью развертывания операционной системы на сервере, где физическое подключение дисплея невозможно или нецелесообразно. Это часто случается при работе с одноплатными компьютерами типа <em>Raspberry Pi</em>, мини-ПК или при удаленной настройке оборудования в стойке. Процесс установки в таких условиях требует особого подхода, так как вы лишаетесь визуального контроля над происходящим.</p>
+
+<p>Главная сложность заключается в том, чтобы система распознала отсутствие видеомонитора и переключилась в режим вывода консоли через сеть. Если этого не сделать, закачка дистрибутива может пройти успешно, но последующая работа окажется невозможной из-за отсутствия видеосигнала. Вам потребуется заранее подготовить сетевые настройки и методы удаленного доступа.</p>
+
+<p>В этой статье мы разберем проверенные способы установки <strong>Linux</strong> без использования видеовыхода. Мы рассмотрим подготовку загрузочного носителя, настройку BIOS/UEFI для работы в режиме <strong>Headless</strong> и методы первого входа в систему. Этот подход позволит вам полностью управлять сервером, находясь за сотни километров от него.</p>
+
+<h2 id="подготовка-загрузочного-образа-и-настройки-сети">Подготовка загрузочного образа и настройки сети</h2>
+
+<p>Первым шагом является подготовка установочного носителя. Стандартные образы дистрибутивов часто рассчитаны на работу с графическим интерфейсом или установкой через видеоконсоль. Вам необходимо модифицировать параметры загрузки, чтобы принудительно активировать текстовый режим. Это можно сделать путем редактирования файла конфигурации загрузчика <em>GRUB</em> или добавления специальных параметров ядра при старте.</p>
+
+<p>Критически важно заранее определить <strong>IP-адрес</strong>, который будет назначен серверу. Без монитора вы не сможете зайти в настройки DHCP или роутера, чтобы проверить адрес, если сервер не получает его автоматически. Рекомендуется использовать статическую настройку IP через параметры ядра при загрузке с флешки, чтобы гарантировать доступность устройства сразу после завершения установки.</p>
+
+<p>Для успешной установки также необходимо настроить <strong>SSH</strong> (Secure Shell) так, чтобы он активировался сразу после завершения инсталляции. Если вы используете популярный дистрибутив вроде <em>Ubuntu Server</em> или <em>Debian</em>, на этапе установки есть опция "Install OpenSSH server". Обязательно отметьте этот пункт, иначе система загрузится, но вы не сможете подключиться к ней удаленно.</p>
+
+<div class="attention-box attention-tip"><span class="attention-icon">💡</span><p>Перед началом установки создайте на другом компьютере текстовый файл с нужными параметрами сети и командами, чтобы быстро вставить их при загрузке, так как клавиатуру и экран вы использовать не сможете.</p></div>
+
+<h2 id="настройка-biosuefi-для-режима-headless">Настройка BIOS/UEFI для режима Headless</h2>
+
+<p>Большинство современных материнских плат по умолчанию отключают видеовыход, если не обнаруживают подключенный монитор. Это может привести к тому, что система будет загружаться, но не будет отдавать видеосигнал даже при наличии флешки. Вам нужно войти в BIOS/UEFI (обычно это возможно только если подключить монитор на короткое время один раз) и изменить настройки запуска.</p>
+
+<p>В разделе <code>Boot</code> или <code>Advanced</code> ищите параметры, связанные с видеоконтроллером. Найдите опцию <code>Boot without VGA</code>, <code>Ignore No VGA</code> или <code>Force VGA</code>. Включите эти функции, чтобы материнская плата продолжала генерировать видеосигнал или инициализировать сетевой интерфейс даже без физического монитора. Это критично для серверов с процессорами <em>Intel Xeon</em> или <em>AMD EPYC</em>.</p>
+
+<p>Также проверьте настройки приоритета загрузки. Убедитесь, что сетевая карта или USB-порт с дистрибутивом стоят выше, чем жесткий диск. Если вы планируете использовать <strong>PXE</strong> (загрузку по сети), настройте DHCP-сервер для раздачи образа установки. Это позволит запускать процесс полностью удаленно, даже без вставленной флешки.</p>
+
+<blockquote>
+<p>⚠️ Внимание: Некоторые серверные платы требуют установки специального модуля IPMI или iDRAC/iLO для полноценного управления без монитора. Без этих модулей вы можете потерять возможность загрузки, если настройки BIOS не были сохранены корректно при первом подключении.</p>
+</blockquote>
+
+<h2 id="методы-удаленного-доступа-и-настройки-ipmi">Методы удаленного доступа и настройки IPMI</h2>
+
+<p>Если вы работаете с профессиональным серверным оборудованием, вам повезло: у него есть встроенный контроллер управления, такой как <em>IPMI</em>, <em>iDRAC</em> (Dell) или <em>iLO</em> (HPE). Эти интерфейсы позволяют получить полный визуальный доступ к экрану сервера через веб-браузер, как будто вы сидите перед ним. Это самый надежный способ установки, так как вы видите весь процесс, включая сообщения об ошибках.</p>
+
+<p>Для обычных ПК или домашних серверов этот метод недоступен, поэтому приходится полагаться на сетевую загрузку и SSH. Вам необходимо использовать утилиты вроде <code>netcat</code> или <code>telnet</code> для отладки, если SSH не поднимается. Однако, если вы правильно настроили параметры ядра, система должна автоматически поднимать сетевой сервис и ждать подключения по порту <code>22</code>.</p>
+
+<div class="checklist-block"><h4>☑️ Проверка перед запуском</h4><label class="check-item"><input type="checkbox"><span>Настроить статический IP в параметрах ядра</span></label><label class="check-item"><input type="checkbox"><span>Включить SSH на этапе установки</span></label><label class="check-item"><input type="checkbox"><span>Проверить приоритет загрузки</span></label><label class="check-item"><input type="checkbox"><span>Убедиться в наличии сетевого драйвера</span></label><div class="check-progress">Выполнено: <span class="check-count">0</span> / 4</div></div>
+
+<h2 id="процесс-установки-через-ssh-и-консоль">Процесс установки через SSH и консоль</h2>
+
+<p>После того как загрузочный носитель запущен и система определила сеть, вы можете подключиться к ней с основного компьютера. Используйте команду <code>ssh root@<ip-адрес></code> для входа. Если вы не знаете адрес, возможно, придется воспользоваться утилитой сканирования сети, например <em>Advanced IP Scanner</em> или <code>nmap</code>, чтобы найти новое устройство в подсети.</p>
+
+<p>В процессе установки вы будете работать в текстовом режиме. Следуйте инструкциям на экране, которые транслируются на ваш терминал. Вам предстоит выбрать язык, раскладку клавиатуры, разметку диска и настроить пользователя. Обратите внимание на параметры разметки диска: если вы ошибетесь, восстановить данные на удаленном сервере будет крайне сложно.</p>
+
+<p>Особое внимание уделите установке загрузчика <strong>GRUB</strong>. Убедитесь, что он записан в правильное устройство (обычно <code>/dev/sda</code> или <code>/dev/nvme0n1</code>). После завершения установки система перезагрузится. В этот момент критически важно, чтобы она снова загрузилась в текстовый режим и не попыталась инициализировать графический интерфейс, который не может быть отрисован.</p>
+
+<div class="poll-widget" id="poll-8a7a7b96"><div class="poll-widget-question">📊 Какой метод вы планируете использовать для установки без монитора?</div><div class="poll-widget-option" data-poll="8a7a7b96" data-idx="0" onclick="pbPollVote(this)"><span class="poll-widget-label">Полный Headless (только SSH)</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="8a7a7b96" data-idx="1" onclick="pbPollVote(this)"><span class="poll-widget-label">IPMI / iDRAC / iLO (виртуальный KVM)</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="8a7a7b96" data-idx="2" onclick="pbPollVote(this)"><span class="poll-widget-label">PXE загрузка по сети</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="8a7a7b96" data-idx="3" onclick="pbPollVote(this)"><span class="poll-widget-label">Использование HDMI-эмулятора</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div></div>
+
+<details class="faq-item"><summary>Что делать, если система не загружается после установки?</summary><div class="faq-answer"><p>Если после перезагрузки вы не видите ответа от сервера, проверьте, не ушел ли он в режим ожидания. Попробуйте принудительно перезагрузить питание через IPMI или физически. Возможно, в GRUB не был прописан параметр console=tty0 или ttyS0, и система ждет вывода на несуществующий экран.</p></div></details>
+
+<h2 id="использование-hdmi-эмуляторов-как-запасной-вариант">Использование HDMI-эмуляторов как запасной вариант</h2>
+
+<p>Иногда программные методы настройки BIOS не дают результата, и видеокарта просто не генерирует сигнал. В этом случае физическое решение может стать спасением. HDMI-эмулятор (или "Dummy Plug") — это маленькое устройство, которое вставляется в видеовыход видеокарты и обманывает систему, заставляя её думать, что подключен монитор.</p>
+
+<p>Установив такой эмулятор, система будет работать стабильно, выдавая видеосигнал, который вы сможете перенаправить через программный KVM или просто игнорировать, так как доступ к консоли будет осуществляться через сеть. Это особенно актуально для игровых серверов или станций рендеринга, где требуется стабильная частота кадров, а не реальное изображение.</p>
+
+<table>
+<thead>
+<tr>
+<th>Тип решения</th>
+<th>Сложность настройки</th>
+<th>Стоимость</th>
+<th>Надежность</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Настройка BIOS + SSH</td>
+<td>Высокая</td>
+<td>Бесплатно</td>
+<td>Средняя</td>
+</tr>
+<tr>
+<td>IPMI / iDRAC</td>
+<td>Средняя</td>
+<td>Включено в сервер</td>
+<td>Очень высокая</td>
+</tr>
+<tr>
+<td>HDMI-эмулятор</td>
+<td>Низкая</td>
+<td>Низкая</td>
+<td>Высокая</td>
+</tr>
+<tr>
+<td>PXE-загрузка</td>
+<td>Очень высокая</td>
+<td>Бесплатно</td>
+<td>Высокая</td>
+</tr>
+</tbody>
+</table>
+
+<blockquote>
+<p>⚠️ Внимание: При покупке HDMI-эмулятора убедитесь, что он поддерживает разрешение <code>1080p</code> или <code>4K</code>, так как некоторые старые модели могут ограничивать частоту обновления, что приведет к торможению системы, если вы решите использовать графический интерфейс в будущем.</p>
+</blockquote>
+
+<h2 id="решение-проблем-с-отсутствием-видеосигнала">Решение проблем с отсутствием видеосигнала</h2>
+
+<p>Если система не загружается или "висит" на этапе инициализации ядра, проблема может быть в драйверах видеокарты. В режиме <strong>Headless</strong> часто отключаются проприетарные драйверы, такие как <em>NVIDIA</em>, если не указано явное разрешение. Добавьте параметр <code>nomodeset</code> в конфигурацию загрузчика, чтобы заставить ядро использовать базовые драйверы до установки специфических модулей.</p>
+
+<p>Также проверьте лог-файлы системы. Если у вас есть доступ к консоли, посмотрите файл <code>/var/log/syslog</code> или используйте <code>dmesg</code>, чтобы найти ошибки, связанные с инициализацией драйверов видеоадаптера. Часто достаточно просто переназначить <strong>TTY</strong> (виртуальный терминал) на последовательный порт, если у вас есть консольный кабель.</p>
+
+<p> Если вы используете специфические сетевые адаптеры, убедитесь, что их драйверы включены в образ установки. В противном случае система загрузится, но не будет видна в сети, и вы потеряете управление.</p>
+
+<div class="attention-box attention-tip"><span class="attention-icon">💡</span><p>Использование параметра nomodeset и правильной настройки BIOS — ключ к стабильной работе системы без монитора. Не пренебрегайте проверкой совместимости сетевых драйверов перед началом установки.</p></div>
+
+<h2 id="faq-часто-задаваемые-вопросы">FAQ: Часто задаваемые вопросы</h2>
+
+<details>
+<summary>Можно ли установить Linux без монитора на обычном домашнем ПК без IPMI?</summary>
+<p>Да, это возможно. Вам потребуется правильно настроить загрузочную флешку (добавить параметры ядра для отключения графики), включить опцию "Boot without VGA" в BIOS (если она есть) и заранее активировать SSH на этапе установки дистрибутива.</p>
+</details>
+
+<details>
+<summary>Что такое HDMI-эмулятор и зачем он нужен?</summary>
+<p>Это небольшое устройство, которое вставляется в видеовыход видеокарты и обманывает систему, заставляя её думать, что подключен монитор. Это гарантирует, что видеокарта инициализируется корректно, что особенно важно для серверов с дискретными видеокартами (например, NVIDIA), которые не работают без подключенного дисплея.</p>
+</details>
+
+<details>
+<summary>Как узнать IP-адрес сервера, если нет монитора?</summary>
+<p>Лучший способ — назначить статический IP-адрес через параметры ядра при загрузке с флешки. Альтернативный вариант — использовать сканеры сети (nmap, Advanced IP Scanner) на вашем основном компьютере, чтобы найти новое устройство в локальной сети, если оно получило адрес от DHCP.</p>
+</details>
+
+<details>
+<summary>Что делать, если установка зависла на 100%?</summary>
+<p>Вероятно, загрузчик не может корректно загрузить графический интерфейс. Попробуйте перезагрузить сервер и добавить параметр <code>nomodeset</code> или <code>console=ttyS0</code> в меню загрузки GRUB. Если у вас есть IPMI, проверьте логи через удаленную консоль.</p>
+</details>
+
+<details>
+<summary>Нужен ли специальный дистрибутив Linux для работы без монитора?</summary>
+<p>Нет, достаточно использовать стандартные серверные версии (Ubuntu Server, Debian, CentOS). Главное — выбрать правильные опции при установке (отказ от графического окружения, активация SSH) и настроить параметры ядра для работы в режиме Headless.</p>
+</details></div>
+                    <!--#include virtual="/ssi/article_after.html" -->
+
+                </article>
+                <aside class="article-sidebar"><!--#include virtual="/ssi/sidebar_top.html" --><nav class="sidebar-search"><div class="sidebar-search-box"><input type="text" id="globalSearchInput" placeholder="🔍 Поиск статей..." autocomplete="off"><div class="search-dropdown" id="globalSearchDropdown"></div></div></nav><!--#include virtual="/ssi/sidebar_before_toc.html" --><nav class="sidebar-toc" id="sidebarToc"><h3>Содержание</h3><ul><li><a href="#подготовка-загрузочного-образа-и-настройки-сети">Подготовка загрузочного образа и настройки сети</a></li><li><a href="#настройка-biosuefi-для-режима-headless">Настройка BIOS/UEFI для режима Headless</a></li><li><a href="#методы-удаленного-доступа-и-настройки-ipmi">Методы удаленного доступа и настройки IPMI</a></li><li><a href="#процесс-установки-через-ssh-и-консоль">Процесс установки через SSH и консоль</a></li><li><a href="#использование-hdmi-эмуляторов-как-запасной-вариант">Использование HDMI-эмуляторов как запасной вариант</a></li><li><a href="#решение-проблем-с-отсутствием-видеосигнала">Решение проблем с отсутствием видеосигнала</a></li><li><a href="#faq-часто-задаваемые-вопросы">FAQ: Часто задаваемые вопросы</a></li></ul></nav><!--#include virtual="/ssi/sidebar_before_related.html" --><nav class="sidebar-related"><h3>Похожие статьи</h3><ul><li><a href="/articles/k/ka/kak-uznat-polozhenie-kursora-na-monitore-python.html" class="related-card">Как узнать положение курсора на мониторе: Python и координаты</a></li><li><a href="/articles/k/ka/kak-nazyvaetsya-strelka-begayushchaya-po-monitoru.html" class="related-card">Как называется стрелка на мониторе: Курсор, карта и типы</a></li><li><a href="/articles/g/ga/gasnet-monitor-no-kompyuter-prodolzhaet-rabotat-v-chem-prichina-vindovs-7.html" class="related-card">Монитор гаснет, компьютер работает: причины и решение для Windows 7</a></li><li><a href="/articles/k/ka/kak-proshit-monitor-jbl-kamri-50.html" class="related-card">Прошивка монитора JBL Camry 50: инструкция, риски и обновление ПО</a></li><li><a href="/articles/p/po/pochemu-pri-igre-tukhnet-monitor-a-kompyuter-rabotaet.html" class="related-card">Монитор гаснет в играх: причины и способы устранения</a></li></ul></nav><!--#include virtual="/ssi/sidebar_after_related.html" --></aside>
+            </div>
+        </div>
+    </main>
+
+    <!--#include virtual="/ssi/before_related_bottom.html" -->
+    <section class="related-bottom">
+        <div class="container">
+            <h2 class="related-bottom-heading">📖 Читайте также</h2>
+            <div class="related-bottom-grid"><a href="/articles/k/ka/kak-uznat-polozhenie-kursora-na-monitore-python.html" class="related-bottom-card"><span class="related-bottom-title">Как узнать положение курсора на мониторе: Python и координаты</span><span class="related-bottom-desc">Полное руководство по определению координат курсора мыши в Python. Разбираем библиотеки, работу с не</span></a><a href="/articles/k/ka/kak-nazyvaetsya-strelka-begayushchaya-po-monitoru.html" class="related-bottom-card"><span class="related-bottom-title">Как называется стрелка на мониторе: Курсор, карта и типы</span><span class="related-bottom-desc">Узнайте, как правильно называется бегущая стрелка на экране. Разбор терминов: курсор, каретка, указа</span></a><a href="/articles/g/ga/gasnet-monitor-no-kompyuter-prodolzhaet-rabotat-v-chem-prichina-vindovs-7.html" class="related-bottom-card"><span class="related-bottom-title">Монитор гаснет, компьютер работает: причины и решение для Windows 7</span><span class="related-bottom-desc">Монитор отключается, но системный блок продолжает работать? Разбираем главные причины сбоя в Windows</span></a><a href="/articles/k/ka/kak-proshit-monitor-jbl-kamri-50.html" class="related-bottom-card"><span class="related-bottom-title">Прошивка монитора JBL Camry 50: инструкция, риски и обновление ПО</span><span class="related-bottom-desc">Подробное руководство по прошивке монитора JBL Camry 50. Узнайте о совместимости, способах обновлени</span></a><a href="/articles/p/po/pochemu-pri-igre-tukhnet-monitor-a-kompyuter-rabotaet.html" class="related-bottom-card"><span class="related-bottom-title">Монитор гаснет в играх: причины и способы устранения</span><span class="related-bottom-desc">Экран гаснет при нагрузке? Разбираем основные причины: перегрев, блок питания, драйверы. Узнайте, ка</span></a><a href="/articles/k/ka/kak-uznat-id-monitora.html" class="related-bottom-card"><span class="related-bottom-title">Как узнать ID монитора: 5 рабочих способов для Windows и Linux</span><span class="related-bottom-desc">Узнайте аппаратный и программный ID вашего дисплея. Пошаговые инструкции через драйверы, утилиты и к</span></a></div>
+        </div>
+    </section>
+    <!--#include virtual="/ssi/after_related_bottom.html" -->
+
+    <footer class="site-footer-premium">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-col">
+                    <div class="footer-brand">🖥️ Мониторум</div>
+                    <p class="footer-about">Полный справочник по настройке, ремонту и выбору компьютерных мониторов для любых задач.</p>
+                </div>
+                <div class="footer-col">
+                    <h4>Разделы</h4>
+                    <ul><li><a href="/category/nastrojka-ekrana/">⚙️ Настройка экрана</a></li>
+<li><a href="/category/podklyuchenie-ustrojstv/">🔌 Подключение устройств</a></li>
+<li><a href="/category/mnozhestvennye-ekrany/">🖥️🖥️ Множественные экраны</a></li>
+<li><a href="/category/zvuk-i-audio/">🔊 Звук и аудио</a></li>
+<li><a href="/category/remont-i-polomki/">🔧 Ремонт и поломки</a></li>
+<li><a href="/category/ukhod-i-chistka/">🧼 Уход и чистка</a></li></ul>
+                </div>
+                <div class="footer-col">
+                    <h4>Информация</h4>
+                    <ul>
+                        <li><a href="/">Главная</a></li>
+                        <li><a href="/about.html">О проекте</a></li>
+                        <li><a href="/categories.html">Все разделы</a></li>
+                        <li><a href="/contact.html">Контакты</a></li>
+                        <li><a href="/privacy.html">Конфиденциальность</a></li>
+                        <li><a href="/sitemap.xml">Карта сайта</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>© Мониторум. Все права защищены.</p>
+                <!--LiveInternet counter--><div style="margin-top:10px;"><a href="https://www.liveinternet.ru/click"
+                target="_blank"><img id="licnt06C4" width="88" height="15" style="border:0" 
+                title="LiveInternet: показано число посетителей за сегодня"
+                src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAEALAAAAAABAAEAAAIBTAA7"
+                alt=""/></a><script>(function(d,s){d.getElementById("licnt06C4").src=
+                "https://counter.yadro.ru/hit?t26.5;r"+escape(d.referrer)+
+                ((typeof(s)=="undefined")?"":";s"+s.width+"*"+s.height+"*"+
+                (s.colorDepth?s.colorDepth:s.pixelDepth))+";u"+escape(d.URL)+
+                ";h"+escape(d.title.substring(0,150))+";"+Math.random()})(document,screen)</script></div><!--/LiveInternet-->
+            </div>
+        </div>
+    </footer>
+    <div id="cookie-consent" class="cookie-popup">
+        <div class="cookie-inner">
+            <span>🍪 Мы используем файлы cookie для улучшения работы сайта.</span>
+            <button id="cookie-accept" class="cookie-btn">Принять</button>
+        </div>
+    </div>
+    <script src="/static/js/main.js"></script>
+    <script>
+    (function() {
+        const popup = document.getElementById('cookie-consent');
+        const btn = document.getElementById('cookie-accept');
+        if (popup && btn && !localStorage.getItem('cookie-accepted')) {
+            popup.classList.add('visible');
+            btn.onclick = () => {
+                localStorage.setItem('cookie-accepted', 'true');
+                popup.classList.remove('visible');
+            };
+        }
+    })();
+    </script>
+    <script>
+    function pbPollVote(el) {
+        var poll = el.closest('.poll-widget');
+        if (poll.classList.contains('voted')) return;
+        poll.classList.add('voted');
+        el.classList.add('selected');
+        var opts = poll.querySelectorAll('.poll-widget-option');
+        var n = opts.length;
+        var raw = [];
+        var sum = 0;
+        for (var i = 0; i < n; i++) {
+            var v = Math.random() * 50 + 5;
+            if (opts[i] === el) v += 30;
+            raw.push(v);
+            sum += v;
+        }
+        var pcts = raw.map(function(v) { return Math.round(v / sum * 100); });
+        var diff = 100 - pcts.reduce(function(a,b){ return a+b; }, 0);
+        pcts[Array.from(opts).indexOf(el)] += diff;
+        setTimeout(function() {
+            opts.forEach(function(opt, i) {
+                opt.querySelector('.poll-widget-bar').style.width = pcts[i] + '%';
+                opt.querySelector('.poll-widget-pct').textContent = pcts[i] + '%';
+            });
+        }, 50);
+    }
+    </script>
+    <!--#include virtual="/ssi/body_bottom.html" -->
+    <script src="/static/js/inject.js" defer></script>
+</body>
+</html>

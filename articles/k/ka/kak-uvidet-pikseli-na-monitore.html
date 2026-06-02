@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27><text y=%27.9em%27 font-size=%2790%27>🖥️</text></svg>">
+    <title>Как увидеть пиксели на мониторе: диагностика битых точек и артефактов — Мониторум</title>
+    <meta name="description" content="Пошаговая инструкция, как проверить монитор на битые пиксели программно и визуально. Методы выявления дефектов матрицы, тесты контрастности и инструменты для диагностики.">
+    <link rel="canonical" href="https://monitorium.vercel.app/articles/k/ka/kak-uvidet-pikseli-na-monitore.html">
+
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="Как увидеть пиксели на мониторе: диагностика битых точек и артефактов">
+    <meta property="og:description" content="Пошаговая инструкция, как проверить монитор на битые пиксели программно и визуально. Методы выявления дефектов матрицы, тесты контрастности и инструменты для диагностики.">
+    <meta property="og:locale" content="ru_RU">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css?v=1780420684">
+    <style>
+    .site-footer-premium {
+        margin-top: 60px; padding: 40px 0 0; background: #1e293b; color: #94a3b8;
+    }
+    .footer-grid {
+        display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 40px;
+        padding-bottom: 32px; border-bottom: 1px solid #334155;
+    }
+    .footer-brand { font-size: 1.2rem; font-weight: 700; color: #f1f5f9; margin-bottom: 12px; }
+    .footer-about { font-size: 0.9rem; line-height: 1.6; margin-bottom: 8px; }
+    .footer-updated { font-size: 0.8rem; color: #64748b; }
+    .footer-col h4 { color: #f1f5f9; font-size: 0.95rem; margin-bottom: 16px; }
+    .footer-col ul { list-style: none; }
+    .footer-col li { margin-bottom: 8px; }
+    .footer-col a { color: #94a3b8; font-size: 0.9rem; transition: color 0.2s; }
+    .footer-col a:hover { color: #60a5fa; }
+    .footer-bottom { padding: 20px 0; text-align: center; font-size: 0.85rem; }
+    @media (max-width: 640px) {
+        .footer-grid { grid-template-columns: 1fr; gap: 24px; }
+    }
+    .cookie-popup {
+        position: fixed; bottom: 0; left: 0; right: 0; background: #1e293b; color: #fff;
+        padding: 16px; transition: transform 0.5s ease; z-index: 9999; border-top: 2px solid #2563eb;
+        transform: translateY(100%);
+    }
+    .cookie-popup.visible { transform: translateY(0); }
+    .cookie-inner { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; gap: 16px; font-size: 0.9rem; }
+    .cookie-btn { background: #2563eb; color: #fff; border: none; padding: 8px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+    .cookie-btn:hover { background: #1d4ed8; }
+    @media (max-width: 640px) {
+        .cookie-inner { flex-direction: column; text-align: center; }
+    }
+</style>
+    
+    <!--#include virtual="/ssi/head.html" -->
+</head>
+<body>
+        <!--#include virtual="/ssi/body_top.html" -->
+    <style>
+    .nav-dropdown { position: relative; display: inline-block; }
+    .dropdown-toggle {
+        background: none; border: none; cursor: pointer;
+        font: inherit; color: inherit; padding: 8px 12px;
+        border-radius: 8px; transition: background 0.2s;
+    }
+    .dropdown-toggle:hover { background: rgba(0,0,0,0.05); }
+    .dropdown-menu {
+        display: none; position: absolute; right: 0; top: 100%;
+        min-width: 240px; max-height: 70vh; overflow-y: auto;
+        background: var(--card-bg, #fff); border: 1px solid var(--border, #e5e7eb);
+        border-radius: 12px; box-shadow: 0 12px 40px rgba(0,0,0,0.12);
+        padding: 8px 0; z-index: 1000;
+    }
+    .nav-dropdown::after {
+        content: ''; position: absolute; left: 0; right: 0;
+        top: 100%; height: 12px;
+    }
+    .nav-dropdown:hover .dropdown-menu,
+    .nav-dropdown:focus-within .dropdown-menu { display: block; }
+    .dropdown-item {
+        display: block; padding: 10px 20px; color: var(--text, #1f2937);
+        text-decoration: none; font-size: 0.95rem; transition: background 0.15s;
+        white-space: nowrap;
+    }
+    .dropdown-item:hover { background: rgba(37,99,235,0.06); color: var(--primary, #2563eb); }
+    @media (max-width: 768px) {
+        .main-nav > .nav-link { display: none; }
+        .dropdown-toggle { display: none; }
+        .dropdown-menu {
+            display: block !important; position: static;
+            box-shadow: none; border: none; border-radius: 0;
+            min-width: auto; max-height: none; padding: 0;
+            background: transparent;
+        }
+        .dropdown-item {
+            padding: 8px 0; font-size: 1rem;
+        }
+    }
+    </style>
+    <header class="site-header">
+        <div class="container header-inner">
+            <a href="/" class="logo">
+                <span class="logo-icon">🖥️</span>
+                <span>Мониторум</span>
+            </a>
+            <button class="mobile-menu-btn" aria-label="Меню" id="menuBtn">☰</button>
+            <nav class="main-nav" id="mainNav">
+                <a href="/category/nastrojka-ekrana/" class="nav-link">⚙️ Настройка экрана</a>
+<a href="/category/podklyuchenie-ustrojstv/" class="nav-link">🔌 Подключение устройств</a>
+<a href="/category/mnozhestvennye-ekrany/" class="nav-link">🖥️🖥️ Множественные экраны</a>
+<a href="/category/zvuk-i-audio/" class="nav-link">🔊 Звук и аудио</a>
+<div class="nav-dropdown">
+            <button class="nav-link dropdown-toggle">📂 Все разделы ▾</button>
+            <div class="dropdown-menu"><a href="/category/nastrojka-ekrana/" class="dropdown-item">⚙️ Настройка экрана</a>
+<a href="/category/podklyuchenie-ustrojstv/" class="dropdown-item">🔌 Подключение устройств</a>
+<a href="/category/mnozhestvennye-ekrany/" class="dropdown-item">🖥️🖥️ Множественные экраны</a>
+<a href="/category/zvuk-i-audio/" class="dropdown-item">🔊 Звук и аудио</a>
+<a href="/category/remont-i-polomki/" class="dropdown-item">🔧 Ремонт и поломки</a>
+<a href="/category/ukhod-i-chistka/" class="dropdown-item">🧼 Уход и чистка</a>
+<a href="/category/vybor-i-kharakteristiki/" class="dropdown-item">📊 Выбор и характеристики</a>
+<a href="/category/drajvery-i-po/" class="dropdown-item">💿 Драйверы и ПО</a>
+<a href="/category/krepleniya-i-ustanovka/" class="dropdown-item">🔩 Крепления и установка</a>
+<a href="/category/utilizatsiya-i-prodazha/" class="dropdown-item">♻️ Утилизация и продажа</a>
+<a href="/category/spetsialnye-rezhimy/" class="dropdown-item">🎮 Специальные режимы</a>
+<a href="/category/drugoe/" class="dropdown-item">📁 Другое</a></div>
+        </div>
+            </nav>
+        </div>
+    </header>
+
+    <nav class="breadcrumbs" aria-label="Навигация">
+        <div class="container"><a href="/">Главная</a><span class="breadcrumb-sep">›</span><a href="/category/remont-i-polomki/">Ремонт и поломки</a><span class="breadcrumb-sep">›</span><span class="breadcrumb-current">Как увидеть пиксели на мониторе: диагностика битых точек и артефактов</span></div>
+    </nav>
+
+    <main class="site-main">
+        <div class="container">
+            <div class="article-layout">
+                <article class="article-main">
+                    
+                    <h1>Полное руководство: как увидеть пиксели на мониторе и проверить матрицу</h1>
+                    <nav class="mobile-toc"><details><summary>📋 Содержание</summary><ul><li><a href="#физическая-структура-пикселя-и-природа-дефектов">Физическая структура пикселя и природа дефектов</a></li><li><a href="#программные-методы-диагностики-монитора">Программные методы диагностики монитора</a></li><li><a href="#ручная-проверка-и-визуальные-тесты">Ручная проверка и визуальные тесты</a></li><li><a href="#аппаратные-методы-восстановления-пикселей">Аппаратные методы восстановления пикселей</a></li><li><a href="#таблица-типов-дефектов-и-их-проявлений">Таблица типов дефектов и их проявлений</a></li><li><a href="#гарантийные-обязательства-и-стандарты-качества">Гарантийные обязательства и стандарты качества</a></li><li><a href="#процедура-проверки-при-покупке-в-магазине">Процедура проверки при покупке в магазине</a></li><li><a href="#faq-часто-задаваемые-вопросы">FAQ: Часто задаваемые вопросы</a></li></ul></details></nav>
+                    <!--#include virtual="/ssi/article_before.html" -->
+                    <div class="article-body"><p>Прозрачные или застывшие в одном цвете точки на экране <em>LG UltraGear</em> или <em>Dell U2719D</em> свидетельствуют о неисправности <strong>матрицы</strong> и требуют немедленной проверки. Если вы заметили мерцание, полосы или отдельные неактивные элементы, необходимо запустить специализированный тест, чтобы локализовать дефект и отличить программный сбой от физической поломки. Игнорирование таких симптомов приводит к распространению дефекта по всей площади <strong>дисплея</strong> и потере гарантии на устройство.</p>
+
+<p>Визуальное обнаружение <strong>битых пикселей</strong> (dead pixels) часто невозможно при обычной работе за компьютером, так как операционная система и приложения заполняют экран сложными текстурами. Для выявления проблемы необходимо переключить экран в режим монохромного закрашивания, где каждый <strong>кластер</strong> из красного, зеленого и синего субпикселей будет освещен по отдельности. Только при таком освещении становятся заметны застрявшие или выгоревшие элементы матрицы.</p>
+
+<h2 id="физическая-структура-пикселя-и-природа-дефектов">Физическая структура пикселя и природа дефектов</h2>
+
+<p>Каждый элемент изображения на <strong>жидкокристаллическом дисплее</strong> (LCD) состоит из трех субпикселей, отвечающих за основные цвета спектра. В современных <em>IPS</em> и <em>VA</em> панелях эти элементы управляются тонкопленочными транзисторами (TFT), которые могут выходить из строя. Понимание типа неисправности критично для выбора метода лечения: некоторые дефекты поддаются программному восстановлению, а другие требуют аппаратной замены.</p>
+
+<p>Существует несколько типов аномалий, которые можно выявить при тщательном осмотре. <strong>Мертвые пиксели</strong> остаются черными, так как свет от подсветки не проходит через заблокированные жидкие кристаллы. <strong>Застрявшие пиксели</strong> (stuck pixels), напротив, горят одним цветом (красным, зеленым или синим), потому что транзистор заперт в открытом состоянии. Также встречаются горячие пиксели, которые светятся слишком ярко даже при минимальной яркости.</p>
+
+<p>Кроме точечных дефектов, пользователи часто сталкиваются с артефактами, вызванными проблемами <strong>видеокарты</strong> или кабелем подключения. В отличие от дефекта матрицы, такие полосы или искажения исчезают при смене видеовыхода или отключении периферии. Важно точно дифференцировать источник проблемы, чтобы не тратить время на ремонт исправной панели.</p>
+
+<blockquote>⚠️ Внимание: Использование агрессивных механических воздействий на экран для «разгона» пикселей может привести к необратимым повреждениям <strong>жидких кристаллов</strong> и появлению разводов, которые невозможно удалить программно.</blockquote>
+
+<h2 id="программные-методы-диагностики-монитора">Программные методы диагностики монитора</h2>
+
+<p>Самый эффективный способ увидеть все пиксели — использовать специализированное программное обеспечение, которое последовательно закрашивает экран чистыми цветами. Онлайн-сервисы и десктопные утилиты, такие как <code>JScreenFix</code> или <em>Dead Pixel Tester</em>, позволяют переключаться между красным, зеленым, синим, белым и черным режимами с высокой скоростью. Это создает эффект <strong>стробоскопа</strong>, который помогает выявить даже самые мелкие дефекты.</p>
+
+<p>При использовании сторонних программ необходимо убедиться, что <strong>разрешение экрана</strong> установлено на родное значение, указанное производителем. Если вы используете <em>NVIDIA Control Panel</em> или настройки драйверов AMD, проверьте, чтобы масштабирование не искажало карту пикселей. Для максимальной точности диагностики следует отключить функцию «Глазомер» или любые фильтры изображения в меню самого монитора.</p>
+
+<p>Для локальной проверки можно использовать стандартные средства операционной системы, например, создать полноэкранное окно с залитым цветом в графическом редакторе. Однако специализированный софт предлагает более продвинутые функции, такие как быстрое переключение (<strong>hotkeys</strong>) и тест на мерцание. Обратите внимание на утилиту <em>DeadPixelTrekker</em>, которая позволяет запускать циклические тесты для воздействия на застрявшие пиксели.</p>
+
+<details class="faq-item"><summary>Дополнительные утилиты</summary><div class="faq-answer"><p>Существует портативная версия EIZO Monitor Test, которая не требует установки и работает на большинстве ОС. Также полезен инструмент DisplayX, популярный для проверки CRT и LCD экранов в промышленных масштабах.</p></div></details>
+
+<h2 id="ручная-проверка-и-визуальные-тесты">Ручная проверка и визуальные тесты</h2>
+
+<p>Если под рукой нет компьютера с установленным софтом, можно провести базовую проверку, используя встроенные меню самого монитора. Большинство моделей <em>Samsung</em>, <em>AOC</em> и <em>BenQ</em> имеют функцию самопроверки (Self-Test), которая активируется при отключении кабеля видеокарты от системного блока. При включении в этом режиме экран отображает градиенты и сетку, позволяя увидеть дефекты без участия <strong>системного блока</strong>.</p>
+
+<p>Второй метод — это использование полноэкранного изображения в браузере. Откройте новый вкладку и введите адрес сайта с цветовыми полями, затем нажмите <code>F11</code> для перехода в полноэкранный режим. Медленно перемещайте взгляд по экрану, сканируя поверхность на предмет цветных точек. Особое внимание уделите углам монитора, так как именно там чаще всего проявляются дефекты <strong>подложки</strong> из-за давления при транспортировке.</p>
+
+<p>Для проверки на <strong>мерцающие пиксели</strong> (flickering) можно использовать метод с камерой смартфона. Откройте камеру на телефоне, включите режим видеосъемки и направьте объектив на экран монитора, показывая тестовые цвета. На экране телефона часто видны микро-искажения и мерцания, которые человеческий глаз не замечает из-за инерционности зрения. Этот трюк особенно актуален при проверке <em>PWM</em> (широтно-импульсной модуляции) подсветки.</p>
+
+<div class="attention-box attention-tip"><span class="attention-icon">💡</span><p>При визуальном осмотре обязательно отключите все окна браузера и панели задач, чтобы ничего не отвлекало от поиска точечных дефектов на чистом фоне.</p></div>
+
+
+
+<h2 id="аппаратные-методы-восстановления-пикселей">Аппаратные методы восстановления пикселей</h2>
+
+<p>Если обнаружен <strong>застрявший пиксель</strong>, существует высокий шанс его восстановления путем механического воздействия или программной стимуляции. Метод «массажа» подразумевает легкое надавливание на область дефекта тупым предметом (например, стилусом или кончиком пальца) во время включения монитора в режим черного цвета. Важно соблюдать осторожность, чтобы не повредить <strong>жидкокристаллический слой</strong> сверх меры.</p>
+
+<p>Программный метод основан на быстрой смене цветов в зоне дефекта. Утилиты вроде <em>JScreenFix</em> генерируют мигающий квадрат, который нужно перетащить на проблемную зону. Интенсивное переключение цветов создает импульсы, которые могут разблокировать запертый транзистор. Этот процесс может занять от нескольких минут до нескольких часов непрерывной работы.</p>
+
+<p>Если программные и механические методы не помогают, проблема может быть в физическом разрушении контактных дорожек или <strong>TFT-транзистора</strong>. В таких случаях единственным решением становится замена матрицы, что часто превышает стоимость самого устройства. Однако для премиальных моделей <em>Eizo</em> или <em>Nec</em> профессиональный ремонт может быть экономически целесообразным.</p>
+
+<div class="checklist-block"><h4>☑️ Чек-лист перед попыткой восстановления</h4><label class="check-item"><input type="checkbox"><span>Отключите питание монитора</span></label><label class="check-item"><input type="checkbox"><span>Соберите инструмент (тупой наконечник)</span></label><label class="check-item"><input type="checkbox"><span>Запустите тестовый режим на черном фоне</span></label><label class="check-item"><input type="checkbox"><span>Аккуратно надавите на битый пиксель (не более 5 секунд)</span></label><div class="check-progress">Выполнено: <span class="check-count">0</span> / 4</div></div>
+
+<h2 id="таблица-типов-дефектов-и-их-проявлений">Таблица типов дефектов и их проявлений</h2>
+
+<p>Для точной диагностики необходимо понимать, как именно проявляются различные виды неисправностей. Ниже приведена таблица, описывающая основные типы дефектов, их визуальное проявление и потенциальные причины возникновения.</p>
+
+<table>
+<thead>
+<tr>
+<th>Тип дефекта</th>
+<th>Визуальное проявление</th>
+<th>Причина</th>
+<th>Восстановление</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Мертвый пиксель</td>
+<td>Черная точка на любом фоне</td>
+<td>Разрыв цепи транзистора</td>
+<td>Сложно, часто невозможно</td>
+</tr>
+<tr>
+<td>Застрявший пиксель</td>
+<td>Яркая точка (R, G, B)</td>
+<td>Заклинивание жидких кристаллов</td>
+<td>Вероятно, методом стимуляции</td>
+</tr>
+<tr>
+<td>Горячий пиксель</td>
+<td>Светящаяся точка на черном</td>
+<td>Пробой транзистора, утечка тока</td>
+<td>Сложно, требует замены</td>
+</tr>
+<tr>
+<td>Светлое пятно</td>
+<td>Размытое свечение</td>
+<td>Давление на матовый слой</td>
+<td>Не лечится, дефект сборки</td>
+</tr>
+</tbody>
+</table>
+
+<p>Особое внимание стоит уделить различию между <strong>мертвыми</strong> и <strong>застрявшими</strong> пикселями, так как гарантии на них часто распространяются по-разному. Производители <em>Samsung</em> и <em>LG</em> обычно допускают наличие нескольких дефектов в пределах стандарта ISO 9241-307, но это не относится к крупным скоплениям битых точек.</p>
+
+<blockquote>⚠️ Внимание: Не пытайтесь восстановить <strong>мертвые пиксели</strong> механическим давлением, если они появились после удара или падения устройства — это может привести к полному выходу матрицы из строя.</blockquote>
+
+<h2 id="гарантийные-обязательства-и-стандарты-качества">Гарантийные обязательства и стандарты качества</h2>
+
+<p>При покупке нового монитора важно знать, сколько дефектов допускается по закону и стандартам производителя. Согласно международному стандарту ISO 9241-307, классы <strong>A</strong> и <strong>B</strong> разрешают наличие определенного количества битых пикселей. Однако многие премиальные бренды, такие как <em>Eizo</em>, дают гарантию на отсутствие любых дефектов (Zero Dead Pixel Policy).</p>
+
+<p>Если вы выявили дефект в течение гарантийного срока, необходимо сразу обратиться в сервисный центр, предоставив доказательства. Фотографии не всегда принимаются как официальный аргумент, поэтому лучше записать видео с включенным тестовым режимом, демонстрирующим проблему. Обязательно сохраните <strong>чек</strong> и гарантийный талон, так как без них сервис может отказать в бесплатном ремонте.</p>
+
+<p>В случае отказа от замены устройства на основании «допустимых дефектов», вы можете потребовать проведения независимой экспертизы. Важно отметить, что наличие единичных <strong>застрявших пикселей</strong> в центре экрана часто рассматривается как брак, в то время как дефекты по краям могут быть отнесены к особенностям производства.</p>
+
+<div class="attention-box attention-tip"><span class="attention-icon">💡</span><p>Гарантийный случай признается при наличии более 3-5 дефектных пикселей в центре экрана или любого количества мертвых пикселей на моделях с политикой Zero Dead Pixel.</p></div>
+
+<h2 id="процедура-проверки-при-покупке-в-магазине">Процедура проверки при покупке в магазине</h2>
+
+<p>При выборе монитора в розничном магазине всегда требуйте включить устройство и запустить тестовый режим. Не поленитесь открыть свой ноутбук или флешку с тестовым изображением, так как демонстрационные образцы часто имеют скрытые дефекты из-за постоянной работы. Осмотрите <strong>матовое покрытие</strong> на предмет царапин, а также проверьте равномерность подсветки в темном помещении.</p>
+
+<p>Обратите внимание на углы обзора и наличие эффекта <strong>IPS glow</strong>, который может быть принят за дефект подсветки. Направьте взгляд под разными углами на черную картинку и убедитесь, что свечение не искажает цвета. Для матриц <em>VA</em> проверьте отсутствие шлейфов (ghosting) при движении объектов, что критично для игровых задач.</p>
+
+<p>Если при осмотре вы заметили хоть один <strong>битый пиксель</strong>, не соглашайтесь на установку устройства. Замените его на другой экземпляр, даже если продавец утверждает, что это «техническая норма». Ваша цель — получить идеально исправное устройство, особенно если вы покупаете его для профессиональной работы с цветом или игр.</p>
+
+<details class="faq-item"><summary>Тест на равномерность подсветки</summary><div class="faq-answer"><p>Для проверки равномерности подсветки включите черный фон и затемните комнату. Ищите пятна «светящегося облака» по углам экрана — это признак плохого качества сборки матрицы.</p></div></details>
+
+<h2 id="faq-часто-задаваемые-вопросы">FAQ: Часто задаваемые вопросы</h2>
+
+<details>
+<summary>Можно ли увидеть битые пиксели на своем мониторе без программ?</summary>
+<p>Да, используя полноэкранные изображения чистых цветов (красный, зеленый, синий, белый, черный) в браузере или графическом редакторе. Также работает функция самопроверки (Self-Test) самого монитора при отключенном кабеле.</p>
+</details>
+
+<details>
+<summary>Чем отличается мертвый пиксель от застрявшего?</summary>
+<p>Мертвый пиксель всегда черный, так как транзистор не подает сигнал и кристалл заблокирован. Застрявший пиксель светится одним цветом (красным, зеленым или синим), так как транзистор заперт в открытом состоянии и пропускает свет постоянно.</p>
+</details>
+
+<details>
+<summary>Сколько битых пикселей допускается по гарантии?</summary>
+<p>Это зависит от производителя. Стандарты ISO допускают несколько дефектов, но многие бренды (например, Dell, Eizo) предлагают политику «Zero Dead Pixel», при которой даже один дефект является основанием для замены.</p>
+</details>
+
+<details>
+<summary>Помогает ли надавливание на пиксель восстановить его?</summary>
+<p>Иногда помогает, если пиксель застрял механически. Необходимо аккуратно надавить на дефект во время включения монитора на черном фоне, но это рискованно и может привести к повреждению матрицы.</p>
+</details>
+
+<details>
+<summary>Как проверить монитор на мерцание (PWM)?</summary>
+<p>Включите камеру смартфона и посмотрите на экран монитора через неё. Если на экране телефона видны полосы или быстрое мерцание, значит используется широтно-импульсная модуляция подсветки, что может вызывать усталость глаз.</p>
+</details></div>
+                    <!--#include virtual="/ssi/article_after.html" -->
+
+                </article>
+                <aside class="article-sidebar"><!--#include virtual="/ssi/sidebar_top.html" --><nav class="sidebar-search"><div class="sidebar-search-box"><input type="text" id="globalSearchInput" placeholder="🔍 Поиск статей..." autocomplete="off"><div class="search-dropdown" id="globalSearchDropdown"></div></div></nav><!--#include virtual="/ssi/sidebar_before_toc.html" --><nav class="sidebar-toc" id="sidebarToc"><h3>Содержание</h3><ul><li><a href="#физическая-структура-пикселя-и-природа-дефектов">Физическая структура пикселя и природа дефектов</a></li><li><a href="#программные-методы-диагностики-монитора">Программные методы диагностики монитора</a></li><li><a href="#ручная-проверка-и-визуальные-тесты">Ручная проверка и визуальные тесты</a></li><li><a href="#аппаратные-методы-восстановления-пикселей">Аппаратные методы восстановления пикселей</a></li><li><a href="#таблица-типов-дефектов-и-их-проявлений">Таблица типов дефектов и их проявлений</a></li><li><a href="#гарантийные-обязательства-и-стандарты-качества">Гарантийные обязательства и стандарты качества</a></li><li><a href="#процедура-проверки-при-покупке-в-магазине">Процедура проверки при покупке в магазине</a></li><li><a href="#faq-часто-задаваемые-вопросы">FAQ: Часто задаваемые вопросы</a></li></ul></nav><!--#include virtual="/ssi/sidebar_before_related.html" --><nav class="sidebar-related"><h3>Похожие статьи</h3><ul><li><a href="/articles/k/ka/kak-ubrat-svist-monitora.html" class="related-card">Как убрать свист монитора: 7 рабочих методов устранения дроссельного писка</a></li><li><a href="/articles/k/ka/kak-pochinit-matritsu-na-monitore.html" class="related-card">Ремонт матрицы монитора: диагностика, замена и восстановление в домашних условиях</a></li><li><a href="/articles/c/ch/chto-znachit-no-signal-na-monitore.html" class="related-card">No Signal на мониторе: причины и как исправить за 5 минут</a></li><li><a href="/articles/p/po/pochemu-krasnyj-ekran-monitora-kompyutera.html" class="related-card">Красный экран монитора: причины, методы устранения и диагностика</a></li><li><a href="/articles/m/mo/monitor-kompyutera-stal-belym-chto-delat.html" class="related-card">Монитор стал белым: причины и 7 способов починки (2026)</a></li></ul></nav><!--#include virtual="/ssi/sidebar_after_related.html" --></aside>
+            </div>
+        </div>
+    </main>
+
+    <!--#include virtual="/ssi/before_related_bottom.html" -->
+    <section class="related-bottom">
+        <div class="container">
+            <h2 class="related-bottom-heading">📖 Читайте также</h2>
+            <div class="related-bottom-grid"><a href="/articles/k/ka/kak-ubrat-svist-monitora.html" class="related-bottom-card"><span class="related-bottom-title">Как убрать свист монитора: 7 рабочих методов устранения дроссельного писка</span><span class="related-bottom-desc">Полное руководство по устранению свиста монитора. Причины дроссельного писка, настройки Windows, мет</span></a><a href="/articles/k/ka/kak-pochinit-matritsu-na-monitore.html" class="related-bottom-card"><span class="related-bottom-title">Ремонт матрицы монитора: диагностика, замена и восстановление в домашних условиях</span><span class="related-bottom-desc">Полное руководство по ремонту матрицы монитора. Узнайте, как диагностировать дефекты, заменить LCD-п</span></a><a href="/articles/c/ch/chto-znachit-no-signal-na-monitore.html" class="related-bottom-card"><span class="related-bottom-title">No Signal на мониторе: причины и как исправить за 5 минут</span><span class="related-bottom-desc">Почему монитор показывает «No Signal»? Подробный разбор причин: от кабелей до видеокарты. Пошаговые </span></a><a href="/articles/p/po/pochemu-krasnyj-ekran-monitora-kompyutera.html" class="related-bottom-card"><span class="related-bottom-title">Красный экран монитора: причины, методы устранения и диагностика</span><span class="related-bottom-desc">Почему компьютер показывает красный экран? Основные причины: от сбитых настроек цвета и плохого кабе</span></a><a href="/articles/m/mo/monitor-kompyutera-stal-belym-chto-delat.html" class="related-bottom-card"><span class="related-bottom-title">Монитор стал белым: причины и 7 способов починки (2026)</span><span class="related-bottom-desc">Экран компьютера побелел? Разбираемся, почему монитор показывает белый экран и как вернуть изображен</span></a><a href="/articles/k/ka/kak-proverit-ispravnost-invertora-monitora.html" class="related-bottom-card"><span class="related-bottom-title">Как проверить исправность инвертора монитора: диагностика и ремонт</span><span class="related-bottom-desc">Пошаговая инструкция по диагностике инвертора монитора своими руками. Выявление неисправностей подсв</span></a></div>
+        </div>
+    </section>
+    <!--#include virtual="/ssi/after_related_bottom.html" -->
+
+    <footer class="site-footer-premium">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-col">
+                    <div class="footer-brand">🖥️ Мониторум</div>
+                    <p class="footer-about">Полный справочник по настройке, ремонту и выбору компьютерных мониторов для любых задач.</p>
+                </div>
+                <div class="footer-col">
+                    <h4>Разделы</h4>
+                    <ul><li><a href="/category/nastrojka-ekrana/">⚙️ Настройка экрана</a></li>
+<li><a href="/category/podklyuchenie-ustrojstv/">🔌 Подключение устройств</a></li>
+<li><a href="/category/mnozhestvennye-ekrany/">🖥️🖥️ Множественные экраны</a></li>
+<li><a href="/category/zvuk-i-audio/">🔊 Звук и аудио</a></li>
+<li><a href="/category/remont-i-polomki/">🔧 Ремонт и поломки</a></li>
+<li><a href="/category/ukhod-i-chistka/">🧼 Уход и чистка</a></li></ul>
+                </div>
+                <div class="footer-col">
+                    <h4>Информация</h4>
+                    <ul>
+                        <li><a href="/">Главная</a></li>
+                        <li><a href="/about.html">О проекте</a></li>
+                        <li><a href="/categories.html">Все разделы</a></li>
+                        <li><a href="/contact.html">Контакты</a></li>
+                        <li><a href="/privacy.html">Конфиденциальность</a></li>
+                        <li><a href="/sitemap.xml">Карта сайта</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>© Мониторум. Все права защищены.</p>
+                <!--LiveInternet counter--><div style="margin-top:10px;"><a href="https://www.liveinternet.ru/click"
+                target="_blank"><img id="licnt06C4" width="88" height="15" style="border:0" 
+                title="LiveInternet: показано число посетителей за сегодня"
+                src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAEALAAAAAABAAEAAAIBTAA7"
+                alt=""/></a><script>(function(d,s){d.getElementById("licnt06C4").src=
+                "https://counter.yadro.ru/hit?t26.5;r"+escape(d.referrer)+
+                ((typeof(s)=="undefined")?"":";s"+s.width+"*"+s.height+"*"+
+                (s.colorDepth?s.colorDepth:s.pixelDepth))+";u"+escape(d.URL)+
+                ";h"+escape(d.title.substring(0,150))+";"+Math.random()})(document,screen)</script></div><!--/LiveInternet-->
+            </div>
+        </div>
+    </footer>
+    <div id="cookie-consent" class="cookie-popup">
+        <div class="cookie-inner">
+            <span>🍪 Мы используем файлы cookie для улучшения работы сайта.</span>
+            <button id="cookie-accept" class="cookie-btn">Принять</button>
+        </div>
+    </div>
+    <script src="/static/js/main.js"></script>
+    <script>
+    (function() {
+        const popup = document.getElementById('cookie-consent');
+        const btn = document.getElementById('cookie-accept');
+        if (popup && btn && !localStorage.getItem('cookie-accepted')) {
+            popup.classList.add('visible');
+            btn.onclick = () => {
+                localStorage.setItem('cookie-accepted', 'true');
+                popup.classList.remove('visible');
+            };
+        }
+    })();
+    </script>
+    <script>
+    function pbPollVote(el) {
+        var poll = el.closest('.poll-widget');
+        if (poll.classList.contains('voted')) return;
+        poll.classList.add('voted');
+        el.classList.add('selected');
+        var opts = poll.querySelectorAll('.poll-widget-option');
+        var n = opts.length;
+        var raw = [];
+        var sum = 0;
+        for (var i = 0; i < n; i++) {
+            var v = Math.random() * 50 + 5;
+            if (opts[i] === el) v += 30;
+            raw.push(v);
+            sum += v;
+        }
+        var pcts = raw.map(function(v) { return Math.round(v / sum * 100); });
+        var diff = 100 - pcts.reduce(function(a,b){ return a+b; }, 0);
+        pcts[Array.from(opts).indexOf(el)] += diff;
+        setTimeout(function() {
+            opts.forEach(function(opt, i) {
+                opt.querySelector('.poll-widget-bar').style.width = pcts[i] + '%';
+                opt.querySelector('.poll-widget-pct').textContent = pcts[i] + '%';
+            });
+        }, 50);
+    }
+    </script>
+    <!--#include virtual="/ssi/body_bottom.html" -->
+    <script src="/static/js/inject.js" defer></script>
+</body>
+</html>

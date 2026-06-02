@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27><text y=%27.9em%27 font-size=%2790%27>🖥️</text></svg>">
+    <title>Сброс Windows без монитора: методы через RDP, ADB и консоль — Мониторум</title>
+    <meta name="description" content="Как сбросить настройки Windows 10/11 без видеосигнала: полное руководство по удаленному доступу, командам ADB и настройке BIOS для восстановления системы.">
+    <link rel="canonical" href="https://monitorium.vercel.app/articles/k/ka/kak-sbrosit-vindu-bez-monitora.html">
+
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="Сброс Windows без монитора: методы через RDP, ADB и консоль">
+    <meta property="og:description" content="Как сбросить настройки Windows 10/11 без видеосигнала: полное руководство по удаленному доступу, командам ADB и настройке BIOS для восстановления системы.">
+    <meta property="og:locale" content="ru_RU">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css?v=1780420684">
+    <style>
+    .site-footer-premium {
+        margin-top: 60px; padding: 40px 0 0; background: #1e293b; color: #94a3b8;
+    }
+    .footer-grid {
+        display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 40px;
+        padding-bottom: 32px; border-bottom: 1px solid #334155;
+    }
+    .footer-brand { font-size: 1.2rem; font-weight: 700; color: #f1f5f9; margin-bottom: 12px; }
+    .footer-about { font-size: 0.9rem; line-height: 1.6; margin-bottom: 8px; }
+    .footer-updated { font-size: 0.8rem; color: #64748b; }
+    .footer-col h4 { color: #f1f5f9; font-size: 0.95rem; margin-bottom: 16px; }
+    .footer-col ul { list-style: none; }
+    .footer-col li { margin-bottom: 8px; }
+    .footer-col a { color: #94a3b8; font-size: 0.9rem; transition: color 0.2s; }
+    .footer-col a:hover { color: #60a5fa; }
+    .footer-bottom { padding: 20px 0; text-align: center; font-size: 0.85rem; }
+    @media (max-width: 640px) {
+        .footer-grid { grid-template-columns: 1fr; gap: 24px; }
+    }
+    .cookie-popup {
+        position: fixed; bottom: 0; left: 0; right: 0; background: #1e293b; color: #fff;
+        padding: 16px; transition: transform 0.5s ease; z-index: 9999; border-top: 2px solid #2563eb;
+        transform: translateY(100%);
+    }
+    .cookie-popup.visible { transform: translateY(0); }
+    .cookie-inner { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; gap: 16px; font-size: 0.9rem; }
+    .cookie-btn { background: #2563eb; color: #fff; border: none; padding: 8px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+    .cookie-btn:hover { background: #1d4ed8; }
+    @media (max-width: 640px) {
+        .cookie-inner { flex-direction: column; text-align: center; }
+    }
+</style>
+    
+    <!--#include virtual="/ssi/head.html" -->
+</head>
+<body>
+        <!--#include virtual="/ssi/body_top.html" -->
+    <style>
+    .nav-dropdown { position: relative; display: inline-block; }
+    .dropdown-toggle {
+        background: none; border: none; cursor: pointer;
+        font: inherit; color: inherit; padding: 8px 12px;
+        border-radius: 8px; transition: background 0.2s;
+    }
+    .dropdown-toggle:hover { background: rgba(0,0,0,0.05); }
+    .dropdown-menu {
+        display: none; position: absolute; right: 0; top: 100%;
+        min-width: 240px; max-height: 70vh; overflow-y: auto;
+        background: var(--card-bg, #fff); border: 1px solid var(--border, #e5e7eb);
+        border-radius: 12px; box-shadow: 0 12px 40px rgba(0,0,0,0.12);
+        padding: 8px 0; z-index: 1000;
+    }
+    .nav-dropdown::after {
+        content: ''; position: absolute; left: 0; right: 0;
+        top: 100%; height: 12px;
+    }
+    .nav-dropdown:hover .dropdown-menu,
+    .nav-dropdown:focus-within .dropdown-menu { display: block; }
+    .dropdown-item {
+        display: block; padding: 10px 20px; color: var(--text, #1f2937);
+        text-decoration: none; font-size: 0.95rem; transition: background 0.15s;
+        white-space: nowrap;
+    }
+    .dropdown-item:hover { background: rgba(37,99,235,0.06); color: var(--primary, #2563eb); }
+    @media (max-width: 768px) {
+        .main-nav > .nav-link { display: none; }
+        .dropdown-toggle { display: none; }
+        .dropdown-menu {
+            display: block !important; position: static;
+            box-shadow: none; border: none; border-radius: 0;
+            min-width: auto; max-height: none; padding: 0;
+            background: transparent;
+        }
+        .dropdown-item {
+            padding: 8px 0; font-size: 1rem;
+        }
+    }
+    </style>
+    <header class="site-header">
+        <div class="container header-inner">
+            <a href="/" class="logo">
+                <span class="logo-icon">🖥️</span>
+                <span>Мониторум</span>
+            </a>
+            <button class="mobile-menu-btn" aria-label="Меню" id="menuBtn">☰</button>
+            <nav class="main-nav" id="mainNav">
+                <a href="/category/nastrojka-ekrana/" class="nav-link">⚙️ Настройка экрана</a>
+<a href="/category/podklyuchenie-ustrojstv/" class="nav-link">🔌 Подключение устройств</a>
+<a href="/category/mnozhestvennye-ekrany/" class="nav-link">🖥️🖥️ Множественные экраны</a>
+<a href="/category/zvuk-i-audio/" class="nav-link">🔊 Звук и аудио</a>
+<div class="nav-dropdown">
+            <button class="nav-link dropdown-toggle">📂 Все разделы ▾</button>
+            <div class="dropdown-menu"><a href="/category/nastrojka-ekrana/" class="dropdown-item">⚙️ Настройка экрана</a>
+<a href="/category/podklyuchenie-ustrojstv/" class="dropdown-item">🔌 Подключение устройств</a>
+<a href="/category/mnozhestvennye-ekrany/" class="dropdown-item">🖥️🖥️ Множественные экраны</a>
+<a href="/category/zvuk-i-audio/" class="dropdown-item">🔊 Звук и аудио</a>
+<a href="/category/remont-i-polomki/" class="dropdown-item">🔧 Ремонт и поломки</a>
+<a href="/category/ukhod-i-chistka/" class="dropdown-item">🧼 Уход и чистка</a>
+<a href="/category/vybor-i-kharakteristiki/" class="dropdown-item">📊 Выбор и характеристики</a>
+<a href="/category/drajvery-i-po/" class="dropdown-item">💿 Драйверы и ПО</a>
+<a href="/category/krepleniya-i-ustanovka/" class="dropdown-item">🔩 Крепления и установка</a>
+<a href="/category/utilizatsiya-i-prodazha/" class="dropdown-item">♻️ Утилизация и продажа</a>
+<a href="/category/spetsialnye-rezhimy/" class="dropdown-item">🎮 Специальные режимы</a>
+<a href="/category/drugoe/" class="dropdown-item">📁 Другое</a></div>
+        </div>
+            </nav>
+        </div>
+    </header>
+
+    <nav class="breadcrumbs" aria-label="Навигация">
+        <div class="container"><a href="/">Главная</a><span class="breadcrumb-sep">›</span><a href="/category/drajvery-i-po/">Драйверы и ПО</a><span class="breadcrumb-sep">›</span><span class="breadcrumb-current">Сброс Windows без монитора: методы через RDP, ADB и консоль</span></div>
+    </nav>
+
+    <main class="site-main">
+        <div class="container">
+            <div class="article-layout">
+                <article class="article-main">
+                    
+                    <h1>Полное руководство по сбросу Windows при отсутствии видеосигнала</h1>
+                    <nav class="mobile-toc"><details><summary>📋 Содержание</summary><ul><li><a href="#подготовка-сети-и-проверка-удаленного-доступа">Подготовка сети и проверка удаленного доступа</a></li><li><a href="#использование-powershell-и-командной-строки-для-сброса">Использование PowerShell и командной строки для сброса</a></li><li><a href="#сброс-через-bios-и-автоматический-запуск-восстановления">Сброс через BIOS и автоматический запуск восстановления</a></li><li><a href="#применение-утилит-adb-и-android-подобных-интерфейсов">Применение утилит ADB и Android-подобных интерфейсов</a></li><li><a href="#сравнительный-анализ-методов-восстановления-системы">Сравнительный анализ методов восстановления системы</a></li><li><a href="#предотвращение-проблем-и-резервное-копирование">Предотвращение проблем и резервное копирование</a></li><li><a href="#faq-часто-задаваемые-вопросы-о-сбросе-системы">FAQ: Часто задаваемые вопросы о сбросе системы</a></li></ul></details></nav>
+                    <!--#include virtual="/ssi/article_before.html" -->
+                    <div class="article-body">
+
+<p>Ситуация, когда компьютер перестает выдавать изображение на дисплей, но продолжает работать, является одной из самых стрессовых для пользователя. Часто проблема кроется не в аппаратной поломке материнской платы, а в сбое драйверов видеокарты или некорректном обновлении <strong>операционной системы</strong>. В таких случаях физическое вмешательство и переустановка Windows через флешку могут быть излишними, если вы способны получить доступ к системе удаленными методами.</p>
+
+<p>Существует несколько проверенных способов восстановить работоспособность <em>Windows 10</em> или <em>Windows 11</em> без подключения внешнего монитора. Эти методы варьируются от использования встроенных инструментов удаленного рабочего стола до применения специализированных утилит командной строки. Главное условие успеха — наличие работающей сети и понимание того, как передавать команды на «слепой» компьютер.</p>
+
+<h2 id="подготовка-сети-и-проверка-удаленного-доступа">Подготовка сети и проверка удаленного доступа</h2>
+
+<p>Первым шагом в любой операции без видеосигнала является обеспечение стабильного сетевого соединения. Вам необходимо убедиться, что компьютер подключен к интернету через кабель Ethernet, так как Wi-Fi может отключиться при перезагрузке или сбое драйверов. Проверьте лампочки на сетевом адаптере: индикатор активности должен мигать, что свидетельствует о передаче данных.</p>
+
+<p>Если вы ранее не включали <strong>удаленный рабочий стол</strong>, данный метод может не сработать без предварительной настройки. Однако, если доступ был разрешен, вы можете использовать приложение <code>Подключение к удаленному рабочему столу</code> с другого устройства. Введите IP-адрес проблемного компьютера, и если соединение установится, вы увидите рабочий стол, даже если на самом ПК экран черный.</p>
+
+<p>Важно различать типы экранов: если вы видите только статичный черный экран, система может быть загружена. Если же индикаторы на корпусе мигают хаотично или компьютер не реагирует на нажатие клавиш, проблема может быть аппаратной. В этом случае программный сброс невозможен без физического обхода ошибки через BIOS.</p>
+
+<blockquote>⚠️ Внимание: Если вы используете метод через RDP, убедитесь, что на проблемном устройстве включена функция «Разрешить удаленные подключения». Без этого флага попытка подключения завершится ошибкой авторизации.</blockquote>
+
+<h2 id="использование-powershell-и-командной-строки-для-сброса">Использование PowerShell и командной строки для сброса</h2>
+
+<p>Даже если вы не видите изображения, вы можете отправить команды на выполнение через PowerShell, если у вас есть доступ к файловой системе удаленного ПК. Для этого используется инструмент <strong>WinRM</strong> (Windows Remote Management), который позволяет управлять системой по сети. Этот метод особенно эффективен для сброса настроек сети или драйверов, которые часто вызывают отсутствие видеосигнала.</p>
+
+<p>Откройте терминал на рабочем компьютере и выполните команду для запуска сброса: <pre><code>Invoke-Command -ComputerName ИМЯ_ПК -ScriptBlock { Reset-ComputerMachinePassword }</code></pre> Это действие сбросит пароль машины и может помочь при ошибках доверительных отношений, но для полного сброса системы требуется более глубокий подход через <code>systemreset</code>.</p>
+
+<p>Если у вас нет прав администратора на удаленном конце, вы можете попробовать запустить утилиту <code>Reset.exe</code> через планировщик задач. Команда <code>schtasks /create</code> позволяет создать задачу на запуск сброса системы при следующей перезагрузке. Это критически важно, так как визуальный интерфейс может быть недоступен, но фоновые процессы работают корректно.</p>
+
+<div class="poll-widget" id="poll-7e806e68"><div class="poll-widget-question">📊 Какой интерфейс вы предпочитаете для удаленного управления?</div><div class="poll-widget-option" data-poll="7e806e68" data-idx="0" onclick="pbPollVote(this)"><span class="poll-widget-label">RDP</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="7e806e68" data-idx="1" onclick="pbPollVote(this)"><span class="poll-widget-label">PowerShell</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="7e806e68" data-idx="2" onclick="pbPollVote(this)"><span class="poll-widget-label">TeamViewer</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="7e806e68" data-idx="3" onclick="pbPollVote(this)"><span class="poll-widget-label">Альтернативный</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div></div>
+
+<h2 id="сброс-через-bios-и-автоматический-запуск-восстановления">Сброс через BIOS и автоматический запуск восстановления</h2>
+
+<p>Когда программные методы исчерпаны, остается вариант настройки системы через <strong>BIOS/UEFI</strong>. Если у вас есть клавиатура и мышь, но нет монитора, можно попытаться изменить настройки загрузки. Перезагрузите компьютер и нажимайте <code>Del</code> или <code>F2</code> для входа в BIOS. Навигация здесь происходит вслепую, но стандартные горячие клавиши обычно сохраняют работоспособность.</p>
+
+<p>Вам нужно найти раздел <code>Boot</code> и переместить флешку с образом восстановления в начало списка приоритетов загрузки. Для этого используйте стрелки и клавиши <code>F5/F6</code> (или <code>-/+</code> в зависимости от версии BIOS). Если вы знаете, что флешка подключена, можно попробовать активировать опцию <code>Secure Boot</code> отключения, которая иногда блокирует загрузку сторонних утилит восстановления.</p>
+
+<p>Существует риск, что настройки BIOS сбросятся при отсутствии видеосигнала из-за сбоя CMOS. Чтобы избежать этого, перед входом в меню убедитесь, что питание стабильно. Некоторые материнские платы имеют кнопку <code>Clear CMOS</code> на задней панели, нажатие которой вернет настройки к заводским, но это также удалит и ваши кастомные профили разгона.</p>
+
+<div class="checklist-block"><h4>☑️ Настройка BIOS вслепую</h4><label class="check-item"><input type="checkbox"><span>Найти кнопку входа (Del/F2)</span></label><label class="check-item"><input type="checkbox"><span>Перейти в Boot Menu</span></label><label class="check-item"><input type="checkbox"><span>Выбрать флешку</span></label><label class="check-item"><input type="checkbox"><span>Сохранить и выйти</span></label><div class="check-progress">Выполнено: <span class="check-count">0</span> / 4</div></div>
+
+<p>Если вы не уверены в своих действиях, лучше воспользоваться функцией автоматического восстановления при загрузке. Она активируется после трех неудачных попыток включения. Система сама предложит вариант <code>Диагностика -> Вернуть компьютер в исходное состояние</code>, даже если монитор не показывает процесс, но вы услышите характерные звуки (звук клика мыши или голосовой ассистент, если он включен).</p>
+
+<details class="faq-item"><summary>Что делать, если BIOS не реагирует?
+<p>Попробуйте подключить внешний монитор к встроенному видеовыходу (если процессор имеет графику), а не к дискретной видеокарте. Часто проблема именно в отсутствии сигнала с дискретного адаптера.--></p>
+
+<h2 id="применение-утилит-adb-и-android-подобных-интерфейсов">Применение утилит ADB и Android-подобных интерфейсов</h2>
+
+<p>Для продвинутых пользователей, особенно тех, кто использует <em>Windows Subsystem for Android</em> или специфические планшеты на базе Windows, подходит метод через <strong>ADB</strong> (Android Debug Bridge). Эта утилита позволяет отправлять команды на устройство через USB-кабель, не требуя видеовыхода. Она полезна, если проблема кроется в графическом интерфейсе оболочки.</p>
+
+<p>Установите драйверы ADB на рабочую машину и подключите проблемный ПК через USB. Введите команду <pre><code>adb devices</code></pre> для проверки обнаружения устройства. Если устройство определено, вы можете отправить команду на перезагрузку в режим восстановления</summary><div class="faq-answer"><p> <pre><code>adb reboot recovery</code></pre>. Это переведет систему в среду восстановления, откуда возможен сброс до заводских настроек.</p>
+
+<p>Метод работает только в том случае, если отладка по USB была предварительно включена в настройках системы. Если этого не было сделано, данный способ не поможет без физического доступа к включенному меню. Однако, для планшетов и гибридных устройств это часто единственный выход.</p>
+
+<blockquote>⚠️ Внимание: Использование ADB при отключенном дисплее может привести к потере данных, если вы не уверены в точности команд. Команда <code>adb shell wm size</code> может изменить разрешение, которое не вернется без визуального контроля.</blockquote>
+
+
+
+<h2 id="сравнительный-анализ-методов-восстановления-системы">Сравнительный анализ методов восстановления системы</h2>
+
+<p>Выбор метода зависит от типа проблемы и доступных инструментов. Не всегда удается сбросить систему одним способом, поэтому полезно иметь таблицу с характеристиками каждого подхода. Это поможет вам быстро сориентироваться, если у вас нет времени на чтение длинных инструкций.</p>
+
+<table>
+<thead>
+<tr>
+<th>Метод</th>
+<th>Условие работы</th>
+<th>Сложность</th>
+<th>Риск потери данных</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Удаленный рабочий стол (RDP)</td>
+<td>Включен ранее, есть сеть</td>
+<td>Низкая</td>
+<td>Минимальный</td>
+</tr>
+<tr>
+<td>PowerShell / WinRM</td>
+<td>Включен удаленный доступ</td>
+<td>Средняя</td>
+<td>Средний</td>
+</tr>
+<tr>
+<td>Настройка BIOS</td>
+<td>Есть клавиатура, доступ к портам</td>
+<td>Высокая</td>
+<td>Высокий (при ошибке)</td>
+</tr>
+<tr>
+<td>ADB (для планшетов)</td>
+<td>Включена отладка по USB</td>
+<td>Высокая</td>
+<td>Высокий</td>
+</tr>
+</tbody>
+</table>
+
+<p>Обратите внимание, что использование внешних загрузочных носителей (LiveCD) является альтернативой, если программные методы не сработали. Однако, для этого вам все равно потребуется минимальное визуальное подтверждение загрузки, либо использование <em>headless</em> серверов, которые не требуют дисплея.</p>
+
+<div class="attention-box attention-tip"><span class="attention-icon">💡</span><p>Самый надежный способ без монитора — это настройка BIOS на загрузку с флешки восстановления, так как он не зависит от работоспособности драйверов Windows.</p></div>
+
+<h2 id="предотвращение-проблем-и-резервное-копирование">Предотвращение проблем и резервное копирование</h2>
+
+<p>Чтобы избежать ситуации, когда придется сбрасывать систему вслепую, необходимо настроить автоматическое резервное копирование. Используйте <strong>Облачные сервисы</strong> для хранения важных документов и настроек. Если драйверы видеокарты вызовут сбой, вы сможете быстро восстановить систему с облака, не теряя данных.</p>
+
+<p>Также рекомендуется создавать точки восстановления системы перед любыми крупными обновлениями. Если экран погаснет после установки драйверов, вы сможете откатиться к предыдущему состоянию через безопасный режим. Это снизит риск необходимости полного сброса Windows.</p>
+
+<p>Не забывайте проверять физическое состояние кабелей и портов. Частой причиной отсутствия изображения является окисление контактов или перегрев видеокарты. Регулярная чистка системы охлаждения и замена термопасты могут предотвратить критические сбои.</p>
+
+<blockquote>⚠️ Внимание: Убедитесь, что ваши резервные копии обновляются регулярно. Старые копии могут не содержать важных данных, потерянных в последние дни перед сбоем.</blockquote>
+
+<h2 id="faq-часто-задаваемые-вопросы-о-сбросе-системы">FAQ: Часто задаваемые вопросы о сбросе системы</h2>
+
+<details>
+<summary>Можно ли сбросить Windows, если компьютер вообще не включается?</summary>
+<p>Нет, для сброса операционной системы компьютер должен быть включен. Если нет реакции на кнопку питания, проблема аппаратная (например, отказ блока питания или материнской платы), и требуется ремонт оборудования.</p>
+</details>
+
+<details>
+<summary>Что делать, если после сброса через RDP экран так и не появился?</summary>
+<p>Возможно, драйвер видеокарты был удален полностью. Попробуйте зайти в безопасный режим через настройки загрузки (нажав F8 или выбрав опцию в меню восстановления) и установить драйверы заново.</p>
+</details>
+
+<details>
+<summary>Нужен ли второй компьютер для выполнения команд PowerShell?</summary>
+<p>Да, для использования команд WinRM или удаленного подключения вам нужно устройство, с которого вы будете отправлять команды на проблемный ПК. На самом проблемном устройстве терминал может быть недоступен визуально.</p>
+</details>
+
+<details>
+<summary>Сработает ли метод с ADB на обычном настольном ПК?</summary>
+<p>Нет, ADB предназначен в основном для мобильных устройств и планшетов. Для настольных ПК лучше использовать RDP, PowerShell или загрузочные носители.</p>
+</details>
+
+<details>
+<summary>Можно ли использовать голосового помощника для сброса?</summary>
+<p>В редких случаях, если включен голосовой ввод и навыки Cortana или Alexa, можно попробовать отдать команду перезагрузки, но надежность этого метода крайне низка и не рекомендуется для критических операций.</p>
+</details></div>
+                    <!--#include virtual="/ssi/article_after.html" -->
+
+                </article>
+                <aside class="article-sidebar"><!--#include virtual="/ssi/sidebar_top.html" --><nav class="sidebar-search"><div class="sidebar-search-box"><input type="text" id="globalSearchInput" placeholder="🔍 Поиск статей..." autocomplete="off"><div class="search-dropdown" id="globalSearchDropdown"></div></div></nav><!--#include virtual="/ssi/sidebar_before_toc.html" --><nav class="sidebar-toc" id="sidebarToc"><h3>Содержание</h3><ul><li><a href="#подготовка-сети-и-проверка-удаленного-доступа">Подготовка сети и проверка удаленного доступа</a></li><li><a href="#использование-powershell-и-командной-строки-для-сброса">Использование PowerShell и командной строки для сброса</a></li><li><a href="#сброс-через-bios-и-автоматический-запуск-восстановления">Сброс через BIOS и автоматический запуск восстановления</a></li><li><a href="#применение-утилит-adb-и-android-подобных-интерфейсов">Применение утилит ADB и Android-подобных интерфейсов</a></li><li><a href="#сравнительный-анализ-методов-восстановления-системы">Сравнительный анализ методов восстановления системы</a></li><li><a href="#предотвращение-проблем-и-резервное-копирование">Предотвращение проблем и резервное копирование</a></li><li><a href="#faq-часто-задаваемые-вопросы-о-сбросе-системы">FAQ: Часто задаваемые вопросы о сбросе системы</a></li></ul></nav><!--#include virtual="/ssi/sidebar_before_related.html" --><nav class="sidebar-related"><h3>Похожие статьи</h3><ul><li><a href="/articles/k/ka/kak-ustanovit-drajvery-na-monitor-msi.html" class="related-card">Как установить драйверы на монитор MSI: Полная инструкция 2026</a></li><li><a href="/articles/a/an/android-monitor-programma-shpion-kak-ustanovit.html" class="related-card">Как установить программу-шпион на Android через монитор: риски и альтернативы</a></li><li><a href="/articles/k/ka/kak-obnovit-drajver-na-monitor-vindovs-11.html" class="related-card">Как обновить драйвер монитора в Windows 11: Полная инструкция</a></li><li><a href="/articles/k/ka/kak-vstavit-kartinku-v-ekran-monitora-v-fotoshope.html" class="related-card">Как вставить картинку в экран монитора в Photoshop: пошагово</a></li><li><a href="/articles/v/vi/vindovs-10-ne-rabotaet-monitor-chto-delat.html" class="related-card">Монитор не работает в Windows 10: полное руководство по устранению</a></li></ul></nav><!--#include virtual="/ssi/sidebar_after_related.html" --></aside>
+            </div>
+        </div>
+    </main>
+
+    <!--#include virtual="/ssi/before_related_bottom.html" -->
+    <section class="related-bottom">
+        <div class="container">
+            <h2 class="related-bottom-heading">📖 Читайте также</h2>
+            <div class="related-bottom-grid"><a href="/articles/k/ka/kak-ustanovit-drajvery-na-monitor-msi.html" class="related-bottom-card"><span class="related-bottom-title">Как установить драйверы на монитор MSI: Полная инструкция 2026</span><span class="related-bottom-desc">Подробное руководство по установке и обновлению драйверов для мониторов MSI. Узнайте, как активирова</span></a><a href="/articles/a/an/android-monitor-programma-shpion-kak-ustanovit.html" class="related-bottom-card"><span class="related-bottom-title">Как установить программу-шпион на Android через монитор: риски и альтернативы</span><span class="related-bottom-desc">Разбираемся, можно ли легально отслеживать Android-устройства через монитор, какие программы для это</span></a><a href="/articles/k/ka/kak-obnovit-drajver-na-monitor-vindovs-11.html" class="related-bottom-card"><span class="related-bottom-title">Как обновить драйвер монитора в Windows 11: Полная инструкция</span><span class="related-bottom-desc">Пошаговое руководство по обновлению драйверов дисплея в Windows 11. Узнайте, как установить родные п</span></a><a href="/articles/k/ka/kak-vstavit-kartinku-v-ekran-monitora-v-fotoshope.html" class="related-bottom-card"><span class="related-bottom-title">Как вставить картинку в экран монитора в Photoshop: пошагово</span><span class="related-bottom-desc">Детальное руководство по реалистичному размещению изображения на экране монитора в Adobe Photoshop: </span></a><a href="/articles/v/vi/vindovs-10-ne-rabotaet-monitor-chto-delat.html" class="related-bottom-card"><span class="related-bottom-title">Монитор не работает в Windows 10: полное руководство по устранению</span><span class="related-bottom-desc">Если ваш монитор перестал отображать изображение в Windows 10, следуйте пошаговой инструкции. Диагно</span></a><a href="/articles/k/ka/kak-snyat-sutochnyj-monitor.html" class="related-bottom-card"><span class="related-bottom-title">Как правильно снять суточный монитор ЭКГ: подготовка и процедура</span><span class="related-bottom-desc">Подробная инструкция: как снять суточный монитор ЭКГ (Холтер) в домашних условиях. Подключение, снят</span></a></div>
+        </div>
+    </section>
+    <!--#include virtual="/ssi/after_related_bottom.html" -->
+
+    <footer class="site-footer-premium">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-col">
+                    <div class="footer-brand">🖥️ Мониторум</div>
+                    <p class="footer-about">Полный справочник по настройке, ремонту и выбору компьютерных мониторов для любых задач.</p>
+                </div>
+                <div class="footer-col">
+                    <h4>Разделы</h4>
+                    <ul><li><a href="/category/nastrojka-ekrana/">⚙️ Настройка экрана</a></li>
+<li><a href="/category/podklyuchenie-ustrojstv/">🔌 Подключение устройств</a></li>
+<li><a href="/category/mnozhestvennye-ekrany/">🖥️🖥️ Множественные экраны</a></li>
+<li><a href="/category/zvuk-i-audio/">🔊 Звук и аудио</a></li>
+<li><a href="/category/remont-i-polomki/">🔧 Ремонт и поломки</a></li>
+<li><a href="/category/ukhod-i-chistka/">🧼 Уход и чистка</a></li></ul>
+                </div>
+                <div class="footer-col">
+                    <h4>Информация</h4>
+                    <ul>
+                        <li><a href="/">Главная</a></li>
+                        <li><a href="/about.html">О проекте</a></li>
+                        <li><a href="/categories.html">Все разделы</a></li>
+                        <li><a href="/contact.html">Контакты</a></li>
+                        <li><a href="/privacy.html">Конфиденциальность</a></li>
+                        <li><a href="/sitemap.xml">Карта сайта</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>© Мониторум. Все права защищены.</p>
+                <!--LiveInternet counter--><div style="margin-top:10px;"><a href="https://www.liveinternet.ru/click"
+                target="_blank"><img id="licnt06C4" width="88" height="15" style="border:0" 
+                title="LiveInternet: показано число посетителей за сегодня"
+                src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAEALAAAAAABAAEAAAIBTAA7"
+                alt=""/></a><script>(function(d,s){d.getElementById("licnt06C4").src=
+                "https://counter.yadro.ru/hit?t26.5;r"+escape(d.referrer)+
+                ((typeof(s)=="undefined")?"":";s"+s.width+"*"+s.height+"*"+
+                (s.colorDepth?s.colorDepth:s.pixelDepth))+";u"+escape(d.URL)+
+                ";h"+escape(d.title.substring(0,150))+";"+Math.random()})(document,screen)</script></div><!--/LiveInternet-->
+            </div>
+        </div>
+    </footer>
+    <div id="cookie-consent" class="cookie-popup">
+        <div class="cookie-inner">
+            <span>🍪 Мы используем файлы cookie для улучшения работы сайта.</span>
+            <button id="cookie-accept" class="cookie-btn">Принять</button>
+        </div>
+    </div>
+    <script src="/static/js/main.js"></script>
+    <script>
+    (function() {
+        const popup = document.getElementById('cookie-consent');
+        const btn = document.getElementById('cookie-accept');
+        if (popup && btn && !localStorage.getItem('cookie-accepted')) {
+            popup.classList.add('visible');
+            btn.onclick = () => {
+                localStorage.setItem('cookie-accepted', 'true');
+                popup.classList.remove('visible');
+            };
+        }
+    })();
+    </script>
+    <script>
+    function pbPollVote(el) {
+        var poll = el.closest('.poll-widget');
+        if (poll.classList.contains('voted')) return;
+        poll.classList.add('voted');
+        el.classList.add('selected');
+        var opts = poll.querySelectorAll('.poll-widget-option');
+        var n = opts.length;
+        var raw = [];
+        var sum = 0;
+        for (var i = 0; i < n; i++) {
+            var v = Math.random() * 50 + 5;
+            if (opts[i] === el) v += 30;
+            raw.push(v);
+            sum += v;
+        }
+        var pcts = raw.map(function(v) { return Math.round(v / sum * 100); });
+        var diff = 100 - pcts.reduce(function(a,b){ return a+b; }, 0);
+        pcts[Array.from(opts).indexOf(el)] += diff;
+        setTimeout(function() {
+            opts.forEach(function(opt, i) {
+                opt.querySelector('.poll-widget-bar').style.width = pcts[i] + '%';
+                opt.querySelector('.poll-widget-pct').textContent = pcts[i] + '%';
+            });
+        }, 50);
+    }
+    </script>
+    <!--#include virtual="/ssi/body_bottom.html" -->
+    <script src="/static/js/inject.js" defer></script>
+</body>
+</html>

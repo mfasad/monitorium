@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27><text y=%27.9em%27 font-size=%2790%27>🖥️</text></svg>">
+    <title>Как мониторить файл подкачки: инструменты и анализ — Мониторум</title>
+    <meta name="description" content="Полное руководство по мониторингу файла подкачки в Windows. Узнайте, как проверить использование, оптимизировать настройки и диагностировать проблемы памяти.">
+    <link rel="canonical" href="https://monitorium.vercel.app/articles/k/ka/kak-monitorit-fajl-podkachki.html">
+
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="Как мониторить файл подкачки: инструменты и анализ">
+    <meta property="og:description" content="Полное руководство по мониторингу файла подкачки в Windows. Узнайте, как проверить использование, оптимизировать настройки и диагностировать проблемы памяти.">
+    <meta property="og:locale" content="ru_RU">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css?v=1780420684">
+    <style>
+    .site-footer-premium {
+        margin-top: 60px; padding: 40px 0 0; background: #1e293b; color: #94a3b8;
+    }
+    .footer-grid {
+        display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 40px;
+        padding-bottom: 32px; border-bottom: 1px solid #334155;
+    }
+    .footer-brand { font-size: 1.2rem; font-weight: 700; color: #f1f5f9; margin-bottom: 12px; }
+    .footer-about { font-size: 0.9rem; line-height: 1.6; margin-bottom: 8px; }
+    .footer-updated { font-size: 0.8rem; color: #64748b; }
+    .footer-col h4 { color: #f1f5f9; font-size: 0.95rem; margin-bottom: 16px; }
+    .footer-col ul { list-style: none; }
+    .footer-col li { margin-bottom: 8px; }
+    .footer-col a { color: #94a3b8; font-size: 0.9rem; transition: color 0.2s; }
+    .footer-col a:hover { color: #60a5fa; }
+    .footer-bottom { padding: 20px 0; text-align: center; font-size: 0.85rem; }
+    @media (max-width: 640px) {
+        .footer-grid { grid-template-columns: 1fr; gap: 24px; }
+    }
+    .cookie-popup {
+        position: fixed; bottom: 0; left: 0; right: 0; background: #1e293b; color: #fff;
+        padding: 16px; transition: transform 0.5s ease; z-index: 9999; border-top: 2px solid #2563eb;
+        transform: translateY(100%);
+    }
+    .cookie-popup.visible { transform: translateY(0); }
+    .cookie-inner { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; gap: 16px; font-size: 0.9rem; }
+    .cookie-btn { background: #2563eb; color: #fff; border: none; padding: 8px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+    .cookie-btn:hover { background: #1d4ed8; }
+    @media (max-width: 640px) {
+        .cookie-inner { flex-direction: column; text-align: center; }
+    }
+</style>
+    
+    <!--#include virtual="/ssi/head.html" -->
+</head>
+<body>
+        <!--#include virtual="/ssi/body_top.html" -->
+    <style>
+    .nav-dropdown { position: relative; display: inline-block; }
+    .dropdown-toggle {
+        background: none; border: none; cursor: pointer;
+        font: inherit; color: inherit; padding: 8px 12px;
+        border-radius: 8px; transition: background 0.2s;
+    }
+    .dropdown-toggle:hover { background: rgba(0,0,0,0.05); }
+    .dropdown-menu {
+        display: none; position: absolute; right: 0; top: 100%;
+        min-width: 240px; max-height: 70vh; overflow-y: auto;
+        background: var(--card-bg, #fff); border: 1px solid var(--border, #e5e7eb);
+        border-radius: 12px; box-shadow: 0 12px 40px rgba(0,0,0,0.12);
+        padding: 8px 0; z-index: 1000;
+    }
+    .nav-dropdown::after {
+        content: ''; position: absolute; left: 0; right: 0;
+        top: 100%; height: 12px;
+    }
+    .nav-dropdown:hover .dropdown-menu,
+    .nav-dropdown:focus-within .dropdown-menu { display: block; }
+    .dropdown-item {
+        display: block; padding: 10px 20px; color: var(--text, #1f2937);
+        text-decoration: none; font-size: 0.95rem; transition: background 0.15s;
+        white-space: nowrap;
+    }
+    .dropdown-item:hover { background: rgba(37,99,235,0.06); color: var(--primary, #2563eb); }
+    @media (max-width: 768px) {
+        .main-nav > .nav-link { display: none; }
+        .dropdown-toggle { display: none; }
+        .dropdown-menu {
+            display: block !important; position: static;
+            box-shadow: none; border: none; border-radius: 0;
+            min-width: auto; max-height: none; padding: 0;
+            background: transparent;
+        }
+        .dropdown-item {
+            padding: 8px 0; font-size: 1rem;
+        }
+    }
+    </style>
+    <header class="site-header">
+        <div class="container header-inner">
+            <a href="/" class="logo">
+                <span class="logo-icon">🖥️</span>
+                <span>Мониторум</span>
+            </a>
+            <button class="mobile-menu-btn" aria-label="Меню" id="menuBtn">☰</button>
+            <nav class="main-nav" id="mainNav">
+                <a href="/category/nastrojka-ekrana/" class="nav-link">⚙️ Настройка экрана</a>
+<a href="/category/podklyuchenie-ustrojstv/" class="nav-link">🔌 Подключение устройств</a>
+<a href="/category/mnozhestvennye-ekrany/" class="nav-link">🖥️🖥️ Множественные экраны</a>
+<a href="/category/zvuk-i-audio/" class="nav-link">🔊 Звук и аудио</a>
+<div class="nav-dropdown">
+            <button class="nav-link dropdown-toggle">📂 Все разделы ▾</button>
+            <div class="dropdown-menu"><a href="/category/nastrojka-ekrana/" class="dropdown-item">⚙️ Настройка экрана</a>
+<a href="/category/podklyuchenie-ustrojstv/" class="dropdown-item">🔌 Подключение устройств</a>
+<a href="/category/mnozhestvennye-ekrany/" class="dropdown-item">🖥️🖥️ Множественные экраны</a>
+<a href="/category/zvuk-i-audio/" class="dropdown-item">🔊 Звук и аудио</a>
+<a href="/category/remont-i-polomki/" class="dropdown-item">🔧 Ремонт и поломки</a>
+<a href="/category/ukhod-i-chistka/" class="dropdown-item">🧼 Уход и чистка</a>
+<a href="/category/vybor-i-kharakteristiki/" class="dropdown-item">📊 Выбор и характеристики</a>
+<a href="/category/drajvery-i-po/" class="dropdown-item">💿 Драйверы и ПО</a>
+<a href="/category/krepleniya-i-ustanovka/" class="dropdown-item">🔩 Крепления и установка</a>
+<a href="/category/utilizatsiya-i-prodazha/" class="dropdown-item">♻️ Утилизация и продажа</a>
+<a href="/category/spetsialnye-rezhimy/" class="dropdown-item">🎮 Специальные режимы</a>
+<a href="/category/drugoe/" class="dropdown-item">📁 Другое</a></div>
+        </div>
+            </nav>
+        </div>
+    </header>
+
+    <nav class="breadcrumbs" aria-label="Навигация">
+        <div class="container"><a href="/">Главная</a><span class="breadcrumb-sep">›</span><a href="/category/drajvery-i-po/">Драйверы и ПО</a><span class="breadcrumb-sep">›</span><span class="breadcrumb-current">Как мониторить файл подкачки: инструменты и анализ</span></div>
+    </nav>
+
+    <main class="site-main">
+        <div class="container">
+            <div class="article-layout">
+                <article class="article-main">
+                    
+                    <h1>Полный гид: как эффективно мониторить файл подкачки</h1>
+                    <nav class="mobile-toc"><details><summary>📋 Содержание</summary><ul><li><a href="#основы-работы-файла-подкачки-и-его-значение">Основы работы файла подкачки и его значение</a></li><li><a href="#использование-диспетчера-задач-для-быстрой-проверки">Использование диспетчера задач для быстрой проверки</a></li><li><a href="#мониторинг-через-монитор-ресурсов-и-счетчики-производительности">Мониторинг через монитор ресурсов и счетчики производительности</a></li><li><a href="#продвинутый-анализ-с-помощью-perfmon-и-счетчиков-производительности">Продвинутый анализ с помощью PerfMon и счетчиков производительности</a></li><li><a href="#таблица-ключевых-показателей-и-их-интерпретация">Таблица ключевых показателей и их интерпретация</a></li><li><a href="#оптимизация-размера-и-местоположения-файла">Оптимизация размера и местоположения файла</a></li><li><a href="#частые-ошибки-и-способы-их-устранения">Частые ошибки и способы их устранения</a></li><li><a href="#faq-частые-вопросы-о-файле-подкачки">FAQ: Частые вопросы о файле подкачки</a></li></ul></details></nav>
+                    <!--#include virtual="/ssi/article_before.html" -->
+                    <div class="article-body">
+
+<p>Файл подкачки, часто называемый <em>pagefile.sys</em>, играет критическую роль в стабильности работы операционной системы, особенно когда физическая оперативная память исчерпана. Многие пользователи игнорируют этот скрытый системный файл, считая его ненужным, однако отсутствие контроля за его состоянием может привести к внезапным сбоям приложений или полному зависанию системы. Понимание того, как мониторить файл подкачки, позволяет заранее выявить дефицит ресурсов и предотвратить критические ситуации.</p>
+
+<p>В современных версиях Windows управление памятью стало более автоматизированным, но это не отменяет необходимости ручного контроля в специфических сценариях. Профессионалы и продвинутые пользователи используют специальные утилиты для отслеживания текущего потребления файла подкачки в реальном времени. Это помогает понять, действительно ли системе не хватает оперативной памяти или же проблема кроется в некорректной работе драйверов.</p>
+
+<p>Игнорирование показателей файла подкачки может привести к тому, что вы не заметите утечки памяти до момента, когда система перестанет отвечать на запросы. Регулярная проверка позволяет настроить оптимальный размер файла, что особенно важно для игровых ПК и рабочих станций, где каждый гигабайт на счету. Грамотный мониторинг — это залог плавной работы <strong>Windows 10</strong> и <strong>Windows 11</strong>.</p>
+
+<h2 id="основы-работы-файла-подкачки-и-его-значение">Основы работы файла подкачки и его значение</h2>
+
+<p>Файл подкачки представляет собой специальный раздел на жестком диске или SSD, который операционная система использует как расширение оперативной памяти. Когда объем активных данных превышает доступную физическую RAM, система перемещает наименее используемые страницы данных на диск в этот файл. Это сложный механизм, который требует четкого понимания того, как происходит процесс <strong>свопинга</strong> и почему он влияет на производительность.</p>
+
+<p>Если вы решите полностью отключить этот файл, система перестанет иметь резервный буфер для хранения данных. Это может привести к вылету тяжелых приложений, таких как видеоредакторы или современные игры, даже при наличии большого объема оперативной памяти. Однако, если файл подкачки настроен неверно, он может стать"бутылочным горлышком", замедляя работу всего компьютера из-за медленного чтения с диска.</p>
+
+<p>Для эффективного управления необходимо понимать разницу между SSD и HDD. Скорость записи на твердотельные накопители значительно выше, что снижает задержки при использовании файла подкачки. Тем не менее, постоянное чтение и запись могут сократить срок службы дешевых моделей SSD, поэтому важно следить за нагрузкой.</p>
+
+<blockquote>⚠️ Внимание: Никогда не отключайте файл подкачки полностью, если у вас менее 32 ГБ оперативной памяти. Многие программы, включая <strong>Photoshop</strong> и <strong>Adobe Premiere</strong>, требуют наличия файла подкачки для корректной работы, независимо от объема RAM.</blockquote>
+
+<h2 id="использование-диспетчера-задач-для-быстрой-проверки">Использование диспетчера задач для быстрой проверки</h2>
+
+<p>Самый простой способ оценить текущую ситуацию — это встроенный <em>Диспетчер задач</em>. Он доступен практически мгновенно и предоставляет базовую информацию о потреблении памяти. Чтобы открыть его, нажмите сочетание клавиш <code>Ctrl + Shift + Esc</code> или кликните правой кнопкой мыши по панели задач. В открывшемся окне перейдите на вкладку <code>Производительность</code> и выберите раздел <strong>Память</strong>.</p>
+
+<p>Здесь вы увидите график использования памяти, но для детального анализа файла подкачки нужно нажать на ссылку <code>Ресурсы</code> внизу или перейти в вкладку <strong>Производительность</strong> -> <strong>Диск</strong>. В нижней части окна Диспетчера задач отображается текущее значение <strong>Коммит</strong> (Commit), который показывает, сколько памяти (RAM + файл подкачки) используется в данный момент. Если коммит близок к общему лимиту, система испытывает острый дефицит.</p>
+
+<p>Хотя Диспетчер задач удобен для моментальной оценки, он не сохраняет историю изменений. Это означает, что вы можете пропустить пиковые нагрузки, если не смотрите на экран в момент их возникновения. Для долгосрочного контроля этого инструмента недостаточно, но для разовой проверки он подходит идеально.</p>
+
+<div class="poll-widget" id="poll-a0ed1207"><div class="poll-widget-question">📊 Какой объем оперативной памяти установлен в вашем компьютере?</div><div class="poll-widget-option" data-poll="a0ed1207" data-idx="0" onclick="pbPollVote(this)"><span class="poll-widget-label">8 ГБ</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="a0ed1207" data-idx="1" onclick="pbPollVote(this)"><span class="poll-widget-label">16 ГБ</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="a0ed1207" data-idx="2" onclick="pbPollVote(this)"><span class="poll-widget-label">32 ГБ</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="a0ed1207" data-idx="3" onclick="pbPollVote(this)"><span class="poll-widget-label">64 ГБ и более</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div></div>
+
+<h2 id="мониторинг-через-монитор-ресурсов-и-счетчики-производительности">Мониторинг через монитор ресурсов и счетчики производительности</h2>
+
+<p>Для более глубокого анализа стоит воспользоваться <em>Монитором ресурсов</em>. Запустить его можно через поиск Windows, введя команду <code>resmon</code>. Вкладка <strong>Память</strong> здесь предоставляет гораздо больше деталей, чем Диспетчер задач. Вы увидите отдельные процессы, которые активно используют файл подкачки, а также график <strong>Скорость вставки</strong> и <strong>Скорость выгрузки</strong>.</p>
+
+<p>Эти показатели показывают, как часто система обращается к диску для подмены данных. Высокие значения скорости записи или чтения в файл подкачки свидетельствуют о том, что оперативной памяти недостаточно, и система вынуждена постоянно"двигать" данные на диск. Это явление, известное как <strong>thrashing</strong>, приводит к значительному снижению быстродействия всей системы.</p>
+
+<p>Если вы видите стабильно высокие показатели в этом разделе, вам следует задуматься о добавлении планок <strong>RAM</strong> или оптимизации программ, работающих в фоне. Монитор ресурсов также позволяет отсортировать процессы по использованию памяти, что помогает быстро найти виновника проблем. Например, иногда фоновый процесс обновлений может потреблять сотни мегабайт, незаметно для обычного пользователя.</p>
+
+<div class="checklist-block"><h4>☑️ Настройка оптимизации памяти</h4><label class="check-item"><input type="checkbox"><span>Открыть Монитор ресурсов (resmon)</span></label><label class="check-item"><input type="checkbox"><span>Перейти на вкладку Память</span></label><label class="check-item"><input type="checkbox"><span>Проверить график Скорость записи в файл подкачки</span></label><label class="check-item"><input type="checkbox"><span>Сравнить с пиковыми значениями нагрузки</span></label><div class="check-progress">Выполнено: <span class="check-count">0</span> / 4</div></div>
+
+<h2 id="продвинутый-анализ-с-помощью-perfmon-и-счетчиков-производительности">Продвинутый анализ с помощью PerfMon и счетчиков производительности</h2>
+
+<p>Для профессионального мониторинга и сбора статистики за длительный период лучшим инструментом является <em>Монитор производительности</em> (PerfMon). Это мощная утилита, которая позволяет создавать настраиваемые логи и отслеживать сотни параметров одновременно. Запустить его можно через команду <code>perfmon.msc</code> в окне"Выполнить".</p>
+
+<p>В разделе <strong>Счетчики производительности</strong> нужно добавить специфические счетчики, связанные с памятью. Ключевыми параметрами для отслеживания файла подкачки являются <strong>Pages/sec</strong>, <strong>Pool Paged Bytes</strong> и <strong>Commit Limit</strong>. Эти метрики дают исчерпывающую картину того, как система управляет виртуальной памятью и где возникают узкие места.</p>
+
+<p>Вы можете настроить сбор данных в течение длительного времени, например, во время игрового сеанса или работы с тяжелым приложением. После завершения сбора данных вы сможете проанализировать логи и найти периоды пиковой нагрузки. Это особенно полезно для выявления проблем, которые возникают только через несколько часов работы системы.</p>
+
+<p>Использование PerfMon требует некоторых знаний, но оно дает точные данные, недоступные в стандартных интерфейсах. Вы сможете увидеть не только текущее значение, но и динамику изменения параметров во времени. Это позволяет точно определить, является ли файл подкачки постоянным фактором торможения или нагрузка носит эпизодический характер.</p>
+
+<details class="faq-item"><summary>Как настроить сбор данных в PerfMon</summary><div class="faq-answer"><p>В меню"Наборы сбора данных" создайте новый пользовательский набор. Добавьте счетчики"Memory" и"Paging File". Настройте интервал сбора (например, каждые 15 секунд) и длительность. После запуска вы получите файл.blg, который можно открыть в том же PerfMon для анализа графиков.</p></div></details>
+
+<h2 id="таблица-ключевых-показателей-и-их-интерпретация">Таблица ключевых показателей и их интерпретация</h2>
+
+<p>Чтобы легче ориентироваться в цифрах, которые вы видите в мониторах системы, используйте следующую таблицу. Она поможет быстро оценить состояние файла подкачки и понять, требуются ли действия по оптимизации.</p>
+
+<table>
+ <thead>
+ <tr>
+ <th>Показатель</th>
+ <th>Нормальное значение</th>
+ <th>Тревожный признак</th>
+ <th>Действия</th>
+ </tr>
+ </thead>
+ <tbody>
+ <tr>
+ <td>Pages/sec</td>
+ <td>&lt; 20</td>
+ <td>&gt; 100</td>
+ <td>Добавить оперативную память</td>
+ </tr>
+ <tr>
+ <td>Commit Limit</td>
+ <td>Выше текущего использования</td>
+ <td>Близок к максимуму</td>
+ <td>Увеличить размер файла подкачки</td>
+ </tr>
+ <tr>
+ <td>Free System Page Table Entries</td>
+ <td>&gt; 5000</td>
+ <td>&lt; 1000</td>
+ <td>Проверить драйверы на утечку памяти</td>
+ </tr>
+ <tr>
+ <td>Потребление диска</td>
+ <td>До 5-10%</td>
+ <td>Постоянно 100%</td>
+ <td>Заменить HDD на SSD или оптимизировать ПО</td>
+ </tr>
+ </tbody>
+</table>
+
+<blockquote>⚠️ Внимание: Если показатель <strong>Pages/sec</strong> стабильно превышает 100 в течение длительного времени, это прямой сигнал о том, что вашей физической оперативной памяти недостаточно для текущих задач. Система постоянно вынуждена обращаться к медленному диску.</blockquote>
+
+<h2 id="оптимизация-размера-и-местоположения-файла">Оптимизация размера и местоположения файла</h2>
+
+<p>После того как вы проанализировали данные, возможно, потребуется изменить настройки самого файла подкачки. По умолчанию Windows управляет его размером автоматически, но в некоторых случаях лучше задать фиксированные значения. Это предотвращает фрагментацию файла на диске и уменьшает нагрузку на контроллер памяти при изменении размера.</p>
+
+<p>Для изменения параметров перейдите в <code>Система → Дополнительные параметры системы → Быстродействие → Параметры → Дополнительно → Изменить</code>. Здесь вы сможете снять галочку с автоматического управления и задать начальный и максимальный размер. Рекомендуется устанавливать значение, равное 1.5–2 объемам оперативной памяти, но не менее 2 ГБ для стабильности.</p>
+
+<p>Если у вас несколько дисков, имеет смысл разместить файл подкачки на том, который не используется системой для установки программ. Это распределит нагрузку и ускорит работу. Однако, если у вас всего один SSD, нет смысла переносить его, так как скорость доступа будет одинаковой.</p>
+
+<div class="attention-box attention-tip"><span class="attention-icon">💡</span><p>Используйте утилиты типа RAMMap от Microsoft Sysinternals для детального анализа использования физической памяти и определения того, какие данные можно выгрузить в файл подкачки для освобождения места.</p></div>
+
+<h2 id="частые-ошибки-и-способы-их-устранения">Частые ошибки и способы их устранения</h2>
+
+<p>Одной из самых распространенных ошибок является полное отключение файла подкачки с целью"ускорения" системы. На практике это часто приводит к краху приложений, которые не могут выделить необходимую виртуальную память. Даже если у вас 64 ГБ оперативной памяти, некоторые старые программы и игры требуют наличия хотя бы минимального файла подкачки для корректной работы.</p>
+
+<p>Другая ошибка — слишком маленький размер файла. Если вы установите фиксированный размер, например, 2 ГБ, а системе потребуется 4 ГБ, возникнет ошибка нехватки памяти. В таких случаях система может перестать сохранять файлы или вылетит с критической ошибкой (BSOD).</p>
+
+<p>Также стоит следить за состоянием самого диска. Если на жестком диске, где лежит файл подкачки, много битых секторов или он заполнен под завязку, скорость работы системы резко упадет. Регулярная дефрагментация (для HDD) и очистка места обязательны.</p>
+
+<blockquote>⚠️ Внимание: Не размещайте файл подкачки на диске с плохой скоростью записи или на сетевом хранилище. Это приведет к колоссальным задержкам и может сделать систему полностью неработоспособной при высокой нагрузке.</blockquote>
+
+<div class="attention-box attention-tip"><span class="attention-icon">💡</span><p>Оптимальная стратегия — оставить автоматическое управление размером файла подкачки, но разместить его на быстром SSD, если у вас есть несколько накопителей.</p></div>
+
+<h2 id="faq-частые-вопросы-о-файле-подкачки">FAQ: Частые вопросы о файле подкачки</h2>
+
+<details>
+ <summary>Можно ли полностью отключить файл подкачки?</summary>
+ <p>Технически это возможно, но не рекомендуется. Многие программы и игры используют его для выгрузки неиспользуемых данных, даже при большом объеме RAM. Отключение может привести к нестабильной работе системы и вылетам приложений.</p>
+</details>
+
+<details>
+ <summary>Как понять, что файл подкачки слишком мал?</summary>
+ <p>Если вы видите предупреждения о нехватке памяти, приложения вылетают без явной причины или система начинает сильно тормозить при открытии множества вкладок в браузере, скорее всего, файл подкачки перегружен. Проверьте показатели в Мониторе ресурсов.</p>
+</details>
+
+<details>
+ <summary>Влияет ли файл подкачки на скорость игры?</summary>
+ <p>Да, если игра активно использует виртуальную память, а файл подкачки находится на медленном HDD, это вызовет микрофризы и подергивания изображения. Перенос файла на быстрый SSD значительно улучшит плавность геймплея.</p>
+</details>
+
+<details>
+ <summary>Как часто нужно проверять настройки файла подкачки?</summary>
+ <p>Если вы не меняли конфигурацию компьютера и не сталкивались с проблемами, проверять настройки достаточно раз в полгода или при покупке нового оборудования. При появлении тормозов — немедленно.</p>
+</details>
+
+<details>
+ <summary>Можно ли перенести файл подкачки на другой диск?</summary>
+ <p>Да, это стандартная процедура. В настройках виртуальной памяти можно (указать) другой диск и задать для него размер. Старый файл на системном диске при этом будет удален после перезагрузки.</p>
+</details></div>
+                    <!--#include virtual="/ssi/article_after.html" -->
+
+                </article>
+                <aside class="article-sidebar"><!--#include virtual="/ssi/sidebar_top.html" --><nav class="sidebar-search"><div class="sidebar-search-box"><input type="text" id="globalSearchInput" placeholder="🔍 Поиск статей..." autocomplete="off"><div class="search-dropdown" id="globalSearchDropdown"></div></div></nav><!--#include virtual="/ssi/sidebar_before_toc.html" --><nav class="sidebar-toc" id="sidebarToc"><h3>Содержание</h3><ul><li><a href="#основы-работы-файла-подкачки-и-его-значение">Основы работы файла подкачки и его значение</a></li><li><a href="#использование-диспетчера-задач-для-быстрой-проверки">Использование диспетчера задач для быстрой проверки</a></li><li><a href="#мониторинг-через-монитор-ресурсов-и-счетчики-производительности">Мониторинг через монитор ресурсов и счетчики производительности</a></li><li><a href="#продвинутый-анализ-с-помощью-perfmon-и-счетчиков-производительности">Продвинутый анализ с помощью PerfMon и счетчиков производительности</a></li><li><a href="#таблица-ключевых-показателей-и-их-интерпретация">Таблица ключевых показателей и их интерпретация</a></li><li><a href="#оптимизация-размера-и-местоположения-файла">Оптимизация размера и местоположения файла</a></li><li><a href="#частые-ошибки-и-способы-их-устранения">Частые ошибки и способы их устранения</a></li><li><a href="#faq-частые-вопросы-о-файле-подкачки">FAQ: Частые вопросы о файле подкачки</a></li></ul></nav><!--#include virtual="/ssi/sidebar_before_related.html" --><nav class="sidebar-related"><h3>Похожие статьи</h3><ul><li><a href="/articles/k/ka/kak-skrinit-monitor-kompa.html" class="related-card">Как сделать скриншот экрана компьютера: 5 способов для Windows, Mac и Linux</a></li><li><a href="/articles/k/ka/kak-monitorit-temperaturu-videokarty-vo-vremya-igry.html" class="related-card">Как мониторить температуру видеокарты в играх: лучшие способы и утилиты</a></li><li><a href="/articles/k/ka/kak-skopirovat-kartinku-s-ekrana-monitora.html" class="related-card">Как скопировать картинку с экрана монитора: 7 быстрых способов</a></li><li><a href="/articles/k/ka/kak-otklyuchit-drajver-monitora.html" class="related-card">Как отключить драйвер монитора: пошаговая инструкция и нюансы</a></li><li><a href="/articles/d/dr/drajver-dlya-monitora-chto-daet.html" class="related-card">Драйвер для монитора: что дает установка и зачем он нужен</a></li></ul></nav><!--#include virtual="/ssi/sidebar_after_related.html" --></aside>
+            </div>
+        </div>
+    </main>
+
+    <!--#include virtual="/ssi/before_related_bottom.html" -->
+    <section class="related-bottom">
+        <div class="container">
+            <h2 class="related-bottom-heading">📖 Читайте также</h2>
+            <div class="related-bottom-grid"><a href="/articles/k/ka/kak-skrinit-monitor-kompa.html" class="related-bottom-card"><span class="related-bottom-title">Как сделать скриншот экрана компьютера: 5 способов для Windows, Mac и Linux</span><span class="related-bottom-desc">Пошаговые инструкции, как скринить монитор на ПК с клавиатуры, через программы и онлайн-сервисы. Гор</span></a><a href="/articles/k/ka/kak-monitorit-temperaturu-videokarty-vo-vremya-igry.html" class="related-bottom-card"><span class="related-bottom-title">Как мониторить температуру видеокарты в играх: лучшие способы и утилиты</span><span class="related-bottom-desc">Узнайте, как контролировать нагрев GPU во время игр. Обзор HWMonitor, MSI Afterburner и встроенных с</span></a><a href="/articles/k/ka/kak-skopirovat-kartinku-s-ekrana-monitora.html" class="related-bottom-card"><span class="related-bottom-title">Как скопировать картинку с экрана монитора: 7 быстрых способов</span><span class="related-bottom-desc">Полное руководство по скриншотам: от стандартных клавиш до профессионального софта. Узнайте, как быс</span></a><a href="/articles/k/ka/kak-otklyuchit-drajver-monitora.html" class="related-bottom-card"><span class="related-bottom-title">Как отключить драйвер монитора: пошаговая инструкция и нюансы</span><span class="related-bottom-desc">Подробный гайд: как отключить драйвер монитора в Windows, если он вызывает конфликты. Методы отключе</span></a><a href="/articles/d/dr/drajver-dlya-monitora-chto-daet.html" class="related-bottom-card"><span class="related-bottom-title">Драйвер для монитора: что дает установка и зачем он нужен</span><span class="related-bottom-desc">Узнайте, что дает драйвер монитора: правильное разрешение, герцовка и цветопередача. Разбор мифов, и</span></a><a href="/articles/z/za/zachem-monitoru-drajvera.html" class="related-bottom-card"><span class="related-bottom-title">Зачем нужны драйверы для монитора: влияние на работу ПК</span><span class="related-bottom-desc">Разбираем, зачем нужен драйвер монитора, как он влияет на частоту обновления, цветопередачу и работу</span></a></div>
+        </div>
+    </section>
+    <!--#include virtual="/ssi/after_related_bottom.html" -->
+
+    <footer class="site-footer-premium">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-col">
+                    <div class="footer-brand">🖥️ Мониторум</div>
+                    <p class="footer-about">Полный справочник по настройке, ремонту и выбору компьютерных мониторов для любых задач.</p>
+                </div>
+                <div class="footer-col">
+                    <h4>Разделы</h4>
+                    <ul><li><a href="/category/nastrojka-ekrana/">⚙️ Настройка экрана</a></li>
+<li><a href="/category/podklyuchenie-ustrojstv/">🔌 Подключение устройств</a></li>
+<li><a href="/category/mnozhestvennye-ekrany/">🖥️🖥️ Множественные экраны</a></li>
+<li><a href="/category/zvuk-i-audio/">🔊 Звук и аудио</a></li>
+<li><a href="/category/remont-i-polomki/">🔧 Ремонт и поломки</a></li>
+<li><a href="/category/ukhod-i-chistka/">🧼 Уход и чистка</a></li></ul>
+                </div>
+                <div class="footer-col">
+                    <h4>Информация</h4>
+                    <ul>
+                        <li><a href="/">Главная</a></li>
+                        <li><a href="/about.html">О проекте</a></li>
+                        <li><a href="/categories.html">Все разделы</a></li>
+                        <li><a href="/contact.html">Контакты</a></li>
+                        <li><a href="/privacy.html">Конфиденциальность</a></li>
+                        <li><a href="/sitemap.xml">Карта сайта</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>© Мониторум. Все права защищены.</p>
+                <!--LiveInternet counter--><div style="margin-top:10px;"><a href="https://www.liveinternet.ru/click"
+                target="_blank"><img id="licnt06C4" width="88" height="15" style="border:0" 
+                title="LiveInternet: показано число посетителей за сегодня"
+                src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAEALAAAAAABAAEAAAIBTAA7"
+                alt=""/></a><script>(function(d,s){d.getElementById("licnt06C4").src=
+                "https://counter.yadro.ru/hit?t26.5;r"+escape(d.referrer)+
+                ((typeof(s)=="undefined")?"":";s"+s.width+"*"+s.height+"*"+
+                (s.colorDepth?s.colorDepth:s.pixelDepth))+";u"+escape(d.URL)+
+                ";h"+escape(d.title.substring(0,150))+";"+Math.random()})(document,screen)</script></div><!--/LiveInternet-->
+            </div>
+        </div>
+    </footer>
+    <div id="cookie-consent" class="cookie-popup">
+        <div class="cookie-inner">
+            <span>🍪 Мы используем файлы cookie для улучшения работы сайта.</span>
+            <button id="cookie-accept" class="cookie-btn">Принять</button>
+        </div>
+    </div>
+    <script src="/static/js/main.js"></script>
+    <script>
+    (function() {
+        const popup = document.getElementById('cookie-consent');
+        const btn = document.getElementById('cookie-accept');
+        if (popup && btn && !localStorage.getItem('cookie-accepted')) {
+            popup.classList.add('visible');
+            btn.onclick = () => {
+                localStorage.setItem('cookie-accepted', 'true');
+                popup.classList.remove('visible');
+            };
+        }
+    })();
+    </script>
+    <script>
+    function pbPollVote(el) {
+        var poll = el.closest('.poll-widget');
+        if (poll.classList.contains('voted')) return;
+        poll.classList.add('voted');
+        el.classList.add('selected');
+        var opts = poll.querySelectorAll('.poll-widget-option');
+        var n = opts.length;
+        var raw = [];
+        var sum = 0;
+        for (var i = 0; i < n; i++) {
+            var v = Math.random() * 50 + 5;
+            if (opts[i] === el) v += 30;
+            raw.push(v);
+            sum += v;
+        }
+        var pcts = raw.map(function(v) { return Math.round(v / sum * 100); });
+        var diff = 100 - pcts.reduce(function(a,b){ return a+b; }, 0);
+        pcts[Array.from(opts).indexOf(el)] += diff;
+        setTimeout(function() {
+            opts.forEach(function(opt, i) {
+                opt.querySelector('.poll-widget-bar').style.width = pcts[i] + '%';
+                opt.querySelector('.poll-widget-pct').textContent = pcts[i] + '%';
+            });
+        }, 50);
+    }
+    </script>
+    <!--#include virtual="/ssi/body_bottom.html" -->
+    <script src="/static/js/inject.js" defer></script>
+</body>
+</html>

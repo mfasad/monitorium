@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27><text y=%27.9em%27 font-size=%2790%27>🖥️</text></svg>">
+    <title>Монитор ресурсов Windows 10: Полное руководство по анализу и оптимизации — Мониторум</title>
+    <meta name="description" content="Узнайте, как использовать Монитор ресурсов Windows 10 для диагностики зависаний, поиска скрытых процессов и ускорения работы системы. Пошаговая инструкция.">
+    <link rel="canonical" href="https://monitorium.vercel.app/articles/c/ch/chto-takoe-monitor-resursov-v-windows-10.html">
+
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="Монитор ресурсов Windows 10: Полное руководство по анализу и оптимизации">
+    <meta property="og:description" content="Узнайте, как использовать Монитор ресурсов Windows 10 для диагностики зависаний, поиска скрытых процессов и ускорения работы системы. Пошаговая инструкция.">
+    <meta property="og:locale" content="ru_RU">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css?v=1780420684">
+    <style>
+    .site-footer-premium {
+        margin-top: 60px; padding: 40px 0 0; background: #1e293b; color: #94a3b8;
+    }
+    .footer-grid {
+        display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 40px;
+        padding-bottom: 32px; border-bottom: 1px solid #334155;
+    }
+    .footer-brand { font-size: 1.2rem; font-weight: 700; color: #f1f5f9; margin-bottom: 12px; }
+    .footer-about { font-size: 0.9rem; line-height: 1.6; margin-bottom: 8px; }
+    .footer-updated { font-size: 0.8rem; color: #64748b; }
+    .footer-col h4 { color: #f1f5f9; font-size: 0.95rem; margin-bottom: 16px; }
+    .footer-col ul { list-style: none; }
+    .footer-col li { margin-bottom: 8px; }
+    .footer-col a { color: #94a3b8; font-size: 0.9rem; transition: color 0.2s; }
+    .footer-col a:hover { color: #60a5fa; }
+    .footer-bottom { padding: 20px 0; text-align: center; font-size: 0.85rem; }
+    @media (max-width: 640px) {
+        .footer-grid { grid-template-columns: 1fr; gap: 24px; }
+    }
+    .cookie-popup {
+        position: fixed; bottom: 0; left: 0; right: 0; background: #1e293b; color: #fff;
+        padding: 16px; transition: transform 0.5s ease; z-index: 9999; border-top: 2px solid #2563eb;
+        transform: translateY(100%);
+    }
+    .cookie-popup.visible { transform: translateY(0); }
+    .cookie-inner { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; gap: 16px; font-size: 0.9rem; }
+    .cookie-btn { background: #2563eb; color: #fff; border: none; padding: 8px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+    .cookie-btn:hover { background: #1d4ed8; }
+    @media (max-width: 640px) {
+        .cookie-inner { flex-direction: column; text-align: center; }
+    }
+</style>
+    
+    <!--#include virtual="/ssi/head.html" -->
+</head>
+<body>
+        <!--#include virtual="/ssi/body_top.html" -->
+    <style>
+    .nav-dropdown { position: relative; display: inline-block; }
+    .dropdown-toggle {
+        background: none; border: none; cursor: pointer;
+        font: inherit; color: inherit; padding: 8px 12px;
+        border-radius: 8px; transition: background 0.2s;
+    }
+    .dropdown-toggle:hover { background: rgba(0,0,0,0.05); }
+    .dropdown-menu {
+        display: none; position: absolute; right: 0; top: 100%;
+        min-width: 240px; max-height: 70vh; overflow-y: auto;
+        background: var(--card-bg, #fff); border: 1px solid var(--border, #e5e7eb);
+        border-radius: 12px; box-shadow: 0 12px 40px rgba(0,0,0,0.12);
+        padding: 8px 0; z-index: 1000;
+    }
+    .nav-dropdown::after {
+        content: ''; position: absolute; left: 0; right: 0;
+        top: 100%; height: 12px;
+    }
+    .nav-dropdown:hover .dropdown-menu,
+    .nav-dropdown:focus-within .dropdown-menu { display: block; }
+    .dropdown-item {
+        display: block; padding: 10px 20px; color: var(--text, #1f2937);
+        text-decoration: none; font-size: 0.95rem; transition: background 0.15s;
+        white-space: nowrap;
+    }
+    .dropdown-item:hover { background: rgba(37,99,235,0.06); color: var(--primary, #2563eb); }
+    @media (max-width: 768px) {
+        .main-nav > .nav-link { display: none; }
+        .dropdown-toggle { display: none; }
+        .dropdown-menu {
+            display: block !important; position: static;
+            box-shadow: none; border: none; border-radius: 0;
+            min-width: auto; max-height: none; padding: 0;
+            background: transparent;
+        }
+        .dropdown-item {
+            padding: 8px 0; font-size: 1rem;
+        }
+    }
+    </style>
+    <header class="site-header">
+        <div class="container header-inner">
+            <a href="/" class="logo">
+                <span class="logo-icon">🖥️</span>
+                <span>Мониторум</span>
+            </a>
+            <button class="mobile-menu-btn" aria-label="Меню" id="menuBtn">☰</button>
+            <nav class="main-nav" id="mainNav">
+                <a href="/category/nastrojka-ekrana/" class="nav-link">⚙️ Настройка экрана</a>
+<a href="/category/podklyuchenie-ustrojstv/" class="nav-link">🔌 Подключение устройств</a>
+<a href="/category/mnozhestvennye-ekrany/" class="nav-link">🖥️🖥️ Множественные экраны</a>
+<a href="/category/zvuk-i-audio/" class="nav-link">🔊 Звук и аудио</a>
+<div class="nav-dropdown">
+            <button class="nav-link dropdown-toggle">📂 Все разделы ▾</button>
+            <div class="dropdown-menu"><a href="/category/nastrojka-ekrana/" class="dropdown-item">⚙️ Настройка экрана</a>
+<a href="/category/podklyuchenie-ustrojstv/" class="dropdown-item">🔌 Подключение устройств</a>
+<a href="/category/mnozhestvennye-ekrany/" class="dropdown-item">🖥️🖥️ Множественные экраны</a>
+<a href="/category/zvuk-i-audio/" class="dropdown-item">🔊 Звук и аудио</a>
+<a href="/category/remont-i-polomki/" class="dropdown-item">🔧 Ремонт и поломки</a>
+<a href="/category/ukhod-i-chistka/" class="dropdown-item">🧼 Уход и чистка</a>
+<a href="/category/vybor-i-kharakteristiki/" class="dropdown-item">📊 Выбор и характеристики</a>
+<a href="/category/drajvery-i-po/" class="dropdown-item">💿 Драйверы и ПО</a>
+<a href="/category/krepleniya-i-ustanovka/" class="dropdown-item">🔩 Крепления и установка</a>
+<a href="/category/utilizatsiya-i-prodazha/" class="dropdown-item">♻️ Утилизация и продажа</a>
+<a href="/category/spetsialnye-rezhimy/" class="dropdown-item">🎮 Специальные режимы</a>
+<a href="/category/drugoe/" class="dropdown-item">📁 Другое</a></div>
+        </div>
+            </nav>
+        </div>
+    </header>
+
+    <nav class="breadcrumbs" aria-label="Навигация">
+        <div class="container"><a href="/">Главная</a><span class="breadcrumb-sep">›</span><a href="/category/drugoe/">Другое</a><span class="breadcrumb-sep">›</span><span class="breadcrumb-current">Монитор ресурсов Windows 10: Полное руководство по анализу и оптимизации</span></div>
+    </nav>
+
+    <main class="site-main">
+        <div class="container">
+            <div class="article-layout">
+                <article class="article-main">
+                    
+                    <h1>Монитор ресурсов Windows 10: Инструмент для глубокой диагностики и оптимизации ПК</h1>
+                    <nav class="mobile-toc"><details><summary>📋 Содержание</summary><ul><li><a href="#назначение-и-ключевые-возможности-инструмента">Назначение и ключевые возможности инструмента</a></li><li><a href="#запуск-и-интерфейс-программы">Запуск и интерфейс программы</a></li><li><a href="#анализ-нагрузки-процессора-и-памяти">Анализ нагрузки процессора и памяти</a></li><li><a href="#диагностика-проблем-с-диском-и-файловой-системой">Диагностика проблем с диском и файловой системой</a></li><li><a href="#мониторинг-сетевой-активности">Мониторинг сетевой активности</a></li><li><a href="#связь-процессов-и-поиск-скрытых-угроз">Связь процессов и поиск скрытых угроз</a></li><li><a href="#сравнение-с-диспетчером-задач">Сравнение с Диспетчером задач</a></li><li><a href="#практические-сценарии-использования">Практические сценарии использования</a></li><li><a href="#оптимизация-системы-на-основе-данных">Оптимизация системы на основе данных</a></li><li><a href="#заключение-и-рекомендации">Заключение и рекомендации</a></li></ul></details></nav>
+                    <!--#include virtual="/ssi/article_before.html" -->
+                    <div class="article-body">
+
+<p>Многие пользователи сталкиваются с тормозами, внезапными вылетами программ или высокой загрузкой диска, но стандартные средства управления часто не дают полной картины происходящего. В таких ситуациях на помощь приходит встроенный в операционную систему инструмент, который часто остается незамеченным, хотя обладает огромным аналитическим потенциалом. <strong>Монитор ресурсов</strong> представляет собой мощный диагностический утилита, позволяющую в реальном времени отслеживать работу всех компонентов компьютера.</p>
+
+<p>В отличие от простого Диспетчера задач, который показывает лишь базовые метрики, этот инструмент раскрывает глубинные связи между процессами, файлами и сетевыми подключениями. Вы сможете увидеть, какой именно файл блокирует запись на <em>SSD</em> или почему сеть загружена на 100%, даже если все программы кажутся закрытыми. Понимание работы утилиты критически важно для <strong>устранения неполадок</strong> и поддержания стабильности системы.</p>
+
+<h2 id="назначение-и-ключевые-возможности-инструмента">Назначение и ключевые возможности инструмента</h2>
+
+<p>Основная задача <strong>Монитора ресурсов</strong> — предоставить системному администратору или продвинутому пользователю детальную информацию о потреблении аппаратных ресурсов. Программа разбивает данные на четыре ключевые категории: процессор, память, диск и сеть. Каждая вкладка содержит не только цифры, но и логические связи, позволяющие отследить цепочку событий, приведшую к проблеме.</p>
+
+<p>Инструмент особенно полезен при анализе <strong>зависаний системы</strong>. Часто бывает так, что компьютер перестает отвечать на команды, и стандартный интерфейс отключается. Монитор ресурсов может быть запущен отдельно или через безопасный режим, чтобы выявить виновника сбоя. Это может быть фоновый процесс обновления, конфликт драйверов или вредоносное ПО, скрывающееся от обычного пользователя.</p>
+
+<p>Следует отметить, что утилита не только показывает текущее состояние, но и позволяет управлять процессами. Вы можете принудительно завершить работу задачи, отключить службу или удалить файл, который используется другим приложением, прямо из интерфейса программы. Это делает <strong>системную диагностику</strong> не только наблюдательной, но и активной.</p>
+
+<h2 id="запуск-и-интерфейс-программы">Запуск и интерфейс программы</h2>
+
+<p>Открыть <strong>Монитор ресурсов</strong> можно несколькими способами, но самый быстрый — использование системного поиска. Нажмите клавишу <code>Win</code> и начните вводить название утилиты. В результатах поиска появится иконка с зелеными графиками. Также можно вызвать инструмент через команду выполнения: нажмите <code>Win + R</code>, введите <code>resmon</code> и нажмите <strong>Enter</strong>. Это универсальный метод, работающий в любой версии <em>Windows 10</em>.</p>
+
+<p>Интерфейс программы состоит из верхней панели с вкладками и нижней области с графиками. Верхняя часть разделена на разделы: <strong>Процессор</strong>, <strong>Память</strong>, <strong>Диск</strong> и <strong>Сеть</strong>. Нижняя часть отображает динамические графики использования ресурсов в реальном времени. Обратите внимание, что графики обновляются несколько раз в секунду, что позволяет отследить даже кратковременные всплески нагрузки.</p>
+
+<p>В каждом разделе есть таблицы со списком активных процессов. Вы можете сортировать их по любой колонке, кликнув по заголовку. Например, в разделе <em>Процессор</em> удобно сортировать процессы по колонке "Сумма ЦП", чтобы найти самые прожорливые задачи. В разделе <strong>Диск</strong> сортировка по "Общему" поможет выявить файлы, которые активно читаются или записываются в данный момент.</p>
+
+<p>Интересной особенностью является возможность фильтрации. Если вы знаете имя процесса, который вызывает подозрение, вы можете ввести его в поле поиска, и программа покажет только связанные с ним данные. Это значительно упрощает работу, когда в системе запущено сотни фоновых задач.</p>
+
+<div class="poll-widget" id="poll-5130ac05"><div class="poll-widget-question">📊 Какая часть вашего ПК чаще всего вызывает проблемы?</div><div class="poll-widget-option" data-poll="5130ac05" data-idx="0" onclick="pbPollVote(this)"><span class="poll-widget-label">Процессор (тормоза)</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="5130ac05" data-idx="1" onclick="pbPollVote(this)"><span class="poll-widget-label">Память (нехватка)</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="5130ac05" data-idx="2" onclick="pbPollVote(this)"><span class="poll-widget-label">Диск (высокая загрузка)</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="5130ac05" data-idx="3" onclick="pbPollVote(this)"><span class="poll-widget-label">Сеть (низкая скорость)</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div></div>
+
+<h2 id="анализ-нагрузки-процессора-и-памяти">Анализ нагрузки процессора и памяти</h2>
+
+<p>Вкладка <strong>Процессор</strong> содержит три основные секции: процессы, службы и процессоры. В секции процессов вы увидите список всех запущенных программ с указанием их PID, базового класса и использования ЦП. Важно обращать внимание на колонку "Сумма ЦП", так как она показывает общую нагрузку на ядра, включая дочерние процессы.</p>
+
+<p>Секция "Службы" отображает системные процессы, которые работают в фоне. Именно здесь часто скрываются причины высокой загрузки, если пользовательская программа не потребляет ресурсы напрямую. Службы связаны с конкретными процессами, и вы можете увидеть эту связь визуально, нажав на стрелку рядом с процессом.</p>
+
+<p>Раздел <strong>Память</strong> показывает, как распределен оперативный объем. Здесь выделяются категории: "В работе", "Модифицированная", "Свободная" и "Кэш". Ключевым моментом является понимание того, что Windows использует свободную память для кэширования файлов, что ускоряет работу системы. Высокий показатель "В работе" может указывать на утечку памяти в приложении.</p>
+
+<p>Для детального анализа используйте функцию <strong>поиска по файлам</strong>. Если вы хотите узнать, какой процесс использует определенный файл на диске, введите его имя в поле "Искать" в разделе памяти. Программа мгновенно покажет, какой процесс держит этот файл открытым. Это незаменимо при попытке удалить или переименовать файл, который система считает используемым.</p>
+
+<h2 id="диагностика-проблем-с-диском-и-файловой-системой">Диагностика проблем с диском и файловой системой</h2>
+
+<p>Вкладка <strong>Диск</strong> является одной из самых важных для современных пользователей, особенно тех, кто использует старые жесткие диски. Здесь отображается список процессов, инициирующих операции ввода-вывода, а также список всех доступных дисков с их текущей активностью и задержкой (Avg. Disk Queue Length).</p>
+
+<p>Высокая загрузка диска в <em>Windows 10</em> часто связана с процессами индексации, обновления или антивирусного сканирования. В таблице "Процессы" вы увидите, какой файл обрабатывается в данный момент. Если вы видите постоянную запись в файл <code>System</code> или <code>svchost.exe</code>, это может указывать на проблемы с драйверами или службой Windows Update.</p>
+
+<p>Секция "Ввод-вывод диска" показывает детальную информацию о каждом файле, к которому обращается система. Это позволяет отследить, какой именно документ или системный файл вызывает задержки. Если задержка (Latency) постоянно превышает 50-100 мс, это сигнал о проблемах с физическим состоянием накопителя или перегрузке контроллера.</p>
+
+<p>Также здесь можно увидеть, какие диски используются активно. Если у вас установлен <em>SSD</em> и <em>HDD</em>, вы увидите, что основная нагрузка ложится на быстрый диск, а медленный простаивает или выполняет фоновые задачи. Это помогает понять, где именно нужно оптимизировать систему или добавить память.</p>
+
+<div class="checklist-block"><h4>☑️ Проверка состояния диска</h4><label class="check-item"><input type="checkbox"><span>Проверить задержку (Latency)</span></label><label class="check-item"><input type="checkbox"><span>Идентифицировать активные файлы</span></label><label class="check-item"><input type="checkbox"><span>Оценить нагрузку на контроллер</span></label><label class="check-item"><input type="checkbox"><span>Завершить процесс-виновник</span></label><div class="check-progress">Выполнено: <span class="check-count">0</span> / 4</div></div>
+
+<blockquote>⚠️ <strong>Внимание</strong>: Если вы видите, что один процесс постоянно загружает диск на 100% и не завершается, попытка принудительного окончания может привести к потере данных. Сделайте резервную копию важных файлов перед использованием функций управления процессами.</blockquote>
+
+<details class="faq-item"><summary>Что такое очередь диска?
+<p>Очередь диска (Disk Queue) — это список задач, которые ждут своей очереди на чтение или запись. Если значение этой очереди постоянно высокое (выше 2-3), это означает, что диск не успевает обрабатывать запросы, и система начинает "подвисать".--></p>
+
+<h2 id="мониторинг-сетевой-активности">Мониторинг сетевой активности</h2>
+
+<p>Вкладка <strong>Сеть</strong> позволяет отслеживать сетевую активность в реальном времени. Здесь отображаются процессы, которые используют интернет, а также сетевые подключения и порты. Это критически важно для выявления вредоносного ПО, которое может передавать данные на удаленные серверы, скрытно используя ваш трафик.</p>
+
+<p>В разделе "Процессы" вы увидите, какой объем данных отправляется и принимается каждым приложением. Если вы заметили, что процесс, который вы не запускали, активно использует сеть, это повод для беспокойства. В списке "Сетевые подключения" можно увидеть IP-адреса, с которыми соединяется ваш компьютер.</p>
+
+<p>Секция "TCP-подключения" показывает детали передачи данных. Здесь отображаются локальные и удаленные адреса, а также состояние соединения (например, ESTABLISHED, LISTENING). Это позволяет определить, подключен ли ваш ПК к подозрительному серверу. Для безопасной работы важно проверять эти данные регулярно.</p>
+
+<p>Также в этом разделе можно увидеть, какие порты используются. Если вы видите, что на порту 445 или 139 активно слушает соединение, это может указывать на уязвимость в настройках сетевой безопасности. <strong>Блокировка доступа</strong> к определенным портам через фаервол может быть решена на основе этих данных.</p>
+
+<h2 id="связь-процессов-и-поиск-скрытых-угроз">Связь процессов и поиск скрытых угроз</h2>
+
+<p>Одной из самых мощных функций <strong>Монитора ресурсов</strong> является возможность просмотра связей между процессами и файлами. Если вы нажмете на любой процесс в верхней таблице, в нижней части появится список всех файлов, которые он использует. Это позволяет точно определить, какой файл блокирует работу системы или мешает удалению.</p>
+
+<p>Использование этой функции помогает выявить <strong>скрытые угрозы</strong>. Злоумышленники часто маскируют вредоносные программы под системные процессы. Если вы видите процесс с незнакомым именем, который использует файлы в системной папке, это может быть признаком инфекции. Анализ связей позволяет быстро изолировать и удалить подозрительный объект.</p>
+
+<p>Кроме того, можно проанализировать, какие библиотеки DLL загружает процесс. Это полезно для разработчиков и продвинутых пользователей, занимающихся отладкой программ. Если приложение падает из-за ошибки DLL, Монитор ресурсов покажет, какая именно библиотека вызвала сбой.</p>
+
+<p>Для поиска проблем можно использовать функцию "Поиск". Введите имя файла или процесса, и система покажет все связанные с ним элементы. Это значительно ускоряет диагностику, особенно если нужно найти, какой процесс держит файл открытым перед его удалением.</p>
+
+<!--WIDGET</summary><div class="faq-answer"><p>tip:Если вы не знаете, что за процесс вызывает высокую нагрузку, попробуйте найти его название в интернете. Часто системные процессы имеют непонятные названия, но являются частью операционной системы.</p></div></details>
+
+<h2 id="сравнение-с-диспетчером-задач">Сравнение с Диспетчером задач</h2>
+
+<p>Многие пользователи задаются вопросом, зачем использовать Монитор ресурсов, если есть Диспетчер задач. Диспетчер задач более прост и удобен для быстрого завершения зависших приложений. Однако он не предоставляет детальной информации о файлах, сетях и связях между процессами.</p>
+
+<p><strong>Монитор ресурсов</strong> предлагает более глубокий уровень анализа. Он показывает не только "что" происходит, но и "почему". Например, Диспетчер задач покажет, что процесс загружает диск, но не скажет, какой именно файл он обрабатывает. Монитор ресурсов даст эту информацию, что критично для устранения причины проблемы.</p>
+
+<p>Также Монитор ресурсов позволяет фильтровать данные по более сложным критериям. Вы можете настроить отображение только тех процессов, которые используют определенное количество памяти или работают с определенным типом файлов. Это делает инструмент незаменимым для системных администраторов.</p>
+
+<p>В таблице ниже приведено сравнение основных функций двух инструментов:</p>
+
+<table>
+<thead>
+<tr>
+<th>Функция</th>
+<th>Диспетчер задач</th>
+<th>Монитор ресурсов</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Базовая информация о процессах</td>
+<td><strong>Да</strong></td>
+<td><strong>Да</strong></td>
+</tr>
+<tr>
+<td>Детальный анализ файлов</td>
+<td>Нет</td>
+<td><strong>Да</strong></td>
+</tr>
+<tr>
+<td>Сетевые подключения и порты</td>
+<td>Ограниченно</td>
+<td><strong>Полный доступ</strong></td>
+</tr>
+<tr>
+<td>Связи между процессами</td>
+<td>Нет</td>
+<td><strong>Да</strong></td>
+</tr>
+<tr>
+<td>Простота использования</td>
+<td><strong>Высокая</strong></td>
+<td>Средняя</td>
+</tr>
+</tbody>
+</table>
+
+<blockquote>⚠️ <strong>Внимание</strong>: При использовании Монитора ресурсов для завершения процессов будьте предельно осторожны. Завершение системного процесса может привести к нестабильности работы операционной системы или даже к ее полной неработоспособности до перезагрузки.</blockquote>
+
+<h2 id="практические-сценарии-использования">Практические сценарии использования</h2>
+
+<p>Рассмотрим реальные ситуации, где применение <strong>Монитора ресурсов</strong> становится решающим фактором. Первый сценарий — компьютер тормозит при запуске видео. Обычный Диспетчер задач может показать, что нагрузка на ЦП низкая, но диск загружен на 100%. Зайдя в Монитор ресурсов, вы обнаружите, что процесс <code>SearchProtocolHost.exe</code> индексирует файлы на внешнем диске.</p>
+
+<p>Второй сценарий — невозможность удалить файл. Система сообщает, что файл используется другой программой. Вместо того чтобы перезагружать ПК, вы открываете Монитор ресурсов, вводите имя файла в поиск и видите, какой процесс его держит. Вы можете завершить этот процесс или просто закрыть программу, которая его использует.</p>
+
+<p>Третий сценарий — подозрительная сетевая активность. Вы замечаете, что интернет работает медленно, хотя вы ничего не скачиваете. В разделе "Сеть" вы видите, что процесс с неизвестным именем отправляет большие объемы данных на удаленный IP-адрес. Это может быть признаком майнера или ботнета.</p>
+
+<p>Четвертый сценарий — анализ утечек памяти. Программа работает нормально, но со временем компьютер начинает тормозить. В Мониторе ресурсов вы видите, что "Модифицированная" память постоянно растет и не освобождается. Это указывает на утечку памяти в одной из запущенных программ, что требует обновления или замены ПО.</p>
+
+<div class="attention-box attention-tip"><span class="attention-icon">💡</span><p>Монитор ресурсов — это главный инструмент для глубокой диагностики, позволяющий увидеть не только симптомы, но и причины проблем с производительностью ПК.</p></div>
+
+<h2 id="оптимизация-системы-на-основе-данных">Оптимизация системы на основе данных</h2>
+
+<p>После того как вы собрали данные с помощью <strong>Монитора ресурсов</strong>, необходимо предпринять действия по оптимизации. Если вы обнаружили процесс, который постоянно нагружает ЦП, проверьте его настройки. Возможно, он настроен на выполнение тяжелых задач в рабочее время, и его нужно перенести на ночное время.</p>
+
+<p>Если проблема в памяти, рассмотрите возможность увеличения объема <em>RAM</em> или отключения ненужных служб. Иногда достаточно отключить автозагрузку программ, которые не используются ежедневно. Это снизит нагрузку на систему при старте и освободит ресурсы для основных задач.</p>
+
+<p>Для дисковой оптимизации используйте функцию дефрагментации для <em>HDD</em> или TRIM для <em>SSD</em>. Монитор ресурсов покажет, насколько эффективно работает дисковый контроллер. Если задержки остаются высокими после оптимизации, возможно, диск требует замены.</p>
+
+<p>В сетевых настройках можно настроить приоритеты для определенных приложений. Если вы играете в онлайн-игры, убедитесь, что процесс игры имеет высокий приоритет в сетевом стеке. Это снизит задержки и улучшит игровой опыт.</p>
+
+<blockquote>⚠️ <strong>Внимание</strong>: Изменения в системных службах и настройках приоритетов могут повлиять на стабильность работы ОС. Перед внесением изменений создайте точку восстановления системы, чтобы иметь возможность откатиться при необходимости.</blockquote>
+
+<h2 id="заключение-и-рекомендации">Заключение и рекомендации</h2>
+
+<p><strong>Монитор ресурсов</strong> в <em>Windows 10</em> является незаменимым инструментом для любого пользователя, который хочет контролировать свой компьютер. Он предоставляет детальную информацию, недоступную в стандартных утилитах, и позволяет быстро находить и устранять проблемы. Регулярное использование этого инструмента поможет поддерживать высокую производительность системы.</p>
+
+<p>Не забывайте, что диагностика — это только первый шаг. После выявления проблемы необходимо предпринять соответствующие действия: отключить службу, обновить драйвер или удалить вредоносное ПО. Только комплексный подход обеспечит стабильную работу вашего ПК.</p>
+
+<p>Используйте Монитор ресурсов не только в экстренных случаях, но и для плановой проверки. Это поможет выявить скрытые проблемы на ранней стадии и предотвратить серьезные сбои в будущем. Знание того, как работает ваша система, — залог ее надежности и эффективности.</p>
+
+<p> Всегда сверяйтесь с официальными источниками при использовании новых функций. Правильное применение инструментов диагностики — ключ к долгой и безотказной работе вашего компьютера.</p>
+
+<details>
+<summary>Как открыть Монитор ресурсов без использования меню Пуск?</summary>
+<p>Вы можете открыть утилиту через команду "Выполнить". Нажмите <code>Win + R</code>, введите <code>resmon</code> и нажмите <strong>Enter</strong>. Это самый быстрый способ запуска, который работает даже если меню Пуск не отвечает.</p>
+</details>
+
+<details>
+<summary>Что делать, если Монитор ресурсов не показывает данные?</summary>
+<p>Если графики не обновляются или таблицы пусты, попробуйте перезапустить службу "Монитор ресурсов". Иногда проблема возникает из-за сбоя в работе системных процессов. Также проверьте, не блокирует ли антивирус доступ к утилите.</p>
+</details>
+
+<details>
+<summary>Можно ли использовать Монитор ресурсов для удаления вирусов?</summary>
+<p>Да, он помогает выявить вредоносные процессы по их активности. Вы можете найти процесс, который использует сеть или диск, и завершить его. Однако для полного удаления вируса используйте специализированный антивирусный сканер.</p>
+</details>
+
+<details>
+<summary>Почему диск загружен на 100%, если я ничего не делаю?</summary>
+<p>Это часто связано с фоновыми процессами, такими как индексация поиска, обновления Windows или работа антивируса. В Мониторе ресурсов вы увидите, какой именно процесс вызывает нагрузку, и сможете принять решение о его отключении или оптимизации.</p>
+</details></div>
+                    <!--#include virtual="/ssi/article_after.html" -->
+
+                </article>
+                <aside class="article-sidebar"><!--#include virtual="/ssi/sidebar_top.html" --><nav class="sidebar-search"><div class="sidebar-search-box"><input type="text" id="globalSearchInput" placeholder="🔍 Поиск статей..." autocomplete="off"><div class="search-dropdown" id="globalSearchDropdown"></div></div></nav><!--#include virtual="/ssi/sidebar_before_toc.html" --><nav class="sidebar-toc" id="sidebarToc"><h3>Содержание</h3><ul><li><a href="#назначение-и-ключевые-возможности-инструмента">Назначение и ключевые возможности инструмента</a></li><li><a href="#запуск-и-интерфейс-программы">Запуск и интерфейс программы</a></li><li><a href="#анализ-нагрузки-процессора-и-памяти">Анализ нагрузки процессора и памяти</a></li><li><a href="#диагностика-проблем-с-диском-и-файловой-системой">Диагностика проблем с диском и файловой системой</a></li><li><a href="#мониторинг-сетевой-активности">Мониторинг сетевой активности</a></li><li><a href="#связь-процессов-и-поиск-скрытых-угроз">Связь процессов и поиск скрытых угроз</a></li><li><a href="#сравнение-с-диспетчером-задач">Сравнение с Диспетчером задач</a></li><li><a href="#практические-сценарии-использования">Практические сценарии использования</a></li><li><a href="#оптимизация-системы-на-основе-данных">Оптимизация системы на основе данных</a></li><li><a href="#заключение-и-рекомендации">Заключение и рекомендации</a></li></ul></nav><!--#include virtual="/ssi/sidebar_before_related.html" --><nav class="sidebar-related"><h3>Похожие статьи</h3><ul><li><a href="/articles/p/po/pochemu-delali-kvadratnye-monitory.html" class="related-card">Почему мониторы были квадратными: история и технологии</a></li><li><a href="/articles/c/ch/chto-takoe-tint-na-monitore.html" class="related-card">Что такое тинт на мониторе: цветовой оттенок и настройка</a></li><li><a href="/articles/v/vy/vyklyuchaetsya-monitor-a-komp-prodolzhaet-rabotat-windows-7-chto-delat.html" class="related-card">Монитор гаснет, а ПК работает: как исправить в Windows 7</a></li><li><a href="/articles/s/sk/skolko-sushchestvuet-gerts-na-monitore.html" class="related-card">Сколько герц на мониторе: диапазоны, стандарты и выбор частоты</a></li><li><a href="/articles/p/pr/proektor-kak-monitor.html" class="related-card">Проектор как монитор: преимущества, подключение и нюансы использования</a></li></ul></nav><!--#include virtual="/ssi/sidebar_after_related.html" --></aside>
+            </div>
+        </div>
+    </main>
+
+    <!--#include virtual="/ssi/before_related_bottom.html" -->
+    <section class="related-bottom">
+        <div class="container">
+            <h2 class="related-bottom-heading">📖 Читайте также</h2>
+            <div class="related-bottom-grid"><a href="/articles/p/po/pochemu-delali-kvadratnye-monitory.html" class="related-bottom-card"><span class="related-bottom-title">Почему мониторы были квадратными: история и технологии</span><span class="related-bottom-desc">Узнайте, почему первые мониторы имели соотношение сторон 4:3 и как это влияло на работу с текстом, г</span></a><a href="/articles/c/ch/chto-takoe-tint-na-monitore.html" class="related-bottom-card"><span class="related-bottom-title">Что такое тинт на мониторе: цветовой оттенок и настройка</span><span class="related-bottom-desc">Разбираем, что такое тинт в настройках монитора. Как изменить цветовой оттенок, убрать зеленоватый и</span></a><a href="/articles/v/vy/vyklyuchaetsya-monitor-a-komp-prodolzhaet-rabotat-windows-7-chto-delat.html" class="related-bottom-card"><span class="related-bottom-title">Монитор гаснет, а ПК работает: как исправить в Windows 7</span><span class="related-bottom-desc">Почему отключается экран, но компьютер продолжает работать? Полное руководство по устранению сбоя пи</span></a><a href="/articles/s/sk/skolko-sushchestvuet-gerts-na-monitore.html" class="related-bottom-card"><span class="related-bottom-title">Сколько герц на мониторе: диапазоны, стандарты и выбор частоты</span><span class="related-bottom-desc">Разбираем, сколько существует герц на современных мониторах: от 30 Гц до 540 Гц. Как частота обновле</span></a><a href="/articles/p/pr/proektor-kak-monitor.html" class="related-bottom-card"><span class="related-bottom-title">Проектор как монитор: преимущества, подключение и нюансы использования</span><span class="related-bottom-desc">Использование проектора вместо монитора: полное руководство по подключению, выбору модели для работы</span></a><a href="/articles/m/mo/monitoryat-kak-pishetsya.html" class="related-bottom-card"><span class="related-bottom-title">Как правильно пишется «мониторят»: правила и примеры</span><span class="related-bottom-desc">Узнайте, как правильно писать слово «мониторят»: с одной или двумя буквами, значение термина в IT и </span></a></div>
+        </div>
+    </section>
+    <!--#include virtual="/ssi/after_related_bottom.html" -->
+
+    <footer class="site-footer-premium">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-col">
+                    <div class="footer-brand">🖥️ Мониторум</div>
+                    <p class="footer-about">Полный справочник по настройке, ремонту и выбору компьютерных мониторов для любых задач.</p>
+                </div>
+                <div class="footer-col">
+                    <h4>Разделы</h4>
+                    <ul><li><a href="/category/nastrojka-ekrana/">⚙️ Настройка экрана</a></li>
+<li><a href="/category/podklyuchenie-ustrojstv/">🔌 Подключение устройств</a></li>
+<li><a href="/category/mnozhestvennye-ekrany/">🖥️🖥️ Множественные экраны</a></li>
+<li><a href="/category/zvuk-i-audio/">🔊 Звук и аудио</a></li>
+<li><a href="/category/remont-i-polomki/">🔧 Ремонт и поломки</a></li>
+<li><a href="/category/ukhod-i-chistka/">🧼 Уход и чистка</a></li></ul>
+                </div>
+                <div class="footer-col">
+                    <h4>Информация</h4>
+                    <ul>
+                        <li><a href="/">Главная</a></li>
+                        <li><a href="/about.html">О проекте</a></li>
+                        <li><a href="/categories.html">Все разделы</a></li>
+                        <li><a href="/contact.html">Контакты</a></li>
+                        <li><a href="/privacy.html">Конфиденциальность</a></li>
+                        <li><a href="/sitemap.xml">Карта сайта</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>© Мониторум. Все права защищены.</p>
+                <!--LiveInternet counter--><div style="margin-top:10px;"><a href="https://www.liveinternet.ru/click"
+                target="_blank"><img id="licnt06C4" width="88" height="15" style="border:0" 
+                title="LiveInternet: показано число посетителей за сегодня"
+                src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAEALAAAAAABAAEAAAIBTAA7"
+                alt=""/></a><script>(function(d,s){d.getElementById("licnt06C4").src=
+                "https://counter.yadro.ru/hit?t26.5;r"+escape(d.referrer)+
+                ((typeof(s)=="undefined")?"":";s"+s.width+"*"+s.height+"*"+
+                (s.colorDepth?s.colorDepth:s.pixelDepth))+";u"+escape(d.URL)+
+                ";h"+escape(d.title.substring(0,150))+";"+Math.random()})(document,screen)</script></div><!--/LiveInternet-->
+            </div>
+        </div>
+    </footer>
+    <div id="cookie-consent" class="cookie-popup">
+        <div class="cookie-inner">
+            <span>🍪 Мы используем файлы cookie для улучшения работы сайта.</span>
+            <button id="cookie-accept" class="cookie-btn">Принять</button>
+        </div>
+    </div>
+    <script src="/static/js/main.js"></script>
+    <script>
+    (function() {
+        const popup = document.getElementById('cookie-consent');
+        const btn = document.getElementById('cookie-accept');
+        if (popup && btn && !localStorage.getItem('cookie-accepted')) {
+            popup.classList.add('visible');
+            btn.onclick = () => {
+                localStorage.setItem('cookie-accepted', 'true');
+                popup.classList.remove('visible');
+            };
+        }
+    })();
+    </script>
+    <script>
+    function pbPollVote(el) {
+        var poll = el.closest('.poll-widget');
+        if (poll.classList.contains('voted')) return;
+        poll.classList.add('voted');
+        el.classList.add('selected');
+        var opts = poll.querySelectorAll('.poll-widget-option');
+        var n = opts.length;
+        var raw = [];
+        var sum = 0;
+        for (var i = 0; i < n; i++) {
+            var v = Math.random() * 50 + 5;
+            if (opts[i] === el) v += 30;
+            raw.push(v);
+            sum += v;
+        }
+        var pcts = raw.map(function(v) { return Math.round(v / sum * 100); });
+        var diff = 100 - pcts.reduce(function(a,b){ return a+b; }, 0);
+        pcts[Array.from(opts).indexOf(el)] += diff;
+        setTimeout(function() {
+            opts.forEach(function(opt, i) {
+                opt.querySelector('.poll-widget-bar').style.width = pcts[i] + '%';
+                opt.querySelector('.poll-widget-pct').textContent = pcts[i] + '%';
+            });
+        }, 50);
+    }
+    </script>
+    <!--#include virtual="/ssi/body_bottom.html" -->
+    <script src="/static/js/inject.js" defer></script>
+</body>
+</html>

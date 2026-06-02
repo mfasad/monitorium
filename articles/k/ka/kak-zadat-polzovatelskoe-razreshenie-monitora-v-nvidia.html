@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27><text y=%27.9em%27 font-size=%2790%27>🖥️</text></svg>">
+    <title>Как задать пользовательское разрешение монитора в панели NVIDIA — Мониторум</title>
+    <meta name="description" content="Пошаговая инструкция: создание кастомных разрешений экрана, настройка частоты обновления и устранение проблем в панели управления GeForce.">
+    <link rel="canonical" href="https://monitorium.vercel.app/articles/k/ka/kak-zadat-polzovatelskoe-razreshenie-monitora-v-nvidia.html">
+
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="Как задать пользовательское разрешение монитора в панели NVIDIA">
+    <meta property="og:description" content="Пошаговая инструкция: создание кастомных разрешений экрана, настройка частоты обновления и устранение проблем в панели управления GeForce.">
+    <meta property="og:locale" content="ru_RU">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css?v=1780420684">
+    <style>
+    .site-footer-premium {
+        margin-top: 60px; padding: 40px 0 0; background: #1e293b; color: #94a3b8;
+    }
+    .footer-grid {
+        display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 40px;
+        padding-bottom: 32px; border-bottom: 1px solid #334155;
+    }
+    .footer-brand { font-size: 1.2rem; font-weight: 700; color: #f1f5f9; margin-bottom: 12px; }
+    .footer-about { font-size: 0.9rem; line-height: 1.6; margin-bottom: 8px; }
+    .footer-updated { font-size: 0.8rem; color: #64748b; }
+    .footer-col h4 { color: #f1f5f9; font-size: 0.95rem; margin-bottom: 16px; }
+    .footer-col ul { list-style: none; }
+    .footer-col li { margin-bottom: 8px; }
+    .footer-col a { color: #94a3b8; font-size: 0.9rem; transition: color 0.2s; }
+    .footer-col a:hover { color: #60a5fa; }
+    .footer-bottom { padding: 20px 0; text-align: center; font-size: 0.85rem; }
+    @media (max-width: 640px) {
+        .footer-grid { grid-template-columns: 1fr; gap: 24px; }
+    }
+    .cookie-popup {
+        position: fixed; bottom: 0; left: 0; right: 0; background: #1e293b; color: #fff;
+        padding: 16px; transition: transform 0.5s ease; z-index: 9999; border-top: 2px solid #2563eb;
+        transform: translateY(100%);
+    }
+    .cookie-popup.visible { transform: translateY(0); }
+    .cookie-inner { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; gap: 16px; font-size: 0.9rem; }
+    .cookie-btn { background: #2563eb; color: #fff; border: none; padding: 8px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+    .cookie-btn:hover { background: #1d4ed8; }
+    @media (max-width: 640px) {
+        .cookie-inner { flex-direction: column; text-align: center; }
+    }
+</style>
+    
+    <!--#include virtual="/ssi/head.html" -->
+</head>
+<body>
+        <!--#include virtual="/ssi/body_top.html" -->
+    <style>
+    .nav-dropdown { position: relative; display: inline-block; }
+    .dropdown-toggle {
+        background: none; border: none; cursor: pointer;
+        font: inherit; color: inherit; padding: 8px 12px;
+        border-radius: 8px; transition: background 0.2s;
+    }
+    .dropdown-toggle:hover { background: rgba(0,0,0,0.05); }
+    .dropdown-menu {
+        display: none; position: absolute; right: 0; top: 100%;
+        min-width: 240px; max-height: 70vh; overflow-y: auto;
+        background: var(--card-bg, #fff); border: 1px solid var(--border, #e5e7eb);
+        border-radius: 12px; box-shadow: 0 12px 40px rgba(0,0,0,0.12);
+        padding: 8px 0; z-index: 1000;
+    }
+    .nav-dropdown::after {
+        content: ''; position: absolute; left: 0; right: 0;
+        top: 100%; height: 12px;
+    }
+    .nav-dropdown:hover .dropdown-menu,
+    .nav-dropdown:focus-within .dropdown-menu { display: block; }
+    .dropdown-item {
+        display: block; padding: 10px 20px; color: var(--text, #1f2937);
+        text-decoration: none; font-size: 0.95rem; transition: background 0.15s;
+        white-space: nowrap;
+    }
+    .dropdown-item:hover { background: rgba(37,99,235,0.06); color: var(--primary, #2563eb); }
+    @media (max-width: 768px) {
+        .main-nav > .nav-link { display: none; }
+        .dropdown-toggle { display: none; }
+        .dropdown-menu {
+            display: block !important; position: static;
+            box-shadow: none; border: none; border-radius: 0;
+            min-width: auto; max-height: none; padding: 0;
+            background: transparent;
+        }
+        .dropdown-item {
+            padding: 8px 0; font-size: 1rem;
+        }
+    }
+    </style>
+    <header class="site-header">
+        <div class="container header-inner">
+            <a href="/" class="logo">
+                <span class="logo-icon">🖥️</span>
+                <span>Мониторум</span>
+            </a>
+            <button class="mobile-menu-btn" aria-label="Меню" id="menuBtn">☰</button>
+            <nav class="main-nav" id="mainNav">
+                <a href="/category/nastrojka-ekrana/" class="nav-link">⚙️ Настройка экрана</a>
+<a href="/category/podklyuchenie-ustrojstv/" class="nav-link">🔌 Подключение устройств</a>
+<a href="/category/mnozhestvennye-ekrany/" class="nav-link">🖥️🖥️ Множественные экраны</a>
+<a href="/category/zvuk-i-audio/" class="nav-link">🔊 Звук и аудио</a>
+<div class="nav-dropdown">
+            <button class="nav-link dropdown-toggle">📂 Все разделы ▾</button>
+            <div class="dropdown-menu"><a href="/category/nastrojka-ekrana/" class="dropdown-item">⚙️ Настройка экрана</a>
+<a href="/category/podklyuchenie-ustrojstv/" class="dropdown-item">🔌 Подключение устройств</a>
+<a href="/category/mnozhestvennye-ekrany/" class="dropdown-item">🖥️🖥️ Множественные экраны</a>
+<a href="/category/zvuk-i-audio/" class="dropdown-item">🔊 Звук и аудио</a>
+<a href="/category/remont-i-polomki/" class="dropdown-item">🔧 Ремонт и поломки</a>
+<a href="/category/ukhod-i-chistka/" class="dropdown-item">🧼 Уход и чистка</a>
+<a href="/category/vybor-i-kharakteristiki/" class="dropdown-item">📊 Выбор и характеристики</a>
+<a href="/category/drajvery-i-po/" class="dropdown-item">💿 Драйверы и ПО</a>
+<a href="/category/krepleniya-i-ustanovka/" class="dropdown-item">🔩 Крепления и установка</a>
+<a href="/category/utilizatsiya-i-prodazha/" class="dropdown-item">♻️ Утилизация и продажа</a>
+<a href="/category/spetsialnye-rezhimy/" class="dropdown-item">🎮 Специальные режимы</a>
+<a href="/category/drugoe/" class="dropdown-item">📁 Другое</a></div>
+        </div>
+            </nav>
+        </div>
+    </header>
+
+    <nav class="breadcrumbs" aria-label="Навигация">
+        <div class="container"><a href="/">Главная</a><span class="breadcrumb-sep">›</span><a href="/category/drugoe/">Другое</a><span class="breadcrumb-sep">›</span><span class="breadcrumb-current">Как задать пользовательское разрешение монитора в панели NVIDIA</span></div>
+    </nav>
+
+    <main class="site-main">
+        <div class="container">
+            <div class="article-layout">
+                <article class="article-main">
+                    
+                    <h1>Настройка пользовательского разрешения монитора через панель NVIDIA</h1>
+                    <nav class="mobile-toc"><details><summary>📋 Содержание</summary><ul><li><a href="#подготовка-к-созданию-кастомного-разрешения">Подготовка к созданию кастомного разрешения</a></li><li><a href="#пошаговая-инструкция-по-настройке-в-панели-управления">Пошаговая инструкция по настройке в панели управления</a></li><li><a href="#тонкая-настройка-и-выбор-частоты-обновления">Тонкая настройка и выбор частоты обновления</a></li><li><a href="#типичные-ошибки-и-способы-их-устранения">Типичные ошибки и способы их устранения</a></li><li><a href="#влияние-на-производительность-и-геймплей">Влияние на производительность и геймплей</a></li><li><a href="#альтернативные-методы-и-инструменты">Альтернативные методы и инструменты</a></li><li><a href="#faq-часто-задаваемые-вопросы">FAQ: Часто задаваемые вопросы</a></li></ul></details></nav>
+                    <!--#include virtual="/ssi/article_before.html" -->
+                    <div class="article-body"><p>Многие пользователи сталкиваются с ситуацией, когда родное разрешение монитора не раскрывает весь потенциал <strong>графической карты</strong>, или же требуется специфическая частота обновления для комфортной игры. Ограничения стандартных пресетов часто мешают получить максимальную плавность картинки или четкость текста. В таких случаях на помощь приходит встроенный инструмент создания <strong>пользовательских разрешений</strong> в панели управления <em>NVIDIA</em>.</p>
+
+<p>Данная процедура позволяет вручную прописать любые значения горизонтального и вертикального разрешения, а также задать частоту обновления, которую система не видит автоматически. Это критически важно для обладателей старых или специализированных <em>дисплеев</em>, а также для энтузиастов, желающих разогнать матрицу. Однако важно понимать, что некорректные настройки могут привести к отсутствию изображения, поэтому действовать следует внимательно.</p>
+
+<h2 id="подготовка-к-созданию-кастомного-разрешения">Подготовка к созданию кастомного разрешения</h2>
+
+<p>Прежде чем приступать к изменению настроек, необходимо убедиться, что ваш <strong>монитор</strong> и видеодрайвер готовы к получению нестандартного сигнала. Часто проблема кроется не в отсутствии возможности, а в неправильном подключении или устаревшем программном обеспечении. Проверьте версию драйвера, так как старые сборки могут блокировать создание новых профилей.</p>
+
+<p>Особое внимание уделите типу кабеля, которым подключено устройство. Для высоких разрешений и частот обновления (например, 4K при <code>120 Гц</code>) стандартные HDMI-кабели иногда не справляются с пропускной способностью. Используйте сертифицированные кабели <em>DisplayPort</em> или HDMI версии 2.0 и выше, чтобы избежать ошибок при передаче сигнала.</p>
+
+<p>Также стоит зафиксировать текущие параметры экрана. Сделайте скриншот или запишите на бумаге ваше текущее разрешение и герцовку. Это позволит быстро вернуться к рабочим настройкам в случае, если новая конфигурация окажется неработоспособной. Не полагайтесь на память, так как при сбое изображения вы можете не знать, какие значения были установлены до изменений.</p>
+
+<h2 id="пошаговая-инструкция-по-настройке-в-панели-управления">Пошаговая инструкция по настройке в панели управления</h2>
+
+<p>Процесс создания нового профиля начинается с запуска панели управления видеодрайвером. Нажмите правой кнопкой мыши на свободное пространство рабочего стола и выберите пункт <code>Панель управления NVIDIA</code>. В открывшемся окне, расположенном обычно в левом нижнем углу, найдите раздел «Дисплей» и нажмите на подпункт <code>Изменение разрешения</code>.</p>
+
+<p>В правой части окна вы увидите список стандартных разрешений для вашего устройства. Если нужного вам варианта нет в списке, не пытайтесь искать его в настройках Windows. Вместо этого обратите внимание на кнопку <code>Настроить...</code>, расположенную под списком разрешений, и нажмите на нее. Именно здесь скрывается функционал для глубокой настройки.</p>
+
+<p>Перейдите во вкладку <code>Создать пользовательское разрешение...</code>. Перед вами откроется окно, где можно вручную ввести параметры. В полях <em>Горизонтальные пиксели</em> и <em>Вертикальные линии</em> введите желаемые значения. Например, если у вас монитор <code>1920×1080</code>, но вы хотите исключить мерцание, можно попробовать изменить синхронизацию, не меняя пиксели, или наоборот — увеличить рабочее пространство.</p>
+
+<div class="checklist-block"><h4>☑️ Проверка готовности системы</h4><label class="check-item"><input type="checkbox"><span>Проверить версию драйвера NVIDIA</span></label><label class="check-item"><input type="checkbox"><span>Убедиться в исправности кабеля</span></label><label class="check-item"><input type="checkbox"><span>Записать текущие параметры экрана</span></label><label class="check-item"><input type="checkbox"><span>Открыть панель управления</span></label><div class="check-progress">Выполнено: <span class="check-count">0</span> / 4</div></div>
+
+<p>После ввода базовых значений нажмите кнопку <code>Тест</code>. Система попытается применить новый режим. Если изображение появится и будет корректным, нажмите <code>Да</code> для сохранения. В случае черного экрана подождите 15 секунд, и система автоматически откатит настройки к предыдущим рабочим значениям, либо нажмите клавишу <code>Esc</code> для принудительной отмены.</p>
+
+<blockquote>⚠️ <strong>Внимание</strong>: Никогда не устанавливайте частоту обновления, превышающую заявленную производителем матрицы более чем на 10-15%. Это может привести к деградации жидких кристаллов или выходу блока питания монитора из строя. Уточняйте технические характеристики в паспорте устройства.</blockquote>
+
+<details class="faq-item"><summary>Что делать, если тест не проходит?</summary><div class="faq-answer"><p>Если после нажатия кнопки "Тест" экран остается черным более 15 секунд, система автоматически вернет старые настройки. Однако, если автоматический откат не сработал, вам потребуется перезагрузить компьютер в безопасном режиме Windows и удалить установленный драйвер через диспетчер задач или специальные утилиты типа DDU.</p></div></details>
+
+<h2 id="тонкая-настройка-и-выбор-частоты-обновления">Тонкая настройка и выбор частоты обновления</h2>
+
+<p>Ключевым моментом при создании пользовательского разрешения является выбор частоты обновления. В окне настройки часто доступны не все теоретически возможные значения. Если вы не видите желаемые <strong>герцы</strong> в выпадающем списке, попробуйте изменить тип тайминга. По умолчанию используется стандарт «Автоматически», но переключение на <em>CV (Custom Video)</em> или <em>CVT (Coordinated Video Timing)</em> может открыть доступ к более высокому герцовке.</p>
+
+<p>Для геймеров критически важно минимизировать задержки ввода. Иногда стандартные тайминги CVT добавляют лишние милисекунды. Попробуйте переключиться на <code>CVT Reduced Blanking</code>, что позволит увеличить частоту обновления при том же разрешении за счет сокращения служебного пространства между кадрами. Это особенно актуально для <em>IPS-матриц</em> и <em>VA-панелей</em>.</p>
+
+<p>Следующий важный параметр — глубина цвета. Убедитесь, что в выпадающем списке <code>Цветовой формат</code> выбраны значения, поддерживаемые вашим кабелем. Например, при разрешении <code>3840×2160</code> и частоте <code>60 Гц</code> часто доступно только <code>YCbCr420</code>, если пропускная способность канала ограничена. Для максимальной цветопередачи выбирайте <code>RGB</code> или <code>YCbCr444</code>, но будьте готовы к снижению герцовки.</p>
+
+<div class="poll-widget" id="poll-89de1850"><div class="poll-widget-question">📊 Какую частоту обновления вы чаще всего используете?</div><div class="poll-widget-option" data-poll="89de1850" data-idx="0" onclick="pbPollVote(this)"><span class="poll-widget-label">60 Гц</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="89de1850" data-idx="1" onclick="pbPollVote(this)"><span class="poll-widget-label">144 Гц</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="89de1850" data-idx="2" onclick="pbPollVote(this)"><span class="poll-widget-label">240 Гц</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="89de1850" data-idx="3" onclick="pbPollVote(this)"><span class="poll-widget-label">Выше 240 Гц</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div></div>
+
+<h2 id="типичные-ошибки-и-способы-их-устранения">Типичные ошибки и способы их устранения</h2>
+
+<p>Самой распространенной проблемой является ситуация, когда система принимает настройки, но после перезагрузки они сбрасываются на стандартные. Это часто происходит из-за того, что монитор не поддерживает <strong>EDID</strong> (расширенные данные идентификации дисплея) для кастомных профилей. В этом случае необходимо принудительно загрузить профиль при запуске системы через настройки панели управления.</p>
+
+<p>Иногда при выборе слишком агрессивных значений пользователь сталкивается с артефактами изображения: мерцанием, смещением цвета или полосами. Это свидетельствует о том, что видеосигнал выходит за пределы физических возможностей <em>таймингов</em> матрицы. В данном случае нельзя продолжать тестирование, так как это чревато повреждением экрана. Немедленно отмените изменения.</p>
+
+<p>Еще одна частая ошибка — игнорирование ограничений видеовыхода. Даже если монитор способен показать <code>4K при 144 Гц</code>, ваш видеоport может не поддерживать такую полосу пропускания. Например, интерфейс <code>HDMI 1.4</code> ограничивает 4K максимум до <code>30 Гц</code>. Проверьте спецификацию вашей видеокарты и порта, чтобы не гадать, почему настройки не применяются.</p>
+
+<blockquote>⚠️ <strong>Внимание</strong>: Если вы используете ноутбук с гибридной графикой, настройки могут не сохраниться, если они применены через встроенную карту, а не дискретную. Убедитесь, что панель управления открыта именно для <em>NVIDIA GeForce</em>, а не для Intel HD Graphics.</blockquote>
+
+<table>
+  <thead>
+    <tr>
+      <th>Параметр</th>
+      <th>Стандартное значение</th>
+      <th>Рекомендуемое для игр</th>
+      <th>Ограничения HDMI 1.4</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Разрешение Full HD</td>
+      <td>1920×1080</td>
+      <td>1920×1080 @ 144 Гц</td>
+      <td>1920×1080 @ 60 Гц</td>
+    </tr>
+    <tr>
+      <td>Разрешение 2K</td>
+      <td>2560×1440</td>
+      <td>2560×1440 @ 165 Гц</td>
+      <td>2560×1440 @ 30 Гц</td>
+    </tr>
+    <tr>
+      <td>Разрешение 4K</td>
+      <td>3840×2160</td>
+      <td>3840×2160 @ 120 Гц</td>
+      <td>3840×2160 @ 30 Гц</td>
+    </tr>
+    <tr>
+      <td>Цветовой профиль</td>
+      <td>RGB 4:4:4</td>
+      <td>RGB 4:4:4</td>
+      <td>YCbCr 4:2:0 (сжатие)</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 id="влияние-на-производительность-и-геймплей">Влияние на производительность и геймплей</h2>
+
+<p>Увеличение частоты обновления при пользовательском разрешении напрямую влияет на плавность движения в динамичных сценах. Даже если видеокарта не выдает достаточного количества кадров (FPS), более высокая герцовка экрана делает картинку субъективно более четкой и отзывчивой. Это особенно заметно в шутерах от первого лица, где скорость реакции играет решающую роль.</p>
+
+<p>Однако, стоит учитывать нагрузку на <strong>GPU</strong>. Разгон матрицы часто требует от видеокарты обработки большего объема данных за единицу времени. Если вы заметили снижение производительности в играх после применения новых настроек, возможно, упрется в limit пропускной способности интерфейса или в нехватку памяти видеоядра. В этом случае стоит вернуться к более консервативным значениям.</p>
+
+<p>Для профессиональной работы, такой как монтаж видео или 3D-рендеринг, точность цветопередачи важнее частоты обновления. Нестандартные тайминги иногда вызывают смещение цветов или потерю деталей в тенях. Всегда тестируйте новые настройки на профессиональном контенте или через специализированные утилиты калибровки, прежде чем использовать их для работы.</p>
+
+<div class="attention-box attention-tip"><span class="attention-icon">💡</span><p>Если вы часто переключаетесь между рабочими задачами и играми, создайте два разных пользовательских разрешения: одно с максимальной герцовкой для игр, другое с оптимальными таймингами для работы с графикой, чтобы не тратить время на постоянную перенастройку.</p></div>
+
+<blockquote>⚠️ <strong>Внимание</strong>: Некоторые мониторы имеют встроенную защиту от перегрузки. При попытке установить слишком высокую частоту обновления они могут отключить вход или вывести сообщение «Out of Range». В этом случае настройку нужно производить непосредственно через панель NVIDIA, а не через настройки самого монитора.</blockquote>
+
+<h2 id="альтернативные-методы-и-инструменты">Альтернативные методы и инструменты</h2>
+
+<p>Если стандартная панель управления NVIDIA по каким-то причинам не позволяет создать нужное разрешение, существуют сторонние утилиты, такие как <em>Custom Resolution Utility (CRU)</em>. Этот инструмент дает более глубокий доступ к таблице EDID монитора, позволяя редактировать даже скрытые параметры, недоступные в графическом интерфейсе драйвера.</p>
+
+<p>Однако использование стороннего ПО требует повышенной осторожности. Неправильное редактирование таблиц EDID может привести к тому, что монитор перестанет определяться системой даже после перезагрузки. В таких случаях потребуется сброс настроек монитора через аппаратную кнопку сброса или перепрошивка прошивки устройства.</p>
+
+<p>Также стоит отметить, что в некоторых случаях проблема решается обновлением прошивки самого монитора. Производители часто выпускают обновления, которые расширяют список поддерживаемых разрешений и частот. Проверьте официальный сайт производителя вашей модели <em>дисплея</em> в разделе поддержки.</p>
+
+<div class="attention-box attention-tip"><span class="attention-icon">💡</span><p>Создание пользовательского разрешения — это баланс между запросами пользователя и физическими возможностями оборудования, который требует тщательного тестирования каждого параметра.</p></div>
+
+<h2 id="faq-часто-задаваемые-вопросы">FAQ: Часто задаваемые вопросы</h2>
+
+<details>
+  <summary>Почему кнопка «Настроить» в панели NVIDIA неактивна?</summary>
+  <p>Эта кнопка может быть неактивна, если видеодрайвер не установлен корректно или работает в базовом режиме Windows. Также проблема может возникать при использовании старых версий драйверов, которые блокируют функцию кастомизации. Попробуйте переустановить драйвер, выбрав опцию «Чистая установка».</p>
+</details>
+
+<details>
+  <summary>Можно ли установить разрешение выше родного монитора?</summary>
+  <p>Технически это возможно, но изображение будет размытым или растянутым, так как физическая матрица не имеет достаточного количества пикселей. В некоторых случаях это используется для масштабирования (DLSS или аналогичные технологии), но для прямого вывода картинки это нецелесообразно.</p>
+</details>
+
+<details>
+  <summary>Что делать, если экран мигнул и настройки не сохранились?</summary>
+  <p>Если экран мигает и сбрасывается автоматически, значит, параметры выходят за допустимые пределы. Подождите 15 секунд, система вернет старые настройки. Если этого не произошло, перезагрузите компьютер и попробуйте ввести значения с меньшим запасом частоты.</p>
+</details>
+
+<details>
+  <summary>Влияет ли кастомное разрешение на гарантию монитора?</summary>
+  <p>Сама по себе смена настроек через ПО не аннулирует гарантию, так как это программная процедура. Однако, если вы установите параметры, которые привели к физическому повреждению матрицы (например, перегрев от слишком высокой герцовки), это может быть расценено как некорректная эксплуатация.</p>
+</details>
+
+<details>
+  <summary>Где найти сохраненные пользовательские разрешения?</summary>
+  <p>Сохраненные профили хранятся в реестре Windows и файлах конфигурации драйвера NVIDIA. Вы можете управлять ими через меню «Изменение разрешения» в панели управления, удаляя ненужные или применяя нужные. Полностью удалить их можно через утилиту очистки реестра, но лучше использовать встроенный интерфейс.</p>
+</details></div>
+                    <!--#include virtual="/ssi/article_after.html" -->
+
+                </article>
+                <aside class="article-sidebar"><!--#include virtual="/ssi/sidebar_top.html" --><nav class="sidebar-search"><div class="sidebar-search-box"><input type="text" id="globalSearchInput" placeholder="🔍 Поиск статей..." autocomplete="off"><div class="search-dropdown" id="globalSearchDropdown"></div></div></nav><!--#include virtual="/ssi/sidebar_before_toc.html" --><nav class="sidebar-toc" id="sidebarToc"><h3>Содержание</h3><ul><li><a href="#подготовка-к-созданию-кастомного-разрешения">Подготовка к созданию кастомного разрешения</a></li><li><a href="#пошаговая-инструкция-по-настройке-в-панели-управления">Пошаговая инструкция по настройке в панели управления</a></li><li><a href="#тонкая-настройка-и-выбор-частоты-обновления">Тонкая настройка и выбор частоты обновления</a></li><li><a href="#типичные-ошибки-и-способы-их-устранения">Типичные ошибки и способы их устранения</a></li><li><a href="#влияние-на-производительность-и-геймплей">Влияние на производительность и геймплей</a></li><li><a href="#альтернативные-методы-и-инструменты">Альтернативные методы и инструменты</a></li><li><a href="#faq-часто-задаваемые-вопросы">FAQ: Часто задаваемые вопросы</a></li></ul></nav><!--#include virtual="/ssi/sidebar_before_related.html" --><nav class="sidebar-related"><h3>Похожие статьи</h3><ul><li><a href="/articles/c/ch/chastota-otklika-monitora-kakaya-luchshe.html" class="related-card">Частота отклика монитора: какая лучше для игр и работы в 2026</a></li><li><a href="/articles/k/ka/kakoj-monitor-24-ili-27.html" class="related-card">24 или 27 дюймов: какой монитор выбрать для работы и игр в 2026</a></li><li><a href="/articles/m/mo/monitor-240-gerts-kakaya-videokarta-nuzhna.html" class="related-card">Монитор 240 Гц: какая видеокарта нужна для стабильного FPS</a></li><li><a href="/articles/m/mo/monitory-crt-chto-eto.html" class="related-card">Что такое мониторы CRT: принцип работы, плюсы, минусы и применение</a></li><li><a href="/articles/s/sk/skolko-gerts-podderzhivaet-monitor.html" class="related-card">Сколько герц поддерживает монитор: проверка, настройка и лимиты</a></li></ul></nav><!--#include virtual="/ssi/sidebar_after_related.html" --></aside>
+            </div>
+        </div>
+    </main>
+
+    <!--#include virtual="/ssi/before_related_bottom.html" -->
+    <section class="related-bottom">
+        <div class="container">
+            <h2 class="related-bottom-heading">📖 Читайте также</h2>
+            <div class="related-bottom-grid"><a href="/articles/c/ch/chastota-otklika-monitora-kakaya-luchshe.html" class="related-bottom-card"><span class="related-bottom-title">Частота отклика монитора: какая лучше для игр и работы в 2026</span><span class="related-bottom-desc">Разбираем, какая частота отклика пикселя лучше: 1 мс или 5 мс? Влияние на геймплей, размытие в движе</span></a><a href="/articles/k/ka/kakoj-monitor-24-ili-27.html" class="related-bottom-card"><span class="related-bottom-title">24 или 27 дюймов: какой монитор выбрать для работы и игр в 2026</span><span class="related-bottom-desc">Сравнение 24 и 27-дюймовых мониторов. Разбор плотности пикселей, влияния на зрение и производительно</span></a><a href="/articles/m/mo/monitor-240-gerts-kakaya-videokarta-nuzhna.html" class="related-bottom-card"><span class="related-bottom-title">Монитор 240 Гц: какая видеокарта нужна для стабильного FPS</span><span class="related-bottom-desc">Выбор видеокарты под монитор 240 Гц. Разбор требований к GPU для разных игр, сравнение моделей NVIDI</span></a><a href="/articles/m/mo/monitory-crt-chto-eto.html" class="related-bottom-card"><span class="related-bottom-title">Что такое мониторы CRT: принцип работы, плюсы, минусы и применение</span><span class="related-bottom-desc">Разбираем, что такое кинескопные мониторы CRT, как они устроены, почему их ценят геймеры и где они п</span></a><a href="/articles/s/sk/skolko-gerts-podderzhivaet-monitor.html" class="related-bottom-card"><span class="related-bottom-title">Сколько герц поддерживает монитор: проверка, настройка и лимиты</span><span class="related-bottom-desc">Как узнать максимальную частоту обновления монитора, проверить реальную герцовку и настроить видеока</span></a><a href="/articles/s/sk/skolko-maksimum-dyujmov-u-monitora.html" class="related-bottom-card"><span class="related-bottom-title">Максимальный размер монитора в дюймах: рекорды и выбор</span><span class="related-bottom-desc">Сколько максимум дюймов у монитора сегодня? Обзор мировых рекордов, доступных моделей и нюансов выбо</span></a></div>
+        </div>
+    </section>
+    <!--#include virtual="/ssi/after_related_bottom.html" -->
+
+    <footer class="site-footer-premium">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-col">
+                    <div class="footer-brand">🖥️ Мониторум</div>
+                    <p class="footer-about">Полный справочник по настройке, ремонту и выбору компьютерных мониторов для любых задач.</p>
+                </div>
+                <div class="footer-col">
+                    <h4>Разделы</h4>
+                    <ul><li><a href="/category/nastrojka-ekrana/">⚙️ Настройка экрана</a></li>
+<li><a href="/category/podklyuchenie-ustrojstv/">🔌 Подключение устройств</a></li>
+<li><a href="/category/mnozhestvennye-ekrany/">🖥️🖥️ Множественные экраны</a></li>
+<li><a href="/category/zvuk-i-audio/">🔊 Звук и аудио</a></li>
+<li><a href="/category/remont-i-polomki/">🔧 Ремонт и поломки</a></li>
+<li><a href="/category/ukhod-i-chistka/">🧼 Уход и чистка</a></li></ul>
+                </div>
+                <div class="footer-col">
+                    <h4>Информация</h4>
+                    <ul>
+                        <li><a href="/">Главная</a></li>
+                        <li><a href="/about.html">О проекте</a></li>
+                        <li><a href="/categories.html">Все разделы</a></li>
+                        <li><a href="/contact.html">Контакты</a></li>
+                        <li><a href="/privacy.html">Конфиденциальность</a></li>
+                        <li><a href="/sitemap.xml">Карта сайта</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>© Мониторум. Все права защищены.</p>
+                <!--LiveInternet counter--><div style="margin-top:10px;"><a href="https://www.liveinternet.ru/click"
+                target="_blank"><img id="licnt06C4" width="88" height="15" style="border:0" 
+                title="LiveInternet: показано число посетителей за сегодня"
+                src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAEALAAAAAABAAEAAAIBTAA7"
+                alt=""/></a><script>(function(d,s){d.getElementById("licnt06C4").src=
+                "https://counter.yadro.ru/hit?t26.5;r"+escape(d.referrer)+
+                ((typeof(s)=="undefined")?"":";s"+s.width+"*"+s.height+"*"+
+                (s.colorDepth?s.colorDepth:s.pixelDepth))+";u"+escape(d.URL)+
+                ";h"+escape(d.title.substring(0,150))+";"+Math.random()})(document,screen)</script></div><!--/LiveInternet-->
+            </div>
+        </div>
+    </footer>
+    <div id="cookie-consent" class="cookie-popup">
+        <div class="cookie-inner">
+            <span>🍪 Мы используем файлы cookie для улучшения работы сайта.</span>
+            <button id="cookie-accept" class="cookie-btn">Принять</button>
+        </div>
+    </div>
+    <script src="/static/js/main.js"></script>
+    <script>
+    (function() {
+        const popup = document.getElementById('cookie-consent');
+        const btn = document.getElementById('cookie-accept');
+        if (popup && btn && !localStorage.getItem('cookie-accepted')) {
+            popup.classList.add('visible');
+            btn.onclick = () => {
+                localStorage.setItem('cookie-accepted', 'true');
+                popup.classList.remove('visible');
+            };
+        }
+    })();
+    </script>
+    <script>
+    function pbPollVote(el) {
+        var poll = el.closest('.poll-widget');
+        if (poll.classList.contains('voted')) return;
+        poll.classList.add('voted');
+        el.classList.add('selected');
+        var opts = poll.querySelectorAll('.poll-widget-option');
+        var n = opts.length;
+        var raw = [];
+        var sum = 0;
+        for (var i = 0; i < n; i++) {
+            var v = Math.random() * 50 + 5;
+            if (opts[i] === el) v += 30;
+            raw.push(v);
+            sum += v;
+        }
+        var pcts = raw.map(function(v) { return Math.round(v / sum * 100); });
+        var diff = 100 - pcts.reduce(function(a,b){ return a+b; }, 0);
+        pcts[Array.from(opts).indexOf(el)] += diff;
+        setTimeout(function() {
+            opts.forEach(function(opt, i) {
+                opt.querySelector('.poll-widget-bar').style.width = pcts[i] + '%';
+                opt.querySelector('.poll-widget-pct').textContent = pcts[i] + '%';
+            });
+        }, 50);
+    }
+    </script>
+    <!--#include virtual="/ssi/body_bottom.html" -->
+    <script src="/static/js/inject.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27><text y=%27.9em%27 font-size=%2790%27>🖥️</text></svg>">
+    <title>Как настроить BIOS без монитора: методы удаленного доступа и настройки — Мониторум</title>
+    <meta name="description" content="Пошаговая инструкция по настройке BIOS без видеовыхода. Методы удаленного управления, настройки «вслепую» и использование IPMI для диагностики.">
+    <link rel="canonical" href="https://monitorium.vercel.app/articles/k/ka/kak-nastroit-bios-bez-monitora.html">
+
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="Как настроить BIOS без монитора: методы удаленного доступа и настройки">
+    <meta property="og:description" content="Пошаговая инструкция по настройке BIOS без видеовыхода. Методы удаленного управления, настройки «вслепую» и использование IPMI для диагностики.">
+    <meta property="og:locale" content="ru_RU">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css?v=1780420684">
+    <style>
+    .site-footer-premium {
+        margin-top: 60px; padding: 40px 0 0; background: #1e293b; color: #94a3b8;
+    }
+    .footer-grid {
+        display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 40px;
+        padding-bottom: 32px; border-bottom: 1px solid #334155;
+    }
+    .footer-brand { font-size: 1.2rem; font-weight: 700; color: #f1f5f9; margin-bottom: 12px; }
+    .footer-about { font-size: 0.9rem; line-height: 1.6; margin-bottom: 8px; }
+    .footer-updated { font-size: 0.8rem; color: #64748b; }
+    .footer-col h4 { color: #f1f5f9; font-size: 0.95rem; margin-bottom: 16px; }
+    .footer-col ul { list-style: none; }
+    .footer-col li { margin-bottom: 8px; }
+    .footer-col a { color: #94a3b8; font-size: 0.9rem; transition: color 0.2s; }
+    .footer-col a:hover { color: #60a5fa; }
+    .footer-bottom { padding: 20px 0; text-align: center; font-size: 0.85rem; }
+    @media (max-width: 640px) {
+        .footer-grid { grid-template-columns: 1fr; gap: 24px; }
+    }
+    .cookie-popup {
+        position: fixed; bottom: 0; left: 0; right: 0; background: #1e293b; color: #fff;
+        padding: 16px; transition: transform 0.5s ease; z-index: 9999; border-top: 2px solid #2563eb;
+        transform: translateY(100%);
+    }
+    .cookie-popup.visible { transform: translateY(0); }
+    .cookie-inner { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; gap: 16px; font-size: 0.9rem; }
+    .cookie-btn { background: #2563eb; color: #fff; border: none; padding: 8px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+    .cookie-btn:hover { background: #1d4ed8; }
+    @media (max-width: 640px) {
+        .cookie-inner { flex-direction: column; text-align: center; }
+    }
+</style>
+    
+    <!--#include virtual="/ssi/head.html" -->
+</head>
+<body>
+        <!--#include virtual="/ssi/body_top.html" -->
+    <style>
+    .nav-dropdown { position: relative; display: inline-block; }
+    .dropdown-toggle {
+        background: none; border: none; cursor: pointer;
+        font: inherit; color: inherit; padding: 8px 12px;
+        border-radius: 8px; transition: background 0.2s;
+    }
+    .dropdown-toggle:hover { background: rgba(0,0,0,0.05); }
+    .dropdown-menu {
+        display: none; position: absolute; right: 0; top: 100%;
+        min-width: 240px; max-height: 70vh; overflow-y: auto;
+        background: var(--card-bg, #fff); border: 1px solid var(--border, #e5e7eb);
+        border-radius: 12px; box-shadow: 0 12px 40px rgba(0,0,0,0.12);
+        padding: 8px 0; z-index: 1000;
+    }
+    .nav-dropdown::after {
+        content: ''; position: absolute; left: 0; right: 0;
+        top: 100%; height: 12px;
+    }
+    .nav-dropdown:hover .dropdown-menu,
+    .nav-dropdown:focus-within .dropdown-menu { display: block; }
+    .dropdown-item {
+        display: block; padding: 10px 20px; color: var(--text, #1f2937);
+        text-decoration: none; font-size: 0.95rem; transition: background 0.15s;
+        white-space: nowrap;
+    }
+    .dropdown-item:hover { background: rgba(37,99,235,0.06); color: var(--primary, #2563eb); }
+    @media (max-width: 768px) {
+        .main-nav > .nav-link { display: none; }
+        .dropdown-toggle { display: none; }
+        .dropdown-menu {
+            display: block !important; position: static;
+            box-shadow: none; border: none; border-radius: 0;
+            min-width: auto; max-height: none; padding: 0;
+            background: transparent;
+        }
+        .dropdown-item {
+            padding: 8px 0; font-size: 1rem;
+        }
+    }
+    </style>
+    <header class="site-header">
+        <div class="container header-inner">
+            <a href="/" class="logo">
+                <span class="logo-icon">🖥️</span>
+                <span>Мониторум</span>
+            </a>
+            <button class="mobile-menu-btn" aria-label="Меню" id="menuBtn">☰</button>
+            <nav class="main-nav" id="mainNav">
+                <a href="/category/nastrojka-ekrana/" class="nav-link">⚙️ Настройка экрана</a>
+<a href="/category/podklyuchenie-ustrojstv/" class="nav-link">🔌 Подключение устройств</a>
+<a href="/category/mnozhestvennye-ekrany/" class="nav-link">🖥️🖥️ Множественные экраны</a>
+<a href="/category/zvuk-i-audio/" class="nav-link">🔊 Звук и аудио</a>
+<div class="nav-dropdown">
+            <button class="nav-link dropdown-toggle">📂 Все разделы ▾</button>
+            <div class="dropdown-menu"><a href="/category/nastrojka-ekrana/" class="dropdown-item">⚙️ Настройка экрана</a>
+<a href="/category/podklyuchenie-ustrojstv/" class="dropdown-item">🔌 Подключение устройств</a>
+<a href="/category/mnozhestvennye-ekrany/" class="dropdown-item">🖥️🖥️ Множественные экраны</a>
+<a href="/category/zvuk-i-audio/" class="dropdown-item">🔊 Звук и аудио</a>
+<a href="/category/remont-i-polomki/" class="dropdown-item">🔧 Ремонт и поломки</a>
+<a href="/category/ukhod-i-chistka/" class="dropdown-item">🧼 Уход и чистка</a>
+<a href="/category/vybor-i-kharakteristiki/" class="dropdown-item">📊 Выбор и характеристики</a>
+<a href="/category/drajvery-i-po/" class="dropdown-item">💿 Драйверы и ПО</a>
+<a href="/category/krepleniya-i-ustanovka/" class="dropdown-item">🔩 Крепления и установка</a>
+<a href="/category/utilizatsiya-i-prodazha/" class="dropdown-item">♻️ Утилизация и продажа</a>
+<a href="/category/spetsialnye-rezhimy/" class="dropdown-item">🎮 Специальные режимы</a>
+<a href="/category/drugoe/" class="dropdown-item">📁 Другое</a></div>
+        </div>
+            </nav>
+        </div>
+    </header>
+
+    <nav class="breadcrumbs" aria-label="Навигация">
+        <div class="container"><a href="/">Главная</a><span class="breadcrumb-sep">›</span><a href="/category/spetsialnye-rezhimy/">Специальные режимы</a><span class="breadcrumb-sep">›</span><span class="breadcrumb-current">Как настроить BIOS без монитора: методы удаленного доступа и настройки</span></div>
+    </nav>
+
+    <main class="site-main">
+        <div class="container">
+            <div class="article-layout">
+                <article class="article-main">
+                    
+                    <h1>Как настроить BIOS без монитора: Полное руководство</h1>
+                    <nav class="mobile-toc"><details><summary>📋 Содержание</summary><ul><li><a href="#инструменты-удаленного-управления-для-корпоративных-систем">Инструменты удаленного управления для корпоративных систем</a></li><li><a href="#настройка-вслепую-с-помощью-клавиатуры">Настройка «вслепую» с помощью клавиатуры</a></li><li><a href="#использование-программного-интерфейса-в-работающей-ос">Использование программного интерфейса в работающей ОС</a></li><li><a href="#аппаратный-сброс-и-физическое-вмешательство">Аппаратный сброс и физическое вмешательство</a></li><li><a href="#использование-второго-монитора-или-адаптеров">Использование второго монитора или адаптеров</a></li><li><a href="#диагностика-и-устранение-неполадок">Диагностика и устранение неполадок</a></li><li><a href="#faq-частые-вопросы-пользователей">FAQ: Частые вопросы пользователей</a></li></ul></details></nav>
+                    <!--#include virtual="/ssi/article_before.html" -->
+                    <div class="article-body"><p>Ситуация, когда компьютер не выводит изображение на дисплей, часто ставит пользователей в тупик. Особенно это критично, если необходимо изменить критические параметры <code>UEFI</code> или <code>BIOS</code> для разгона, настройки <code>RAM</code> или исправления ошибок загрузки. Отсутствие видеосигнала не означает, что система неисправна или недоступна для вмешательства. Существуют проверенные методы, позволяющие управлять настройками прошивки материнской платы даже при полном отсутствии визуального контроля.</p>
+
+<p>Современные платформы предлагают широкий спектр инструментов для диагностики и конфигурирования без подключения монитора. От аппаратных интерфейсов корпоративного уровня до программных утилит, работающих в ОС, каждый метод имеет свои особенности применения. Важно понимать, что успешная настройка зависит от корректной подготовки оборудования и выбора правильного канала связи с платой.</p>
+
+<h2 id="инструменты-удаленного-управления-для-корпоративных-систем">Инструменты удаленного управления для корпоративных систем</h2>
+
+<p>Для серверных платформ и высококлассных рабочих станций стандартом де-факто является наличие встроенного контроллера управления. Технология <em>Intel AMT</em> (Active Management Technology) или проприетарные решения, такие как <em>Dell iDRAC</em> и <em>HP iLO</em>, предоставляют полный доступ к интерфейсу BIOS через сеть. Это позволяет администратору подключаться к компьютеру удаленно, как будто физически находясь перед ним, даже если операционная система не загружена или экран черный.</p>
+
+<p>Настройка происходит через веб-интерфейс контроллера управления. Вам необходимо знать IP-адрес контроллера, который можно получить через DHCP или Static IP, если он был предварительно задан. После авторизации вы получаете доступ к консоли, где можно перепрошивать <code>BIOS</code>, менять приоритет загрузки или отключать периферию. Это самый надежный способ для серверов, но требует наличия соответствующего оборудования.</p>
+
+<blockquote>
+<p>⚠️ Внимание: Не все потребительские материнские платы поддерживают функции <code>Intel vPro</code> или <code>AMT</code>. Перед планированием удаленной настройки проверьте спецификацию вашей модели в документации производителя.</p>
+</blockquote>
+
+<p>Использование IPMI (Intelligent Platform Management Interface) также позволяет получать консольный вывод даже при сбоях загрузки. Для этого необходимо настроить сетевой интерфейс на порту управления и использовать <code>IPMItool</code> или специализированное ПО для перенаправления видео. Это требует базовых знаний сетевых протоколов, но дает максимальную гибкость.</p>
+
+<h2 id="настройка-вслепую-с-помощью-клавиатуры">Настройка «вслепую» с помощью клавиатуры</h2>
+
+<p>Если у вас нет серверных функций, можно попробовать войти в <code>BIOS</code> вслепую, используя тактильную память и знание стандартного расположения элементов управления. Этот метод подходит для стандартных потребительских плат, где интерфейс хотя бы отрисовывается, но не виден пользователю. Ключевой момент — понять, на каком этапе загрузки происходит сбой изображения.</p>
+
+<p>Обычно вход в <code>UEFI</code> осуществляется нажатием клавиши <code>Del</code> или <code>F2</code> сразу после включения питания. Вам нужно нажать и удерживать эту клавишу многократно, пока система не перейдет в режим настройки. Затем, опираясь на стандартную логику меню, попробуйте переместиться к нужному пункту. В большинстве интерфейсов навигация осуществляется стрелками, а подтверждение — <code>Enter</code>.</p>
+
+<ul>
+<li>Нажмите <code>Del</code> сразу после нажатия кнопки питания, повторяя нажатия каждые полсекунды.</li>
+<li>Используйте стрелки <code>Вверх/Вниз</code> для перемещения по вкладкам, обычно это <code>Advanced</code> или <code>Boot</code>.</li>
+<li>Для сброса настроек часто используется кнопка <code>F9</code> (Load Optimized Defaults) или <code>F5</code>.</li>
+</ul>
+
+<p>Если вы знаете примерную структуру меню вашей платы, можно зайти в раздел <code>Boot</code>, переместиться вниз, найти <code>Boot Option #1</code> и переключить его на нужный диск. Это часто помогает, если проблема в порядке загрузки. Сложность метода в том, что вы не видите, куда именно вы переместились, и можете случайно изменить критические настройки.</p>
+
+<blockquote>
+<p>⚠️ Внимание: Ошибка в настройке напряжения <code>Vcore</code> или таймингов памяти вслепую может привести к невозможности загрузки системы даже после сброса. Будьте предельно осторожны при изменении значений.</p>
+</blockquote>
+
+<div class="poll-widget" id="poll-542aad0b"><div class="poll-widget-question">📊 Какой метод настройки BIOS вы планируете использовать?</div><div class="poll-widget-option" data-poll="542aad0b" data-idx="0" onclick="pbPollVote(this)"><span class="poll-widget-label">Вход в BIOS вслепую</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="542aad0b" data-idx="1" onclick="pbPollVote(this)"><span class="poll-widget-label">Удаленное управление (IPMI)</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="542aad0b" data-idx="2" onclick="pbPollVote(this)"><span class="poll-widget-label">Сброс через перемычку</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="542aad0b" data-idx="3" onclick="pbPollVote(this)"><span class="poll-widget-label">Подключение к другому монитору</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div></div>
+
+<h2 id="использование-программного-интерфейса-в-работающей-ос">Использование программного интерфейса в работающей ОС</h2>
+
+<p>Если компьютер загружается в операционную систему, но видеосигнал на мониторе отсутствует (например, при отключении драйверов), настройку можно провести через утилиты, работающие на уровне ядра. Программы вроде <em>AMIBCP</em> или <em>UEFITool</em> позволяют редактировать образы прошивки, но требуют осторожности. Более безопасный путь — использование утилит от производителя материнской платы, таких как <em>ASUS AI Suite</em> или <em>Gigabyte Control Center</em>.</p>
+
+<p>Через эти утилиты можно изменить параметры <code>CPU</code>, <code>RAM</code> и <code>Boot</code> без перезагрузки в <code>BIOS</code>. Изменения применяются либо после перезагрузки, либо сразу. Это позволяет исправить настройки, которые вызвали потерю видеосигнала, например, некорректный разгон. Важно, чтобы утилита определяла материнскую плату, что гарантирует совместимость параметров.</p>
+
+<div class="attention-box attention-tip"><span class="attention-icon">💡</span><p>Перед применением любых изменений через программный интерфейс создайте точку восстановления системы или резервную копию профиля BIOS, если утилита это позволяет.</p></div>
+
+<p>В некоторых случаях помогает вход в <code>Windows Recovery Environment</code> (WinRE). Если система не может загрузиться из-за настроек BIOS, можно попасть в среду восстановления, нажав на кнопку питания во время загрузки три раза подряд. Там можно запустить командную строку или restore, что иногда сбрасывает конфигурацию загрузки, но не сам BIOS.</p>
+
+<h2 id="аппаратный-сброс-и-физическое-вмешательство">Аппаратный сброс и физическое вмешательство</h2>
+
+<p>Если программные методы недоступны, а доступ к интерфейсу невозможен, остается только аппаратный сброс. Это радикальный метод, который возвращает настройки к заводским значениям. Для этого потребуется открыть корпус и найти батарею CMOS или перемычку <code>CLR_CMOS</code>. Этот способ гарантированно удалит все ошибочные настройки, в том числе вызвавшие отсутствие видео.</p>
+
+<p>Процедура проста: отключите питание, извлеките круглую батарейку <code>CR2032</code> на 10-15 секунд, затем верните её. Или замкните контакты перемычки <code>CLR_CMOS</code> отверткой на 5-10 секунд при выключенном питании. После этого система загрузится с дефолтными значениями, что часто восстанавливает видеосигнал.</p>
+
+<div class="checklist-block"><h4>☑️ Процедура сброса CMOS</h4><label class="check-item"><input type="checkbox"><span>Отключить блок питания от сети</span></label><label class="check-item"><input type="checkbox"><span>Извлечь батарею или замкнуть перемычку</span></label><label class="check-item"><input type="checkbox"><span>Подождать 10-30 секунд</span></label><label class="check-item"><input type="checkbox"><span>Вернуть компоненты на место и включить</span></label><div class="check-progress">Выполнено: <span class="check-count">0</span> / 4</div></div>
+
+<p>Некоторые материнские платы имеют кнопку <code>MemOK!</code> или <code>BIOS Flashback</code>. Кнопка <code>MemOK!</code> автоматически подбирает стабильные тайминги памяти, что полезно, если проблема в несовместимости <code>RAM</code>. Кнопка <code>Flashback</code> позволяет обновить <code>BIOS</code> без процессора и видеокарты, используя только флеш-накопитель, что критично при апгрейде старых плат на новые процессоры.</p>
+
+<details class="faq-item"><summary>Что делать, если перемычка не сбрасывает настройки?Иногда проблема не в настройках, а в аппаратной неисправности чипа BIOS. В таком случае требуется программатор или замена чипа специалистом.-->
+
+<h2 id="использование-второго-монитора-или-адаптеров">Использование второго монитора или адаптеров</h2>
+
+<p>Часто проблема заключается не в отсутствии видеосигнала, а в использовании несовместимого порта или кабеля. Если вы переместили компьютер в новый корпус или изменили мат. плату, попробуйте подключить монитор к другому выходу. Например, если вы используете дискретную видеокарту, убедитесь, что кабель подключен именно к ней, а не к материнской плате, если в процессоре нет встроенного графического ядра.</p>
+
+<p>Использование конвертеров <code>HDMI</code>-<code>DVI</code> или <code>DisplayPort</code>-<code>HDMI</code> иногда спасает ситуацию, если основной выход не работает корректно. Также стоит попробовать подключить монитор к телевизору или другому экрану, так как некоторые старые мониторы не поддерживают высокие частоты развертки, которые по умолчанию выставляет BIOS.</p>
+
+<table>
+<thead>
+<tr>
+<th>Метод</th>
+<th>Условия применения</th>
+<th>Сложность</th>
+<th>Риск потери данных</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Удаленное управление (IPMI)</td>
+<td>Серверные платы, наличие сети</td>
+<td>Высокая</td>
+<td>Нулевой</td>
+</tr>
+<tr>
+<td>Настройка вслепую</td>
+<td>Ошибки в меню, известны горячие клавиши</td>
+<td>Средняя</td>
+<td>Средний</td>
+</tr>
+<tr>
+<td>Аппаратный сброс (CLR_CMOS)</td>
+<td>Полная потеря видеосигнала</td>
+<td>Низкая</td>
+<td>Низкий (сброс настроек)</td>
+</tr>
+<tr>
+<td>Программные утилиты</td>
+<td>ОС загружается, нет видео</td>
+<td>Средняя</td>
+<td>Низкий</td>
+</tr>
+</tbody>
+</table>
+
+<h2 id="диагностика-и-устранение-неполадок">Диагностика и устранение неполадок</h2>
+
+<p>Если ни один из методов не помог, проблема может быть глубже. Часто отсутствие изображения связано с некорректной инициализацией видеокарты при загрузке. В этом случае помогает отключение дискретного адаптера и использование встроенной графики процессора. Если процессор не имеет видеоядра, потребуется установить заведомо исправную видеокарту для входа в настройки.</p>
+
+<p>Проверьте также состояние кнопок клавиатуры. Иногда проблема решается заменой клавиатуры, так как некоторые старые модели не поддерживают USB-интерфейс на этапе загрузки <code>UEFI</code> (Legacy USB Support может быть отключен). Использование PS/2 клавиатуры в таких случаях становится единственным шансом на управление.</p>
+
+<blockquote>
+<p>⚠️ Внимание</summary><div class="faq-answer"><p> Если вы планируете обновление BIOS через флешку, убедитесь, что файл прошивки переименован в точном соответствии с инструкцией производителя, иначе функция Flashback может не сработать.</p>
+</blockquote>
+
+<p>Иногда помогает отключение всех периферийных устройств, кроме клавиатуры и материнской платы. Лишние устройства могут вызывать конфликты при загрузке, блокируя инициализацию видеопотока. Очистка контактов оперативной памяти ластиком также часто решает проблему черного экрана, позволяя системе загрузиться и выдать изображение.</p>
+
+
+
+<h2 id="faq-частые-вопросы-пользователей">FAQ: Частые вопросы пользователей</h2>
+
+<details>
+<summary>Можно ли изменить BIOS через SSH?</summary>
+<p>Обычно нет. SSH требует работающей операционной системы и сетевых служб. Доступ к BIOS через SSH возможен только на специализированных серверных платах с IPMI, где telnet или SSH эмулируют консоль управления контроллера.</p>
+</details>
+
+<details>
+<summary>Что делать, если я не помню настройки перед сбоем?</summary>
+<p>Лучшее решение — выполнить сброс до заводских настроек (CLR_CMOS). Это вернет стабильные параметры, но отключит разгон. После восстановления изображения вы сможете настроить систему заново, но более осторожно.</p>
+</details>
+
+<details>
+<summary>Работает ли этот метод на ноутбуках?</summary>
+<p>На ноутбуках сброс BIOS без монитора крайне сложен, так как доступ к перемычке часто требует полной разборки корпуса. В таких случаях лучше использовать кнопку сброса на корпусе (если есть) или обратиться в сервис.</p>
+</details>
+
+<details>
+<summary>Как узнать, что я вошел в BIOS вслепую?</summary>
+<p>Обычно это можно понять по звуку: некоторые системы издают специфический звук при входе в меню, либо по поведению клавиш: если вы нажали стрелку, и курсор (который вы не видите) сдвинулся, но система не реагирует, вы, вероятно, не в меню. Однако надежного способа без монитора нет.</p>
+</details></div>
+                    <!--#include virtual="/ssi/article_after.html" -->
+
+                </article>
+                <aside class="article-sidebar"><!--#include virtual="/ssi/sidebar_top.html" --><nav class="sidebar-search"><div class="sidebar-search-box"><input type="text" id="globalSearchInput" placeholder="🔍 Поиск статей..." autocomplete="off"><div class="search-dropdown" id="globalSearchDropdown"></div></div></nav><!--#include virtual="/ssi/sidebar_before_toc.html" --><nav class="sidebar-toc" id="sidebarToc"><h3>Содержание</h3><ul><li><a href="#инструменты-удаленного-управления-для-корпоративных-систем">Инструменты удаленного управления для корпоративных систем</a></li><li><a href="#настройка-вслепую-с-помощью-клавиатуры">Настройка «вслепую» с помощью клавиатуры</a></li><li><a href="#использование-программного-интерфейса-в-работающей-ос">Использование программного интерфейса в работающей ОС</a></li><li><a href="#аппаратный-сброс-и-физическое-вмешательство">Аппаратный сброс и физическое вмешательство</a></li><li><a href="#использование-второго-монитора-или-адаптеров">Использование второго монитора или адаптеров</a></li><li><a href="#диагностика-и-устранение-неполадок">Диагностика и устранение неполадок</a></li><li><a href="#faq-частые-вопросы-пользователей">FAQ: Частые вопросы пользователей</a></li></ul></nav><!--#include virtual="/ssi/sidebar_before_related.html" --><nav class="sidebar-related"><h3>Похожие статьи</h3><ul><li><a href="/articles/k/ka/kak-pereklyuchit-monoblok-v-rezhim-monitora-cherez-nastrojki.html" class="related-card">Как переключить моноблок в режим монитора через настройки</a></li><li><a href="/articles/k/ka/kak-ubrat-rezhim-energosberezheniya-na-monitore-lg.html" class="related-card">Как отключить режим энергосбережения на мониторе LG — пошаговая инструкция</a></li><li><a href="/articles/k/ka/kak-uznat-parol-ot-fort-monitora.html" class="related-card">Как узнать пароль от монитора: сброс и восстановление доступа</a></li><li><a href="/articles/k/ka/kak-vklyuchit-monitor-iz-energosberegayushchego-rezhima.html" class="related-card">Как включить монитор из энергосберегающего режима: полное руководство</a></li><li><a href="/articles/k/ka/kak-otklyuchit-vyklyuchenie-monitora.html" class="related-card">Как отключить автоматическое выключение монитора: пошаговая инструкция</a></li></ul></nav><!--#include virtual="/ssi/sidebar_after_related.html" --></aside>
+            </div>
+        </div>
+    </main>
+
+    <!--#include virtual="/ssi/before_related_bottom.html" -->
+    <section class="related-bottom">
+        <div class="container">
+            <h2 class="related-bottom-heading">📖 Читайте также</h2>
+            <div class="related-bottom-grid"><a href="/articles/k/ka/kak-pereklyuchit-monoblok-v-rezhim-monitora-cherez-nastrojki.html" class="related-bottom-card"><span class="related-bottom-title">Как переключить моноблок в режим монитора через настройки</span><span class="related-bottom-desc">Пошаговая инструкция: как превратить моноблок в внешний монитор. Узнайте про настройки HDMI, сторонн</span></a><a href="/articles/k/ka/kak-ubrat-rezhim-energosberezheniya-na-monitore-lg.html" class="related-bottom-card"><span class="related-bottom-title">Как отключить режим энергосбережения на мониторе LG — пошаговая инструкция</span><span class="related-bottom-desc">Подробное руководство по отключению энергосбережения на мониторах LG всех моделей. Разбираем настрой</span></a><a href="/articles/k/ka/kak-uznat-parol-ot-fort-monitora.html" class="related-bottom-card"><span class="related-bottom-title">Как узнать пароль от монитора: сброс и восстановление доступа</span><span class="related-bottom-desc">Инструкция как снять пароль с монитора: заводские коды, кнопка сброса, блок питания. Пошаговые метод</span></a><a href="/articles/k/ka/kak-vklyuchit-monitor-iz-energosberegayushchego-rezhima.html" class="related-bottom-card"><span class="related-bottom-title">Как включить монитор из энергосберегающего режима: полное руководство</span><span class="related-bottom-desc">Узнайте, как быстро разбудить экран из спящего режима. Пошаговые инструкции для Windows, macOS и BIO</span></a><a href="/articles/k/ka/kak-otklyuchit-vyklyuchenie-monitora.html" class="related-bottom-card"><span class="related-bottom-title">Как отключить автоматическое выключение монитора: пошаговая инструкция</span><span class="related-bottom-desc">Полное руководство по отключению спящего режима монитора. Настройка Windows, драйверов и BIOS для пр</span></a><a href="/articles/k/ka/kak-vklyuchit-sistemnyj-blok-bez-monitora.html" class="related-bottom-card"><span class="related-bottom-title">Как включить системный блок без монитора: методы и настройки</span><span class="related-bottom-desc">Подробное руководство: как запустить ПК без видеовыхода. Методы с BIOS, переключателями и умными роз</span></a></div>
+        </div>
+    </section>
+    <!--#include virtual="/ssi/after_related_bottom.html" -->
+
+    <footer class="site-footer-premium">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-col">
+                    <div class="footer-brand">🖥️ Мониторум</div>
+                    <p class="footer-about">Полный справочник по настройке, ремонту и выбору компьютерных мониторов для любых задач.</p>
+                </div>
+                <div class="footer-col">
+                    <h4>Разделы</h4>
+                    <ul><li><a href="/category/nastrojka-ekrana/">⚙️ Настройка экрана</a></li>
+<li><a href="/category/podklyuchenie-ustrojstv/">🔌 Подключение устройств</a></li>
+<li><a href="/category/mnozhestvennye-ekrany/">🖥️🖥️ Множественные экраны</a></li>
+<li><a href="/category/zvuk-i-audio/">🔊 Звук и аудио</a></li>
+<li><a href="/category/remont-i-polomki/">🔧 Ремонт и поломки</a></li>
+<li><a href="/category/ukhod-i-chistka/">🧼 Уход и чистка</a></li></ul>
+                </div>
+                <div class="footer-col">
+                    <h4>Информация</h4>
+                    <ul>
+                        <li><a href="/">Главная</a></li>
+                        <li><a href="/about.html">О проекте</a></li>
+                        <li><a href="/categories.html">Все разделы</a></li>
+                        <li><a href="/contact.html">Контакты</a></li>
+                        <li><a href="/privacy.html">Конфиденциальность</a></li>
+                        <li><a href="/sitemap.xml">Карта сайта</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>© Мониторум. Все права защищены.</p>
+                <!--LiveInternet counter--><div style="margin-top:10px;"><a href="https://www.liveinternet.ru/click"
+                target="_blank"><img id="licnt06C4" width="88" height="15" style="border:0" 
+                title="LiveInternet: показано число посетителей за сегодня"
+                src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAEALAAAAAABAAEAAAIBTAA7"
+                alt=""/></a><script>(function(d,s){d.getElementById("licnt06C4").src=
+                "https://counter.yadro.ru/hit?t26.5;r"+escape(d.referrer)+
+                ((typeof(s)=="undefined")?"":";s"+s.width+"*"+s.height+"*"+
+                (s.colorDepth?s.colorDepth:s.pixelDepth))+";u"+escape(d.URL)+
+                ";h"+escape(d.title.substring(0,150))+";"+Math.random()})(document,screen)</script></div><!--/LiveInternet-->
+            </div>
+        </div>
+    </footer>
+    <div id="cookie-consent" class="cookie-popup">
+        <div class="cookie-inner">
+            <span>🍪 Мы используем файлы cookie для улучшения работы сайта.</span>
+            <button id="cookie-accept" class="cookie-btn">Принять</button>
+        </div>
+    </div>
+    <script src="/static/js/main.js"></script>
+    <script>
+    (function() {
+        const popup = document.getElementById('cookie-consent');
+        const btn = document.getElementById('cookie-accept');
+        if (popup && btn && !localStorage.getItem('cookie-accepted')) {
+            popup.classList.add('visible');
+            btn.onclick = () => {
+                localStorage.setItem('cookie-accepted', 'true');
+                popup.classList.remove('visible');
+            };
+        }
+    })();
+    </script>
+    <script>
+    function pbPollVote(el) {
+        var poll = el.closest('.poll-widget');
+        if (poll.classList.contains('voted')) return;
+        poll.classList.add('voted');
+        el.classList.add('selected');
+        var opts = poll.querySelectorAll('.poll-widget-option');
+        var n = opts.length;
+        var raw = [];
+        var sum = 0;
+        for (var i = 0; i < n; i++) {
+            var v = Math.random() * 50 + 5;
+            if (opts[i] === el) v += 30;
+            raw.push(v);
+            sum += v;
+        }
+        var pcts = raw.map(function(v) { return Math.round(v / sum * 100); });
+        var diff = 100 - pcts.reduce(function(a,b){ return a+b; }, 0);
+        pcts[Array.from(opts).indexOf(el)] += diff;
+        setTimeout(function() {
+            opts.forEach(function(opt, i) {
+                opt.querySelector('.poll-widget-bar').style.width = pcts[i] + '%';
+                opt.querySelector('.poll-widget-pct').textContent = pcts[i] + '%';
+            });
+        }, 50);
+    }
+    </script>
+    <!--#include virtual="/ssi/body_bottom.html" -->
+    <script src="/static/js/inject.js" defer></script>
+</body>
+</html>

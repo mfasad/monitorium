@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27><text y=%27.9em%27 font-size=%2790%27>🖥️</text></svg>">
+    <title>Почему ShadowPlay записывает не тот монитор: причины и исправление — Мониторум</title>
+    <meta name="description" content="ShadowPlay фиксирует не тот экран? Разбираем настройки NVIDIA, приоритет дисплеев и способы коррекции захвата изображения на вторичном мониторе.">
+    <link rel="canonical" href="https://monitorium.vercel.app/articles/p/po/pochemu-shadowplay-zapisyvaet-ne-tot-monitor.html">
+
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="Почему ShadowPlay записывает не тот монитор: причины и исправление">
+    <meta property="og:description" content="ShadowPlay фиксирует не тот экран? Разбираем настройки NVIDIA, приоритет дисплеев и способы коррекции захвата изображения на вторичном мониторе.">
+    <meta property="og:locale" content="ru_RU">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css?v=1780420684">
+    <style>
+    .site-footer-premium {
+        margin-top: 60px; padding: 40px 0 0; background: #1e293b; color: #94a3b8;
+    }
+    .footer-grid {
+        display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 40px;
+        padding-bottom: 32px; border-bottom: 1px solid #334155;
+    }
+    .footer-brand { font-size: 1.2rem; font-weight: 700; color: #f1f5f9; margin-bottom: 12px; }
+    .footer-about { font-size: 0.9rem; line-height: 1.6; margin-bottom: 8px; }
+    .footer-updated { font-size: 0.8rem; color: #64748b; }
+    .footer-col h4 { color: #f1f5f9; font-size: 0.95rem; margin-bottom: 16px; }
+    .footer-col ul { list-style: none; }
+    .footer-col li { margin-bottom: 8px; }
+    .footer-col a { color: #94a3b8; font-size: 0.9rem; transition: color 0.2s; }
+    .footer-col a:hover { color: #60a5fa; }
+    .footer-bottom { padding: 20px 0; text-align: center; font-size: 0.85rem; }
+    @media (max-width: 640px) {
+        .footer-grid { grid-template-columns: 1fr; gap: 24px; }
+    }
+    .cookie-popup {
+        position: fixed; bottom: 0; left: 0; right: 0; background: #1e293b; color: #fff;
+        padding: 16px; transition: transform 0.5s ease; z-index: 9999; border-top: 2px solid #2563eb;
+        transform: translateY(100%);
+    }
+    .cookie-popup.visible { transform: translateY(0); }
+    .cookie-inner { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; gap: 16px; font-size: 0.9rem; }
+    .cookie-btn { background: #2563eb; color: #fff; border: none; padding: 8px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+    .cookie-btn:hover { background: #1d4ed8; }
+    @media (max-width: 640px) {
+        .cookie-inner { flex-direction: column; text-align: center; }
+    }
+</style>
+    
+    <!--#include virtual="/ssi/head.html" -->
+</head>
+<body>
+        <!--#include virtual="/ssi/body_top.html" -->
+    <style>
+    .nav-dropdown { position: relative; display: inline-block; }
+    .dropdown-toggle {
+        background: none; border: none; cursor: pointer;
+        font: inherit; color: inherit; padding: 8px 12px;
+        border-radius: 8px; transition: background 0.2s;
+    }
+    .dropdown-toggle:hover { background: rgba(0,0,0,0.05); }
+    .dropdown-menu {
+        display: none; position: absolute; right: 0; top: 100%;
+        min-width: 240px; max-height: 70vh; overflow-y: auto;
+        background: var(--card-bg, #fff); border: 1px solid var(--border, #e5e7eb);
+        border-radius: 12px; box-shadow: 0 12px 40px rgba(0,0,0,0.12);
+        padding: 8px 0; z-index: 1000;
+    }
+    .nav-dropdown::after {
+        content: ''; position: absolute; left: 0; right: 0;
+        top: 100%; height: 12px;
+    }
+    .nav-dropdown:hover .dropdown-menu,
+    .nav-dropdown:focus-within .dropdown-menu { display: block; }
+    .dropdown-item {
+        display: block; padding: 10px 20px; color: var(--text, #1f2937);
+        text-decoration: none; font-size: 0.95rem; transition: background 0.15s;
+        white-space: nowrap;
+    }
+    .dropdown-item:hover { background: rgba(37,99,235,0.06); color: var(--primary, #2563eb); }
+    @media (max-width: 768px) {
+        .main-nav > .nav-link { display: none; }
+        .dropdown-toggle { display: none; }
+        .dropdown-menu {
+            display: block !important; position: static;
+            box-shadow: none; border: none; border-radius: 0;
+            min-width: auto; max-height: none; padding: 0;
+            background: transparent;
+        }
+        .dropdown-item {
+            padding: 8px 0; font-size: 1rem;
+        }
+    }
+    </style>
+    <header class="site-header">
+        <div class="container header-inner">
+            <a href="/" class="logo">
+                <span class="logo-icon">🖥️</span>
+                <span>Мониторум</span>
+            </a>
+            <button class="mobile-menu-btn" aria-label="Меню" id="menuBtn">☰</button>
+            <nav class="main-nav" id="mainNav">
+                <a href="/category/nastrojka-ekrana/" class="nav-link">⚙️ Настройка экрана</a>
+<a href="/category/podklyuchenie-ustrojstv/" class="nav-link">🔌 Подключение устройств</a>
+<a href="/category/mnozhestvennye-ekrany/" class="nav-link">🖥️🖥️ Множественные экраны</a>
+<a href="/category/zvuk-i-audio/" class="nav-link">🔊 Звук и аудио</a>
+<div class="nav-dropdown">
+            <button class="nav-link dropdown-toggle">📂 Все разделы ▾</button>
+            <div class="dropdown-menu"><a href="/category/nastrojka-ekrana/" class="dropdown-item">⚙️ Настройка экрана</a>
+<a href="/category/podklyuchenie-ustrojstv/" class="dropdown-item">🔌 Подключение устройств</a>
+<a href="/category/mnozhestvennye-ekrany/" class="dropdown-item">🖥️🖥️ Множественные экраны</a>
+<a href="/category/zvuk-i-audio/" class="dropdown-item">🔊 Звук и аудио</a>
+<a href="/category/remont-i-polomki/" class="dropdown-item">🔧 Ремонт и поломки</a>
+<a href="/category/ukhod-i-chistka/" class="dropdown-item">🧼 Уход и чистка</a>
+<a href="/category/vybor-i-kharakteristiki/" class="dropdown-item">📊 Выбор и характеристики</a>
+<a href="/category/drajvery-i-po/" class="dropdown-item">💿 Драйверы и ПО</a>
+<a href="/category/krepleniya-i-ustanovka/" class="dropdown-item">🔩 Крепления и установка</a>
+<a href="/category/utilizatsiya-i-prodazha/" class="dropdown-item">♻️ Утилизация и продажа</a>
+<a href="/category/spetsialnye-rezhimy/" class="dropdown-item">🎮 Специальные режимы</a>
+<a href="/category/drugoe/" class="dropdown-item">📁 Другое</a></div>
+        </div>
+            </nav>
+        </div>
+    </header>
+
+    <nav class="breadcrumbs" aria-label="Навигация">
+        <div class="container"><a href="/">Главная</a><span class="breadcrumb-sep">›</span><a href="/category/drugoe/">Другое</a><span class="breadcrumb-sep">›</span><span class="breadcrumb-current">Почему ShadowPlay записывает не тот монитор: причины и исправление</span></div>
+    </nav>
+
+    <main class="site-main">
+        <div class="container">
+            <div class="article-layout">
+                <article class="article-main">
+                    
+                    <h1>Решаем проблему захвата не того монитора в NVIDIA ShadowPlay</h1>
+                    <nav class="mobile-toc"><details><summary>📋 Содержание</summary><ul><li><a href="#диагностика-конфигурации-дисплеев-в-windows">Диагностика конфигурации дисплеев в Windows</a></li><li><a href="#настройка-приоритета-захвата-в-geforce-experience">Настройка приоритета захвата в GeForce Experience</a></li><li><a href="#режимы-захвата-окно-полный-экран-и-десктоп">Режимы захвата: Окно, Полный экран и Десктоп</a></li><li><a href="#использование-горячих-клавиш-для-переключения-источника">Использование горячих клавиш для переключения источника</a></li><li><a href="#таблица-сравнение-режимов-захвата-и-их-влияние-на-мониторы">Таблица: Сравнение режимов захвата и их влияние на мониторы</a></li><li><a href="#проблемы-совместимости-и-драйверов">Проблемы совместимости и драйверов</a></li><li><a href="#альтернативные-решения-для-профессиональной-записи">Альтернативные решения для профессиональной записи</a></li><li><a href="#faq-часто-задаваемые-вопросы">FAQ: Часто задаваемые вопросы</a></li></ul></details></nav>
+                    <!--#include virtual="/ssi/article_before.html" -->
+                    <div class="article-body">
+
+<p>Ситуация, когда <strong>NVIDIA ShadowPlay</strong> начинает записывать не тот монитор, с которым вы работаете в данный момент, является одной из самых раздражающих проблем для геймеров и стримеров, использующих многомониторные конфигурации. Вы запускаете игру, настраиваете сцену, но при просмотре итоговой записи или прямой трансляции видите рабочий стол, браузер или вообще застывший экран второго дисплея. Это происходит не из-за поломки видеокарты, а из-за того, как программное обеспечение определяет источник сигнала.</p>
+
+<p>В основе работы функции <em>GeForce Experience</em> лежит механизм захвата активного окна или всего рабочего стола, но алгоритмы выбора приоритетного дисплея иногда дают сбой. Система может полагать, что "основным" является тот экран, где находится курсор мыши, или тот, который был активным в момент запуска приложения, игнорируя ваши текущие действия. <strong>Неправильная привязка</strong> к источнику сигнала делает запись бесполезной, если на ней изображено не то, что вы хотели продемонстрировать.</p>
+
+<p>Исправление этой ошибки требует не только перезапуска драйверов, но и глубокого понимания настроек <code>Настройки игры</code> в панели управления NVIDIA. Вам предстоит проверить конфигурацию дисплеев в Windows, приоритеты захвата в самой программе и правильность определения основного устройства вывода. Ниже мы подробно разберем все шаги, которые вернут контроль над процессом записи.</p>
+
+<h2 id="диагностика-конфигурации-дисплеев-в-windows">Диагностика конфигурации дисплеев в Windows</h2>
+
+<p>Первым делом необходимо убедиться, что операционная система видит ваши мониторы так, как вы этого ожидаете. Windows сама по себе управляет логикой "основного" экрана, и многие программы, включая <strong>NVIDIA ShadowPlay</strong>, подчиняются этим системным правилам. Часто проблема кроется в том, что второй монитор назначен основным, даже если вы играете на первом.</p>
+
+<p>Зайдите в <code>Параметры → Система → Дисплей</code> и проверьте, какой из экранов отмечен как "Основной". Именно с этого экрана по умолчанию захватывается изображение, если в настройках оверлея не указан конкретный монитор. Если вы планируете играть на <em>игровом мониторе</em>, убедитесь, что он имеет цифру "1" и галочку "Сделать основным дисплеем".</p>
+
+<p>Иногда помогает простое перетаскивание иконок мониторов в схеме расположения. Если вы физически располагаете второй экран слева, а в Windows он стоит справа, курсор может "перепрыгивать" в невидимую зону, заставляя систему думать, что активность сместилась. Выровняйте их в <code>Расположение дисплеев</code> так, чтобы они соответствовали вашему рабочему столу.</p>
+
+<h2 id="настройка-приоритета-захвата-в-geforce-experience">Настройка приоритета захвата в GeForce Experience</h2>
+
+<p>После проверки системных настроек перейдите к конфигурации самого <em>NVIDIA GeForce Experience</em>. Откройте оверлей (обычно это сочетание клавиш <code>Alt+Z</code>) и зайдите в <code>Настройки</code>. Найдите раздел <strong>Настройки игры</strong> (Game Settings), где можно детально настроить поведение захвата для каждой конкретной игры.</p>
+
+<p>В этом меню есть критически важный пункт "Разрешение" и "Частота кадров", но также стоит обратить внимание на то, как выбрана сфера захвата. Если у вас включен режим "Окно" или "Полный экран", программа может путаться между дисплеями при переключении окон. Убедитесь, что в настройках захвата выбран правильный источник.</p>
+
+<p>Особое внимание уделите разделу <code>Ссылка на рабочий стол</code> (если он доступен в вашей версии ПО). Некоторые версии драйверов позволяют жестко привязать захват к конкретному идентификатору дисплея. Если такой опции нет, вам придется использовать обходные пути, о которых пойдет речь далее.</p>
+
+<blockquote>⚠️ Внимание: Обновления драйверов NVIDIA часто меняют интерфейс GeForce Experience. Если вы не можете найти привычный пункт меню, проверьте, не переместился ли он в раздел "Общие настройки" или "Конфиденциальность".</blockquote>
+
+<div class="poll-widget" id="poll-3c610c4e"><div class="poll-widget-question">📊 Какой основной источник проблемы у вас чаще всего?</div><div class="poll-widget-option" data-poll="3c610c4e" data-idx="0" onclick="pbPollVote(this)"><span class="poll-widget-label">Настройки Windows</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="3c610c4e" data-idx="1" onclick="pbPollVote(this)"><span class="poll-widget-label">Настройки ShadowPlay</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="3c610c4e" data-idx="2" onclick="pbPollVote(this)"><span class="poll-widget-label">Конфликт программ</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="3c610c4e" data-idx="3" onclick="pbPollVote(this)"><span class="poll-widget-label">Не знаю, не проверял</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div></div>
+
+<h2 id="режимы-захвата-окно-полный-экран-и-десктоп">Режимы захвата: Окно, Полный экран и Десктоп</h2>
+
+<p>ShadowPlay работает в трех основных режимах, и выбор неверного из них является самой частой причиной ошибки. Режим <strong>Полный экран</strong> (Full Screen) захватывает только активное приложение, но если игра запускается в оконном режиме без рамок, система может считать, что вы смотрите на рабочий стол. Режим <strong>Окно</strong> (Window) захватывает только активное окно, игнорируя второй монитор, но требует точного выбора приложения.</p>
+
+<p>Самый ненадежный вариант — режим <strong>Рабочий стол</strong> (Desktop). Он предназначен для записи всего рабочего пространства, но в многодисплейной среде он часто берет сигнал с того монитора, который Windows считает "Главным" в данный момент. Если вы перенесли курсор на второй экран, запись может переключиться туда автоматически, даже если игра осталась на первом.</p>
+
+<p>Для стабильной игры на многомониторной системе рекомендуется использовать режим <code>Полноэкранный захват</code> с включенной опцией "Захватывать рабочий стол" только если это необходимо. Если игра работает через <em>Borderless Window</em> (окно без границ), ShadowPlay может "терять" её при попытке захватить весь экран целиком.</p>
+
+<div class="checklist-block"><h4>☑️ Проверка режима захвата</h4><label class="check-item"><input type="checkbox"><span>Убедиться, что игра в полноэкранном режиме</span></label><label class="check-item"><input type="checkbox"><span>Отключить захват рабочего стола</span></label><label class="check-item"><input type="checkbox"><span>Выбрать конкретное окно приложения</span></label><label class="check-item"><input type="checkbox"><span>Проверить настройки FPS</span></label><div class="check-progress">Выполнено: <span class="check-count">0</span> / 4</div></div>
+
+<h2 id="использование-горячих-клавиш-для-переключения-источника">Использование горячих клавиш для переключения источника</h2>
+
+<p>Если автоматическое определение не работает, NVIDIA предоставляет инструменты для ручного управления источником сигнала. Через оверлей <code>Alt+Z</code> можно вызвать меню настроек захвата и вручную сменить приоритет. Однако, более быстрый способ — использование специальных горячих клавиш, которые переключают режим записи "на лету".</p>
+
+<p>По умолчанию комбинация <code>Alt+F9</code> включает и выключает запись, но она не меняет источник. Для смены источника в некоторых версиях драйверов используется сочетание <code>Alt+Shift+G</code> (или другое, назначенное вами в настройках клавиш). Это позволяет мгновенно переключаться между захватом активного окна и захватом всего экрана.</p>
+
+<p>Важно понимать, что эти горячие клавиши срабатывают мгновенно, но не сохраняют настройки навсегда. Вам придется настраивать их для каждой сессии или использовать скрипты для автоматизации. Это решение больше подходит для тех, кто часто меняет задачи между игрой и работой.</p>
+
+<blockquote>⚠️ Внимание: Горячие клавиши могут конфликтовать с другими программами, например, с Discord или OBS Studio. Если запись не переключается, проверьте, не перехватываем ли комбинацию клавиш стороннее приложение.</blockquote>
+
+<details class="faq-item"><summary>Как настроить уникальные горячие клавиши</summary><div class="faq-answer"><p>Зайдите в настройки GeForce Experience, выберите раздел "Клавиши" и переназначьте действие "Изменить источник захвата" на удобную вам комбинацию, например, Ctrl+Alt+F1.</p></div></details>
+
+<h2 id="таблица-сравнение-режимов-захвата-и-их-влияние-на-мониторы">Таблица: Сравнение режимов захвата и их влияние на мониторы</h2>
+
+<p>Чтобы наглядно понять различия между режимами работы ShadowPlay, представим их в виде таблицы. Это поможет вам выбрать оптимальный вариант для вашей конфигурации оборудования и задач.</p>
+
+<table>
+<thead>
+<tr>
+<th>Режим захвата</th>
+<th>Что записывается</th>
+<th>Влияние второго монитора</th>
+<th>Рекомендация</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Полноэкранный</td>
+<td>Только активное приложение</td>
+<td>Не записывается, игнорируется</td>
+<td>Лучший выбор для игр</td>
+</tr>
+<tr>
+<td>Окно</td>
+<td>Активное окно (фрейм)</td>
+<td>Не записывается, но может быть видно фон</td>
+<td>Подходит для оконных режимов</td>
+</tr>
+<tr>
+<td>Рабочий стол</td>
+<td>Все открытые дисплеи</td>
+<td>Записывается тот, что "Главный"</td>
+<td>Опасно для мульти-мониторов</td>
+</tr>
+<tr>
+<td>Выборочный</td>
+<td>Конкретное окно</td>
+<td>Полная изоляция</td>
+<td>Для стриминга конкретных приложений</td>
+</tr>
+</tbody>
+</table>
+
+<h2 id="проблемы-совместимости-и-драйверов">Проблемы совместимости и драйверов</h2>
+
+<p>Иногда причина кроется не в настройках, а в устаревшем или поврежденном программном обеспечении. Драйверы <em>NVIDIA GeForce</em> обновляются ежемесячно, и новая версия может исправить баги захвата, но также может и внести новые ошибки. Если проблема возникла после обновления системы, попробуйте откатить драйвер на предыдущую стабильную версию.</p>
+
+<p>Конфликты с другими программами записи, такими как <strong>OBS Studio</strong> или <em>XSplit</em>, также могут приводить к ошибке. Эти приложения перехватывают видеопоток на уровне драйвера, и если они запущены одновременно с ShadowPlay, система может "запутаться" и отдать приоритет не тому потоку.</p>
+
+<p>В некоторых случаях помогает полная переустановка GeForce Experience. Используйте утилиту <code>Dism++</code> или стандартный способ удаления, чтобы полностью очистить реестр от старых настроек, а затем загрузите свежую версию с официального сайта. Это сбросит все привязки дисплеев к заводским значениям.</p>
+
+<div class="attention-box attention-tip"><span class="attention-icon">💡</span><p>Если вы используете ноутбук с гибридной графикой (Intel + NVIDIA), убедитесь, что игра и ShadowPlay запущены именно на дискретной видеокарте, а не на встроенной графической плате Intel HD/UHD.</p></div>
+
+<h2 id="альтернативные-решения-для-профессиональной-записи">Альтернативные решения для профессиональной записи</h2>
+
+<p>Если встроенные средства NVIDIA не справляются с задачей точного захвата конкретного монитора, стоит рассмотреть сторонние решения. Программа <strong>OBS Studio</strong> предлагает более гибкие настройки источников, позволяя добавлять "Захват экрана" и выбирать конкретный монитор из списка, игнорируя системные настройки Windows.</p>
+
+<p>В OBS вы можете создать сцену, где источником будет только ваш игровой монитор, и записывать её в фоновом режиме. Это дает полный контроль над тем, что попадает на запись, независимо от того, где находится курсор мыши или какое окно активно в данный момент.</p>
+
+<p>Некоторые пользователи также используют <em>AMD ReLive</em> (если у вас гибридная система) или специализированные утилиты для захвата, такие как <strong>Captura</strong>. Они часто имеют более интуитивный интерфейс для работы с многомониторными конфигурациями и позволяют настраивать горячие клавиши под себя без ограничений.</p>
+
+<div class="attention-box attention-tip"><span class="attention-icon">💡</span><p>Сторонние программы записи дают больший контроль над источником сигнала, но требуют больше ресурсов системы и времени на настройку.</p></div>
+
+<blockquote>⚠️ Внимание: Требование к производительности при использовании сторонних программ может быть выше. Убедитесь, что ваш процессор и видеокарта справляются с кодированием в реальном времени, иначе запись будет тормозить.</blockquote>
+
+<h2 id="faq-часто-задаваемые-вопросы">FAQ: Часто задаваемые вопросы</h2>
+
+<details>
+<summary>Почему ShadowPlay записывает второй монитор, если я играю на первом?</summary>
+<p>Это происходит, когда Windows или сама программа определяет второй монитор как "Основной" дисплей. Проверьте настройки в <code>Параметры системы → Дисплей</code> и убедитесь, что ваш игровой монитор отмечен как основной.</p>
+</details>
+
+<details>
+<summary>Можно ли настроить захват только для конкретной игры?</summary>
+<p>Да, в настройках GeForce Experience в разделе "Игры" можно задать индивидуальные параметры захвата для каждого приложения, включая выбор режима "Полный экран", который изолирует игру от остальных мониторов.</p>
+</details>
+
+<details>
+<summary>Что делать, если горячие клавиши не работают?</summary>
+<p>Проверьте, не конфликтуют ли они с другими программами. Попробуйте сбросить настройки горячих клавиш в <code>Настройки → Клавиши</code> внутри оверлея ShadowPlay и назначить их заново.</p>
+</details>
+
+<details>
+<summary>Нужен ли для этого мощный компьютер?</summary>
+<p>Запись на уровне драйвера (<em>NVENC</em>) очень эффективна и не требует мощного процессора, но при использовании сторонних программ (OBS) нагрузка на систему возрастает. Для ShadowPlay достаточно современной видеокарты серии GTX или RTX.</p>
+</details>
+
+<details>
+<summary>Можно ли записывать звук с микрофона и игры одновременно?</summary>
+<p>Да, в настройках оверлея <code>Alt+Z</code> есть раздел "Аудио", где можно настроить уровни громкости для микрофона и системного звука отдельно. Это работает на любом мониторе.</p>
+</details></div>
+                    <!--#include virtual="/ssi/article_after.html" -->
+
+                </article>
+                <aside class="article-sidebar"><!--#include virtual="/ssi/sidebar_top.html" --><nav class="sidebar-search"><div class="sidebar-search-box"><input type="text" id="globalSearchInput" placeholder="🔍 Поиск статей..." autocomplete="off"><div class="search-dropdown" id="globalSearchDropdown"></div></div></nav><!--#include virtual="/ssi/sidebar_before_toc.html" --><nav class="sidebar-toc" id="sidebarToc"><h3>Содержание</h3><ul><li><a href="#диагностика-конфигурации-дисплеев-в-windows">Диагностика конфигурации дисплеев в Windows</a></li><li><a href="#настройка-приоритета-захвата-в-geforce-experience">Настройка приоритета захвата в GeForce Experience</a></li><li><a href="#режимы-захвата-окно-полный-экран-и-десктоп">Режимы захвата: Окно, Полный экран и Десктоп</a></li><li><a href="#использование-горячих-клавиш-для-переключения-источника">Использование горячих клавиш для переключения источника</a></li><li><a href="#таблица-сравнение-режимов-захвата-и-их-влияние-на-мониторы">Таблица: Сравнение режимов захвата и их влияние на мониторы</a></li><li><a href="#проблемы-совместимости-и-драйверов">Проблемы совместимости и драйверов</a></li><li><a href="#альтернативные-решения-для-профессиональной-записи">Альтернативные решения для профессиональной записи</a></li><li><a href="#faq-часто-задаваемые-вопросы">FAQ: Часто задаваемые вопросы</a></li></ul></nav><!--#include virtual="/ssi/sidebar_before_related.html" --><nav class="sidebar-related"><h3>Похожие статьи</h3><ul><li><a href="/articles/p/po/pochemu-zhelteet-monitor-kompyutera.html" class="related-card">Почему желтеет монитор: причины, решение и настройка баланса белого</a></li><li><a href="/articles/p/po/pochemu-bukvy-na-monitore-razmytye-vindovs-7.html" class="related-card">Размытые буквы на Windows 7: причины и способы устранения</a></li><li><a href="/articles/k/ka/kak-povysit-rezkost-monitora-windows-7.html" class="related-card">Как повысить резкость монитора в Windows 7: настройки драйверов и системы</a></li><li><a href="/articles/k/ka/kak-rasshirit-ekran-na-monitore-kompyutera-v-windows-10.html" class="related-card">Как расширить экран на мониторе в Windows 10: полное руководство</a></li><li><a href="/articles/c/ch/chto-takoe-passivnyj-stsenicheskij-monitor.html" class="related-card">Что такое пассивный сценический монитор: устройство, подключение и настройки</a></li></ul></nav><!--#include virtual="/ssi/sidebar_after_related.html" --></aside>
+            </div>
+        </div>
+    </main>
+
+    <!--#include virtual="/ssi/before_related_bottom.html" -->
+    <section class="related-bottom">
+        <div class="container">
+            <h2 class="related-bottom-heading">📖 Читайте также</h2>
+            <div class="related-bottom-grid"><a href="/articles/p/po/pochemu-zhelteet-monitor-kompyutera.html" class="related-bottom-card"><span class="related-bottom-title">Почему желтеет монитор: причины, решение и настройка баланса белого</span><span class="related-bottom-desc">Узнайте, почему желтеет экран монитора. Разбор программных настроек, старения матрицы и аппаратных с</span></a><a href="/articles/p/po/pochemu-bukvy-na-monitore-razmytye-vindovs-7.html" class="related-bottom-card"><span class="related-bottom-title">Размытые буквы на Windows 7: причины и способы устранения</span><span class="related-bottom-desc">Почему шрифт выглядит нечетким на Windows 7? Узнайте основные причины: от ClearType до видеокарты. П</span></a><a href="/articles/k/ka/kak-povysit-rezkost-monitora-windows-7.html" class="related-bottom-card"><span class="related-bottom-title">Как повысить резкость монитора в Windows 7: настройки драйверов и системы</span><span class="related-bottom-desc">Пошаговая инструкция по улучшению четкости изображения на Windows 7. Настройка резкости через драйве</span></a><a href="/articles/k/ka/kak-rasshirit-ekran-na-monitore-kompyutera-v-windows-10.html" class="related-bottom-card"><span class="related-bottom-title">Как расширить экран на мониторе в Windows 10: полное руководство</span><span class="related-bottom-desc">Узнайте, как изменить масштаб, разрешение и соотношение сторон экрана в Windows 10. Инструкция по на</span></a><a href="/articles/c/ch/chto-takoe-passivnyj-stsenicheskij-monitor.html" class="related-bottom-card"><span class="related-bottom-title">Что такое пассивный сценический монитор: устройство, подключение и настройки</span><span class="related-bottom-desc">Подробный гид по пассивным сценическим мониторам: принцип работы, отличия от активных, схемы подключ</span></a><a href="/articles/s/sk/skachat-programmu-dlya-zapisi-video-s-ekrana-monitora-so-zvukom-besplatno-khot-skolko-chasov.html" class="related-bottom-card"><span class="related-bottom-title">Скачать программу для записи видео с экрана со звуком бесплатно без лимита времени</span><span class="related-bottom-desc">Лучшие бесплатные утилиты для захвата видео с монитора без ограничений по времени. Обзор функций, на</span></a></div>
+        </div>
+    </section>
+    <!--#include virtual="/ssi/after_related_bottom.html" -->
+
+    <footer class="site-footer-premium">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-col">
+                    <div class="footer-brand">🖥️ Мониторум</div>
+                    <p class="footer-about">Полный справочник по настройке, ремонту и выбору компьютерных мониторов для любых задач.</p>
+                </div>
+                <div class="footer-col">
+                    <h4>Разделы</h4>
+                    <ul><li><a href="/category/nastrojka-ekrana/">⚙️ Настройка экрана</a></li>
+<li><a href="/category/podklyuchenie-ustrojstv/">🔌 Подключение устройств</a></li>
+<li><a href="/category/mnozhestvennye-ekrany/">🖥️🖥️ Множественные экраны</a></li>
+<li><a href="/category/zvuk-i-audio/">🔊 Звук и аудио</a></li>
+<li><a href="/category/remont-i-polomki/">🔧 Ремонт и поломки</a></li>
+<li><a href="/category/ukhod-i-chistka/">🧼 Уход и чистка</a></li></ul>
+                </div>
+                <div class="footer-col">
+                    <h4>Информация</h4>
+                    <ul>
+                        <li><a href="/">Главная</a></li>
+                        <li><a href="/about.html">О проекте</a></li>
+                        <li><a href="/categories.html">Все разделы</a></li>
+                        <li><a href="/contact.html">Контакты</a></li>
+                        <li><a href="/privacy.html">Конфиденциальность</a></li>
+                        <li><a href="/sitemap.xml">Карта сайта</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>© Мониторум. Все права защищены.</p>
+                <!--LiveInternet counter--><div style="margin-top:10px;"><a href="https://www.liveinternet.ru/click"
+                target="_blank"><img id="licnt06C4" width="88" height="15" style="border:0" 
+                title="LiveInternet: показано число посетителей за сегодня"
+                src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAEALAAAAAABAAEAAAIBTAA7"
+                alt=""/></a><script>(function(d,s){d.getElementById("licnt06C4").src=
+                "https://counter.yadro.ru/hit?t26.5;r"+escape(d.referrer)+
+                ((typeof(s)=="undefined")?"":";s"+s.width+"*"+s.height+"*"+
+                (s.colorDepth?s.colorDepth:s.pixelDepth))+";u"+escape(d.URL)+
+                ";h"+escape(d.title.substring(0,150))+";"+Math.random()})(document,screen)</script></div><!--/LiveInternet-->
+            </div>
+        </div>
+    </footer>
+    <div id="cookie-consent" class="cookie-popup">
+        <div class="cookie-inner">
+            <span>🍪 Мы используем файлы cookie для улучшения работы сайта.</span>
+            <button id="cookie-accept" class="cookie-btn">Принять</button>
+        </div>
+    </div>
+    <script src="/static/js/main.js"></script>
+    <script>
+    (function() {
+        const popup = document.getElementById('cookie-consent');
+        const btn = document.getElementById('cookie-accept');
+        if (popup && btn && !localStorage.getItem('cookie-accepted')) {
+            popup.classList.add('visible');
+            btn.onclick = () => {
+                localStorage.setItem('cookie-accepted', 'true');
+                popup.classList.remove('visible');
+            };
+        }
+    })();
+    </script>
+    <script>
+    function pbPollVote(el) {
+        var poll = el.closest('.poll-widget');
+        if (poll.classList.contains('voted')) return;
+        poll.classList.add('voted');
+        el.classList.add('selected');
+        var opts = poll.querySelectorAll('.poll-widget-option');
+        var n = opts.length;
+        var raw = [];
+        var sum = 0;
+        for (var i = 0; i < n; i++) {
+            var v = Math.random() * 50 + 5;
+            if (opts[i] === el) v += 30;
+            raw.push(v);
+            sum += v;
+        }
+        var pcts = raw.map(function(v) { return Math.round(v / sum * 100); });
+        var diff = 100 - pcts.reduce(function(a,b){ return a+b; }, 0);
+        pcts[Array.from(opts).indexOf(el)] += diff;
+        setTimeout(function() {
+            opts.forEach(function(opt, i) {
+                opt.querySelector('.poll-widget-bar').style.width = pcts[i] + '%';
+                opt.querySelector('.poll-widget-pct').textContent = pcts[i] + '%';
+            });
+        }, 50);
+    }
+    </script>
+    <!--#include virtual="/ssi/body_bottom.html" -->
+    <script src="/static/js/inject.js" defer></script>
+</body>
+</html>

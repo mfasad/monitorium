@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27><text y=%27.9em%27 font-size=%2790%27>🖥️</text></svg>">
+    <title>Как открыть системный монитор в консоли: Top, Htop, Glances — Мониторум</title>
+    <meta name="description" content="Полное руководство по запуску утилит мониторинга в терминале Linux. Команды для top, htop, glances и анализ загрузки ресурсов процессора.">
+    <link rel="canonical" href="https://monitorium.vercel.app/articles/k/ka/kak-otkryt-sistemnyj-monitor-v-konsoli.html">
+
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="Как открыть системный монитор в консоли: Top, Htop, Glances">
+    <meta property="og:description" content="Полное руководство по запуску утилит мониторинга в терминале Linux. Команды для top, htop, glances и анализ загрузки ресурсов процессора.">
+    <meta property="og:locale" content="ru_RU">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css?v=1780420684">
+    <style>
+    .site-footer-premium {
+        margin-top: 60px; padding: 40px 0 0; background: #1e293b; color: #94a3b8;
+    }
+    .footer-grid {
+        display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 40px;
+        padding-bottom: 32px; border-bottom: 1px solid #334155;
+    }
+    .footer-brand { font-size: 1.2rem; font-weight: 700; color: #f1f5f9; margin-bottom: 12px; }
+    .footer-about { font-size: 0.9rem; line-height: 1.6; margin-bottom: 8px; }
+    .footer-updated { font-size: 0.8rem; color: #64748b; }
+    .footer-col h4 { color: #f1f5f9; font-size: 0.95rem; margin-bottom: 16px; }
+    .footer-col ul { list-style: none; }
+    .footer-col li { margin-bottom: 8px; }
+    .footer-col a { color: #94a3b8; font-size: 0.9rem; transition: color 0.2s; }
+    .footer-col a:hover { color: #60a5fa; }
+    .footer-bottom { padding: 20px 0; text-align: center; font-size: 0.85rem; }
+    @media (max-width: 640px) {
+        .footer-grid { grid-template-columns: 1fr; gap: 24px; }
+    }
+    .cookie-popup {
+        position: fixed; bottom: 0; left: 0; right: 0; background: #1e293b; color: #fff;
+        padding: 16px; transition: transform 0.5s ease; z-index: 9999; border-top: 2px solid #2563eb;
+        transform: translateY(100%);
+    }
+    .cookie-popup.visible { transform: translateY(0); }
+    .cookie-inner { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; gap: 16px; font-size: 0.9rem; }
+    .cookie-btn { background: #2563eb; color: #fff; border: none; padding: 8px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+    .cookie-btn:hover { background: #1d4ed8; }
+    @media (max-width: 640px) {
+        .cookie-inner { flex-direction: column; text-align: center; }
+    }
+</style>
+    
+    <!--#include virtual="/ssi/head.html" -->
+</head>
+<body>
+        <!--#include virtual="/ssi/body_top.html" -->
+    <style>
+    .nav-dropdown { position: relative; display: inline-block; }
+    .dropdown-toggle {
+        background: none; border: none; cursor: pointer;
+        font: inherit; color: inherit; padding: 8px 12px;
+        border-radius: 8px; transition: background 0.2s;
+    }
+    .dropdown-toggle:hover { background: rgba(0,0,0,0.05); }
+    .dropdown-menu {
+        display: none; position: absolute; right: 0; top: 100%;
+        min-width: 240px; max-height: 70vh; overflow-y: auto;
+        background: var(--card-bg, #fff); border: 1px solid var(--border, #e5e7eb);
+        border-radius: 12px; box-shadow: 0 12px 40px rgba(0,0,0,0.12);
+        padding: 8px 0; z-index: 1000;
+    }
+    .nav-dropdown::after {
+        content: ''; position: absolute; left: 0; right: 0;
+        top: 100%; height: 12px;
+    }
+    .nav-dropdown:hover .dropdown-menu,
+    .nav-dropdown:focus-within .dropdown-menu { display: block; }
+    .dropdown-item {
+        display: block; padding: 10px 20px; color: var(--text, #1f2937);
+        text-decoration: none; font-size: 0.95rem; transition: background 0.15s;
+        white-space: nowrap;
+    }
+    .dropdown-item:hover { background: rgba(37,99,235,0.06); color: var(--primary, #2563eb); }
+    @media (max-width: 768px) {
+        .main-nav > .nav-link { display: none; }
+        .dropdown-toggle { display: none; }
+        .dropdown-menu {
+            display: block !important; position: static;
+            box-shadow: none; border: none; border-radius: 0;
+            min-width: auto; max-height: none; padding: 0;
+            background: transparent;
+        }
+        .dropdown-item {
+            padding: 8px 0; font-size: 1rem;
+        }
+    }
+    </style>
+    <header class="site-header">
+        <div class="container header-inner">
+            <a href="/" class="logo">
+                <span class="logo-icon">🖥️</span>
+                <span>Мониторум</span>
+            </a>
+            <button class="mobile-menu-btn" aria-label="Меню" id="menuBtn">☰</button>
+            <nav class="main-nav" id="mainNav">
+                <a href="/category/nastrojka-ekrana/" class="nav-link">⚙️ Настройка экрана</a>
+<a href="/category/podklyuchenie-ustrojstv/" class="nav-link">🔌 Подключение устройств</a>
+<a href="/category/mnozhestvennye-ekrany/" class="nav-link">🖥️🖥️ Множественные экраны</a>
+<a href="/category/zvuk-i-audio/" class="nav-link">🔊 Звук и аудио</a>
+<div class="nav-dropdown">
+            <button class="nav-link dropdown-toggle">📂 Все разделы ▾</button>
+            <div class="dropdown-menu"><a href="/category/nastrojka-ekrana/" class="dropdown-item">⚙️ Настройка экрана</a>
+<a href="/category/podklyuchenie-ustrojstv/" class="dropdown-item">🔌 Подключение устройств</a>
+<a href="/category/mnozhestvennye-ekrany/" class="dropdown-item">🖥️🖥️ Множественные экраны</a>
+<a href="/category/zvuk-i-audio/" class="dropdown-item">🔊 Звук и аудио</a>
+<a href="/category/remont-i-polomki/" class="dropdown-item">🔧 Ремонт и поломки</a>
+<a href="/category/ukhod-i-chistka/" class="dropdown-item">🧼 Уход и чистка</a>
+<a href="/category/vybor-i-kharakteristiki/" class="dropdown-item">📊 Выбор и характеристики</a>
+<a href="/category/drajvery-i-po/" class="dropdown-item">💿 Драйверы и ПО</a>
+<a href="/category/krepleniya-i-ustanovka/" class="dropdown-item">🔩 Крепления и установка</a>
+<a href="/category/utilizatsiya-i-prodazha/" class="dropdown-item">♻️ Утилизация и продажа</a>
+<a href="/category/spetsialnye-rezhimy/" class="dropdown-item">🎮 Специальные режимы</a>
+<a href="/category/drugoe/" class="dropdown-item">📁 Другое</a></div>
+        </div>
+            </nav>
+        </div>
+    </header>
+
+    <nav class="breadcrumbs" aria-label="Навигация">
+        <div class="container"><a href="/">Главная</a><span class="breadcrumb-sep">›</span><a href="/category/drugoe/">Другое</a><span class="breadcrumb-sep">›</span><span class="breadcrumb-current">Как открыть системный монитор в консоли: Top, Htop, Glances</span></div>
+    </nav>
+
+    <main class="site-main">
+        <div class="container">
+            <div class="article-layout">
+                <article class="article-main">
+                    
+                    <h1>Как открыть системный монитор в консоли Linux</h1>
+                    <nav class="mobile-toc"><details><summary>📋 Содержание</summary><ul><li><a href="#классическая-утилита-top-и-её-возможности">Классическая утилита Top и её возможности</a></li><li><a href="#современная-альтернатива-htop">Современная альтернатива Htop</a></li><li><a href="#расширенный-мониторинг-glances">Расширенный мониторинг Glances</a></li><li><a href="#специализированные-утилиты-для-диска-и-сети">Специализированные утилиты для диска и сети</a></li><li><a href="#управление-процессами-и-оптимизация">Управление процессами и оптимизация</a></li><li><a href="#частые-ошибки-и-способы-их-решения">Частые ошибки и способы их решения</a></li><li><a href="#faq-частые-вопросы-о-системных-мониторах">FAQ: Частые вопросы о системных мониторах</a></li></ul></details></nav>
+                    <!--#include virtual="/ssi/article_before.html" -->
+                    <div class="article-body">
+
+<p>Работа с серверами или мощными рабочими станциями часто требует глубокого понимания того, как распределены ресурсы системы. Графический интерфейс не всегда доступен или может быть перегружен, поэтому <strong>консольный мониторинг</strong> становится незаменимым инструментом для администраторов. Вы сможете мгновенно оценить состояние системы, даже подключившись через удаленное соединение с низкой пропускной способностью.</p>
+
+<p>Существует множество утилит, каждая из которых предлагает свой уровень детализации и функционала. От классических инструментов, присутствующих в базовой установке, до современных графических интерпретаций в текстовом режиме. Выбор конкретного <em>инструмента</em> зависит от вашей задачи: нужно ли вам просто быстро проверить нагрузку или провести глубокий анализ процессов в реальном времени.</p>
+
+<h2 id="классическая-утилита-top-и-её-возможности">Классическая утилита Top и её возможности</h2>
+<p>Инструмент <strong>top</strong> является стандартом де-факто для большинства дистрибутивов Linux. Он запускается одной командой и сразу начинает отображать список процессов, сортированный по уровню потребления ресурсов CPU. Это базовый инструмент, который есть практически на любой системе, что делает его первым выбором при экстренном подключении к серверу.</p>
+
+<p>Интерфейс программы разделен на две части: верхняя статистика и нижняя таблица процессов. В статистике вы увидите общее время работы системы, количество задач, загрузку процессора и использование оперативной памяти. Для управления списком можно использовать горячие клавиши: например, нажатие <code>P</code> отсортирует процессы по нагрузке на процессор, а <code>M</code> — по использованию памяти.</p>
+
+<p>Хотя функционал классического <em>top</em> кажется устаревшим по сравнению с современными аналогами, он остается надежным. Вы можете убивать процессы прямо из интерфейса, нажав <code>k</code> и введя PID. Однако, если вам нужен более красивый и информативный вид, стоит рассмотреть альтернативы.</p>
+
+<blockquote>
+<p>⚠️ Внимание: При использовании <code>top</code> будьте осторожны с завершением процессов с высоким приоритетом. Случайное убийство системного процесса (например, <code>systemd</code> или <code>init</code>) может привести к нестабильной работе или перезагрузке сервера.</p>
+</blockquote>
+
+<h2 id="современная-альтернатива-htop">Современная альтернатива Htop</h2>
+<p>Утилита <strong>htop</strong> представляет собой улучшенную версию классического инструмента, предоставляя более интерактивный и наглядный интерфейс. Она поддерживает прокрутку по вертикали и горизонтали, что позволяет видеть все процессы, даже если их список очень длинный. Для корректной работы её нужно сначала установить, так как в некоторых минимальных сборках она не входит в базовый пакет.</p>
+
+<p>Главное преимущество <em>htop</em> — это визуальные индикаторы загрузки процессоров. Вы сразу видите, сколько ядер задействовано и насколько они нагружены, благодаря цветным полоскам. Это позволяет мгновенно выявить "узкое место" в системе без необходимости анализировать сухие цифры процентов. Управление осуществляется мышью или клавиатурой, что значительно ускоряет работу.</p>
+
+<p>Функционал <code>htop</code> включает возможность настраивать отображаемые столбцы, фильтровать процессы по пользователю и настраивать цветовую схему. Вы можете легко завершить процесс, выделив его стрелками и нажав <code>F9</code>, после чего система предложит выбрать сигнал (например, <code>SIGTERM</code> или <code>SIGKILL</code>). Это делает работу с процессами гораздо более безопасной и гибкой.</p>
+
+<div class="checklist-block"><h4>☑️ Установка и запуск htop</h4><label class="check-item"><input type="checkbox"><span>Проверить наличие пакета</span></label><label class="check-item"><input type="checkbox"><span>Установить через менеджер пакетов</span></label><label class="check-item"><input type="checkbox"><span>Запустить команду htop</span></label><label class="check-item"><input type="checkbox"><span>Оценить интерфейс</span></label><div class="check-progress">Выполнено: <span class="check-count">0</span> / 4</div></div>
+
+<h2 id="расширенный-мониторинг-glances">Расширенный мониторинг Glances</h2>
+<p>Если вам требуется комплексный взгляд на систему, утилита <strong>glances</strong> станет отличным выбором. Она написана на Python и собирает информацию о процессоре, памяти, дисках, сети и активных процессах в одном окне. Это идеальный инструмент для тех, кто хочет видеть полную картину состояния сервера без необходимости запускать несколько разных программ.</p>
+
+<p><em>Glances</em> отлично подходит для мониторинга через веб-интерфейс благодаря встроенному веб-серверу. Вы можете запустить его на сервере и открыть в браузере с любого устройства в сети, получая доступ к данным в реальном времени. Это особенно удобно для администрирования удаленных серверов, где графический интерфейс недоступен.</p>
+
+<p>Программа автоматически обновляет данные каждые пару секунд и подсвечивает критические показатели красным цветом. Вы можете видеть историю загрузки, статистику ввода-вывода с дисков и трафик сети. Однако стоит учитывать, что <code>glances</code> потребляет больше ресурсов самой системы по сравнению с легковесными аналогами.</p>
+
+<div class="poll-widget" id="poll-cb4310cd"><div class="poll-widget-question">📊 Какой инструмент мониторинга вы используете чаще?</div><div class="poll-widget-option" data-poll="cb4310cd" data-idx="0" onclick="pbPollVote(this)"><span class="poll-widget-label">Top</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="cb4310cd" data-idx="1" onclick="pbPollVote(this)"><span class="poll-widget-label">Htop</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="cb4310cd" data-idx="2" onclick="pbPollVote(this)"><span class="poll-widget-label">Glances</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="cb4310cd" data-idx="3" onclick="pbPollVote(this)"><span class="poll-widget-label">Другой</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div></div>
+
+<h2 id="специализированные-утилиты-для-диска-и-сети">Специализированные утилиты для диска и сети</h2>
+<p>Иногда проблема кроется не в процессоре, а в диске или сетевом интерфейсе. В таких случаях общие мониторы могут не дать достаточной детализации. Для анализа ввода-вывода отлично подходит <strong>iostat</strong>, а для просмотра сетевой активности <strong>iftop</strong> или <strong>nethogs</strong>.</p>
+
+<p>Утилита <code>iostat</code> показывает статистику использования дисков, включая время ожидания ввода-вывода и процент использования устройства. Если вы видите значение <code>%util</code> близкое к 100%, это верный признак того, что диск не справляется с нагрузкой. Это критическая информация при диагностике медленной работы системы.</p>
+
+<p>Для сетевых задач <em>iftop</em> отображает соединение в виде графа, показывая, кто с кем соединен и какой трафик передается. Это позволяет быстро выявить нештатные подключения или атаки типа DDoS. Эти инструменты часто устанавливаются отдельно и требуют прав суперпользователя для корректного отображения всей информации.</p>
+
+<table>
+<thead>
+<tr>
+<th>Инструмент</th>
+<th>Основное назначение</th>
+<th>Требуют установки</th>
+<th>Интерактивность</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>top</td>
+<td>Базовый мониторинг CPU и процессов</td>
+<td>Нет (входит в утилиту procps)</td>
+<td>Ограниченная</td>
+</tr>
+<tr>
+<td>htop</td>
+<td>Продвинутый мониторинг с UI</td>
+<td>Да</td>
+<td>Высокая</td>
+</tr>
+<tr>
+<td>glances</td>
+<td>Комплексный мониторинг всех ресурсов</td>
+<td>Да</td>
+<td>Средняя</td>
+</tr>
+<tr>
+<td>iotop</td>
+<td>Мониторинг ввода-вывода дисков</td>
+<td>Да</td>
+<td>Высокая</td>
+</tr>
+<tr>
+<td>netstat</td>
+<td>Статистика сетевых подключений</td>
+<td>Нет (входит в утилиту iproute2)</td>
+<td>Нет (статическая)</td>
+</tr>
+</tbody>
+</table>
+
+<blockquote>
+<p>⚠️ Внимание: Многие сетевые утилиты требуют запуска от имени root для отображения информации о процессах, использующих порты. Используйте <code>sudo</code> перед командой, но помните о безопасности.</p>
+</blockquote>
+
+<h2 id="управление-процессами-и-оптимизация">Управление процессами и оптимизация</h2>
+<p>После того как вы открыли системный монитор и идентифицировали проблемные процессы, необходимо предпринять действия для оптимизации. Вы можете изменить приоритет процесса, используя команду <strong>renice</strong>, или завершить его принудительно. Это позволяет освободить ресурсы для критически важных служб.</p>
+
+<p>Если процесс потребляет чрезмерное количество памяти, это может привести к работе механизма <em>OOM Killer</em> (Out of Memory), который начнет убивать процессы для освобождения места. Мониторинг позволяет заметить приближение к этому пределу и принять меры до того, как система начнет нестабильно работать.</p>
+
+<p>Для автоматизации процессов можно настроить алерты в таких инструментах, как <code>glances</code> или <code>htop</code> (через расширение). Вы получите уведомление, если загрузка процессора превысит заданный порог. Это особенно важно для серверов баз данных или веб-серверов, где простои недопустимы.</p>
+
+<div class="attention-box attention-tip"><span class="attention-icon">💡</span><p>Регулярный мониторинг системных ресурсов позволяет предотвратить критические сбои и выявить скрытые проблемы с производительностью на ранних стадиях.</p></div>
+
+<h2 id="частые-ошибки-и-способы-их-решения">Частые ошибки и способы их решения</h2>
+<p>При работе в консоли пользователи часто сталкиваются с тем, что утилита не запускается или показывает пустой список. Это может быть связано с отсутствием необходимых библиотек или недостаточными правами доступа. Например, попытка запустить <code>htop</code> без прав может скрыть процессы, принадлежащие другим пользователям.</p>
+
+<p>Другая распространенная проблема — высокая нагрузка самого инструмента мониторинга. Некоторые утилиты, особенно те, что собирают детальные метрики с диска, могут сами нагружать систему. Если сервер уже работает на пределе, запуск тяжелого монитора может усугубить ситуацию.</p>
+
+<p>Всегда проверяйте, какие именно процессы потребляют ресурсы, прежде чем принимать решения. Иногда "виновником" оказывается фоновая задача, которая должна завершиться через несколько минут. Не спешите убивать процессы без анализа их типа и назначения.</p>
+
+<details class="faq-item"><summary>Как узнать PID процесса?</summary><div class="faq-answer"><p>PID (Process ID) — это уникальный номер процесса в системе. В утилитах типа top или htop первый столбец обычно отображает именно PID. Вы можете использовать команду ps aux | grep имя_процесса, чтобы найти его.</p></div></details>
+
+<blockquote>
+<p>⚠️ Внимание: Завершение системных процессов (например, демонов) может привести к падению сервиса или всей ОС. Всегда проверяйте, какому пользователю принадлежит процесс, перед его остановкой.</p>
+</blockquote>
+
+<h2 id="faq-частые-вопросы-о-системных-мониторах">FAQ: Частые вопросы о системных мониторах</h2>
+
+<details>
+<summary>Какая утилита потребляет меньше всего ресурсов?</summary>
+<p>Классическая утилита <code>top</code> является самой легкой, так как написана на C и имеет минимальный функционал интерфейса. Она идеально подходит для серверов с очень ограниченными ресурсами.</p>
+</details>
+
+<details>
+<summary>Можно ли использовать мониторинг в Windows через консоль?</summary>
+<p>Да, в современных версиях Windows 10/11 доступен подсистема WSL (Windows Subsystem for Linux), которая позволяет запускать Linux-утилиты. Также есть нативная команда <code>tasklist</code> и <code>typeperf</code>, но функционал меньше, чем у Linux-аналогов.</p>
+</details>
+
+<details>
+<summary>Как сохранить лог работы монитора?</summary>
+<p>Вы можете перенаправить вывод в файл, используя оператор перенаправления, например: <code>top -b -n 1 > log.txt</code>. Это создаст файл с текущим состоянием системы, который можно проанализировать позже.</p>
+</details>
+
+<details>
+<summary>В чем разница между Load Average и загрузкой CPU?</summary>
+<p>Load Average показывает среднее количество процессов, ожидающих выполнения ЦП или ввода-вывода за последние 1, 5 и 15 минут. Загрузка CPU (User/System) показывает процент времени, которое ядро процессора потратило на выполнение задач.</p>
+</details></div>
+                    <!--#include virtual="/ssi/article_after.html" -->
+
+                </article>
+                <aside class="article-sidebar"><!--#include virtual="/ssi/sidebar_top.html" --><nav class="sidebar-search"><div class="sidebar-search-box"><input type="text" id="globalSearchInput" placeholder="🔍 Поиск статей..." autocomplete="off"><div class="search-dropdown" id="globalSearchDropdown"></div></div></nav><!--#include virtual="/ssi/sidebar_before_toc.html" --><nav class="sidebar-toc" id="sidebarToc"><h3>Содержание</h3><ul><li><a href="#классическая-утилита-top-и-её-возможности">Классическая утилита Top и её возможности</a></li><li><a href="#современная-альтернатива-htop">Современная альтернатива Htop</a></li><li><a href="#расширенный-мониторинг-glances">Расширенный мониторинг Glances</a></li><li><a href="#специализированные-утилиты-для-диска-и-сети">Специализированные утилиты для диска и сети</a></li><li><a href="#управление-процессами-и-оптимизация">Управление процессами и оптимизация</a></li><li><a href="#частые-ошибки-и-способы-их-решения">Частые ошибки и способы их решения</a></li><li><a href="#faq-частые-вопросы-о-системных-мониторах">FAQ: Частые вопросы о системных мониторах</a></li></ul></nav><!--#include virtual="/ssi/sidebar_before_related.html" --><nav class="sidebar-related"><h3>Похожие статьи</h3><ul><li><a href="/articles/c/ch/chem-opasny-starye-monitory.html" class="related-card">Чем опасны старые мониторы: риски для здоровья и техники</a></li><li><a href="/articles/r/ra/razreshenie-bolshe-chem-ekran-monitora.html" class="related-card">Что делать, если разрешение экрана больше размера монитора: решения</a></li><li><a href="/articles/c/ch/chto-delat-esli-monitor-v-energosberegayushchem-rezhime.html" class="related-card">Монитор в энергосберегающем режиме: почему и как включить экран</a></li><li><a href="/articles/k/ka/kak-ponizit-yarkost-na-monitore-loc.html" class="related-card">Как понизить яркость на мониторе: полное руководство для всех ОС</a></li><li><a href="/articles/k/ka/kak-pravilno-napisat-slovo-monitor.html" class="related-card">Как правильно писать слово «монитор»: орфография и правила</a></li></ul></nav><!--#include virtual="/ssi/sidebar_after_related.html" --></aside>
+            </div>
+        </div>
+    </main>
+
+    <!--#include virtual="/ssi/before_related_bottom.html" -->
+    <section class="related-bottom">
+        <div class="container">
+            <h2 class="related-bottom-heading">📖 Читайте также</h2>
+            <div class="related-bottom-grid"><a href="/articles/c/ch/chem-opasny-starye-monitory.html" class="related-bottom-card"><span class="related-bottom-title">Чем опасны старые мониторы: риски для здоровья и техники</span><span class="related-bottom-desc">Узнайте, почему старые мониторы вредны. Разбор рисков для зрения, угрозы возгорания и устаревших инт</span></a><a href="/articles/r/ra/razreshenie-bolshe-chem-ekran-monitora.html" class="related-bottom-card"><span class="related-bottom-title">Что делать, если разрешение экрана больше размера монитора: решения</span><span class="related-bottom-desc">Разобрали проблему, когда выбранный режим превышает физические границы экрана. Пошаговая инструкция </span></a><a href="/articles/c/ch/chto-delat-esli-monitor-v-energosberegayushchem-rezhime.html" class="related-bottom-card"><span class="related-bottom-title">Монитор в энергосберегающем режиме: почему и как включить экран</span><span class="related-bottom-desc">Экран погас и появилась надпись&#x27;Energy Saving Mode&#x27;? Узнайте, почему монитор переходит в спящий режи</span></a><a href="/articles/k/ka/kak-ponizit-yarkost-na-monitore-loc.html" class="related-bottom-card"><span class="related-bottom-title">Как понизить яркость на мониторе: полное руководство для всех ОС</span><span class="related-bottom-desc">Подробная инструкция, как снизить яркость экрана на мониторе через меню, горячие клавиши и настройки</span></a><a href="/articles/k/ka/kak-pravilno-napisat-slovo-monitor.html" class="related-bottom-card"><span class="related-bottom-title">Как правильно писать слово «монитор»: орфография и правила</span><span class="related-bottom-desc">Разбираем, как пишется слово «монитор» и «монитора». Узнайте правила ударения, множественного числа </span></a><a href="/articles/k/ka/kak-vklyuchit-fps-monitor-v-ks-go-programma.html" class="related-bottom-card"><span class="related-bottom-title">Как включить FPS-монитор в CS:GO: Консоль, Steam и программы</span><span class="related-bottom-desc">Пошаговая инструкция по включению счетчика FPS в Counter-Strike Global Offensive. Разбор встроенных </span></a></div>
+        </div>
+    </section>
+    <!--#include virtual="/ssi/after_related_bottom.html" -->
+
+    <footer class="site-footer-premium">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-col">
+                    <div class="footer-brand">🖥️ Мониторум</div>
+                    <p class="footer-about">Полный справочник по настройке, ремонту и выбору компьютерных мониторов для любых задач.</p>
+                </div>
+                <div class="footer-col">
+                    <h4>Разделы</h4>
+                    <ul><li><a href="/category/nastrojka-ekrana/">⚙️ Настройка экрана</a></li>
+<li><a href="/category/podklyuchenie-ustrojstv/">🔌 Подключение устройств</a></li>
+<li><a href="/category/mnozhestvennye-ekrany/">🖥️🖥️ Множественные экраны</a></li>
+<li><a href="/category/zvuk-i-audio/">🔊 Звук и аудио</a></li>
+<li><a href="/category/remont-i-polomki/">🔧 Ремонт и поломки</a></li>
+<li><a href="/category/ukhod-i-chistka/">🧼 Уход и чистка</a></li></ul>
+                </div>
+                <div class="footer-col">
+                    <h4>Информация</h4>
+                    <ul>
+                        <li><a href="/">Главная</a></li>
+                        <li><a href="/about.html">О проекте</a></li>
+                        <li><a href="/categories.html">Все разделы</a></li>
+                        <li><a href="/contact.html">Контакты</a></li>
+                        <li><a href="/privacy.html">Конфиденциальность</a></li>
+                        <li><a href="/sitemap.xml">Карта сайта</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>© Мониторум. Все права защищены.</p>
+                <!--LiveInternet counter--><div style="margin-top:10px;"><a href="https://www.liveinternet.ru/click"
+                target="_blank"><img id="licnt06C4" width="88" height="15" style="border:0" 
+                title="LiveInternet: показано число посетителей за сегодня"
+                src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAEALAAAAAABAAEAAAIBTAA7"
+                alt=""/></a><script>(function(d,s){d.getElementById("licnt06C4").src=
+                "https://counter.yadro.ru/hit?t26.5;r"+escape(d.referrer)+
+                ((typeof(s)=="undefined")?"":";s"+s.width+"*"+s.height+"*"+
+                (s.colorDepth?s.colorDepth:s.pixelDepth))+";u"+escape(d.URL)+
+                ";h"+escape(d.title.substring(0,150))+";"+Math.random()})(document,screen)</script></div><!--/LiveInternet-->
+            </div>
+        </div>
+    </footer>
+    <div id="cookie-consent" class="cookie-popup">
+        <div class="cookie-inner">
+            <span>🍪 Мы используем файлы cookie для улучшения работы сайта.</span>
+            <button id="cookie-accept" class="cookie-btn">Принять</button>
+        </div>
+    </div>
+    <script src="/static/js/main.js"></script>
+    <script>
+    (function() {
+        const popup = document.getElementById('cookie-consent');
+        const btn = document.getElementById('cookie-accept');
+        if (popup && btn && !localStorage.getItem('cookie-accepted')) {
+            popup.classList.add('visible');
+            btn.onclick = () => {
+                localStorage.setItem('cookie-accepted', 'true');
+                popup.classList.remove('visible');
+            };
+        }
+    })();
+    </script>
+    <script>
+    function pbPollVote(el) {
+        var poll = el.closest('.poll-widget');
+        if (poll.classList.contains('voted')) return;
+        poll.classList.add('voted');
+        el.classList.add('selected');
+        var opts = poll.querySelectorAll('.poll-widget-option');
+        var n = opts.length;
+        var raw = [];
+        var sum = 0;
+        for (var i = 0; i < n; i++) {
+            var v = Math.random() * 50 + 5;
+            if (opts[i] === el) v += 30;
+            raw.push(v);
+            sum += v;
+        }
+        var pcts = raw.map(function(v) { return Math.round(v / sum * 100); });
+        var diff = 100 - pcts.reduce(function(a,b){ return a+b; }, 0);
+        pcts[Array.from(opts).indexOf(el)] += diff;
+        setTimeout(function() {
+            opts.forEach(function(opt, i) {
+                opt.querySelector('.poll-widget-bar').style.width = pcts[i] + '%';
+                opt.querySelector('.poll-widget-pct').textContent = pcts[i] + '%';
+            });
+        }, 50);
+    }
+    </script>
+    <!--#include virtual="/ssi/body_bottom.html" -->
+    <script src="/static/js/inject.js" defer></script>
+</body>
+</html>

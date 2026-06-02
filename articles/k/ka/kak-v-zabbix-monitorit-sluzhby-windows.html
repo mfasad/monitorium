@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27><text y=%27.9em%27 font-size=%2790%27>🖥️</text></svg>">
+    <title>Мониторинг служб Windows в Zabbix: полное руководство по настройке — Мониторум</title>
+    <meta name="description" content="Пошаговая инструкция: как настроить мониторинг служб Windows в Zabbix агентом и WMI. Настройка триггеров, ключей и алертов для администрирования.">
+    <link rel="canonical" href="https://monitorium.vercel.app/articles/k/ka/kak-v-zabbix-monitorit-sluzhby-windows.html">
+
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="Мониторинг служб Windows в Zabbix: полное руководство по настройке">
+    <meta property="og:description" content="Пошаговая инструкция: как настроить мониторинг служб Windows в Zabbix агентом и WMI. Настройка триггеров, ключей и алертов для администрирования.">
+    <meta property="og:locale" content="ru_RU">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css?v=1780420684">
+    <style>
+    .site-footer-premium {
+        margin-top: 60px; padding: 40px 0 0; background: #1e293b; color: #94a3b8;
+    }
+    .footer-grid {
+        display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 40px;
+        padding-bottom: 32px; border-bottom: 1px solid #334155;
+    }
+    .footer-brand { font-size: 1.2rem; font-weight: 700; color: #f1f5f9; margin-bottom: 12px; }
+    .footer-about { font-size: 0.9rem; line-height: 1.6; margin-bottom: 8px; }
+    .footer-updated { font-size: 0.8rem; color: #64748b; }
+    .footer-col h4 { color: #f1f5f9; font-size: 0.95rem; margin-bottom: 16px; }
+    .footer-col ul { list-style: none; }
+    .footer-col li { margin-bottom: 8px; }
+    .footer-col a { color: #94a3b8; font-size: 0.9rem; transition: color 0.2s; }
+    .footer-col a:hover { color: #60a5fa; }
+    .footer-bottom { padding: 20px 0; text-align: center; font-size: 0.85rem; }
+    @media (max-width: 640px) {
+        .footer-grid { grid-template-columns: 1fr; gap: 24px; }
+    }
+    .cookie-popup {
+        position: fixed; bottom: 0; left: 0; right: 0; background: #1e293b; color: #fff;
+        padding: 16px; transition: transform 0.5s ease; z-index: 9999; border-top: 2px solid #2563eb;
+        transform: translateY(100%);
+    }
+    .cookie-popup.visible { transform: translateY(0); }
+    .cookie-inner { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; gap: 16px; font-size: 0.9rem; }
+    .cookie-btn { background: #2563eb; color: #fff; border: none; padding: 8px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+    .cookie-btn:hover { background: #1d4ed8; }
+    @media (max-width: 640px) {
+        .cookie-inner { flex-direction: column; text-align: center; }
+    }
+</style>
+    
+    <!--#include virtual="/ssi/head.html" -->
+</head>
+<body>
+        <!--#include virtual="/ssi/body_top.html" -->
+    <style>
+    .nav-dropdown { position: relative; display: inline-block; }
+    .dropdown-toggle {
+        background: none; border: none; cursor: pointer;
+        font: inherit; color: inherit; padding: 8px 12px;
+        border-radius: 8px; transition: background 0.2s;
+    }
+    .dropdown-toggle:hover { background: rgba(0,0,0,0.05); }
+    .dropdown-menu {
+        display: none; position: absolute; right: 0; top: 100%;
+        min-width: 240px; max-height: 70vh; overflow-y: auto;
+        background: var(--card-bg, #fff); border: 1px solid var(--border, #e5e7eb);
+        border-radius: 12px; box-shadow: 0 12px 40px rgba(0,0,0,0.12);
+        padding: 8px 0; z-index: 1000;
+    }
+    .nav-dropdown::after {
+        content: ''; position: absolute; left: 0; right: 0;
+        top: 100%; height: 12px;
+    }
+    .nav-dropdown:hover .dropdown-menu,
+    .nav-dropdown:focus-within .dropdown-menu { display: block; }
+    .dropdown-item {
+        display: block; padding: 10px 20px; color: var(--text, #1f2937);
+        text-decoration: none; font-size: 0.95rem; transition: background 0.15s;
+        white-space: nowrap;
+    }
+    .dropdown-item:hover { background: rgba(37,99,235,0.06); color: var(--primary, #2563eb); }
+    @media (max-width: 768px) {
+        .main-nav > .nav-link { display: none; }
+        .dropdown-toggle { display: none; }
+        .dropdown-menu {
+            display: block !important; position: static;
+            box-shadow: none; border: none; border-radius: 0;
+            min-width: auto; max-height: none; padding: 0;
+            background: transparent;
+        }
+        .dropdown-item {
+            padding: 8px 0; font-size: 1rem;
+        }
+    }
+    </style>
+    <header class="site-header">
+        <div class="container header-inner">
+            <a href="/" class="logo">
+                <span class="logo-icon">🖥️</span>
+                <span>Мониторум</span>
+            </a>
+            <button class="mobile-menu-btn" aria-label="Меню" id="menuBtn">☰</button>
+            <nav class="main-nav" id="mainNav">
+                <a href="/category/nastrojka-ekrana/" class="nav-link">⚙️ Настройка экрана</a>
+<a href="/category/podklyuchenie-ustrojstv/" class="nav-link">🔌 Подключение устройств</a>
+<a href="/category/mnozhestvennye-ekrany/" class="nav-link">🖥️🖥️ Множественные экраны</a>
+<a href="/category/zvuk-i-audio/" class="nav-link">🔊 Звук и аудио</a>
+<div class="nav-dropdown">
+            <button class="nav-link dropdown-toggle">📂 Все разделы ▾</button>
+            <div class="dropdown-menu"><a href="/category/nastrojka-ekrana/" class="dropdown-item">⚙️ Настройка экрана</a>
+<a href="/category/podklyuchenie-ustrojstv/" class="dropdown-item">🔌 Подключение устройств</a>
+<a href="/category/mnozhestvennye-ekrany/" class="dropdown-item">🖥️🖥️ Множественные экраны</a>
+<a href="/category/zvuk-i-audio/" class="dropdown-item">🔊 Звук и аудио</a>
+<a href="/category/remont-i-polomki/" class="dropdown-item">🔧 Ремонт и поломки</a>
+<a href="/category/ukhod-i-chistka/" class="dropdown-item">🧼 Уход и чистка</a>
+<a href="/category/vybor-i-kharakteristiki/" class="dropdown-item">📊 Выбор и характеристики</a>
+<a href="/category/drajvery-i-po/" class="dropdown-item">💿 Драйверы и ПО</a>
+<a href="/category/krepleniya-i-ustanovka/" class="dropdown-item">🔩 Крепления и установка</a>
+<a href="/category/utilizatsiya-i-prodazha/" class="dropdown-item">♻️ Утилизация и продажа</a>
+<a href="/category/spetsialnye-rezhimy/" class="dropdown-item">🎮 Специальные режимы</a>
+<a href="/category/drugoe/" class="dropdown-item">📁 Другое</a></div>
+        </div>
+            </nav>
+        </div>
+    </header>
+
+    <nav class="breadcrumbs" aria-label="Навигация">
+        <div class="container"><a href="/">Главная</a><span class="breadcrumb-sep">›</span><a href="/category/drajvery-i-po/">Драйверы и ПО</a><span class="breadcrumb-sep">›</span><span class="breadcrumb-current">Мониторинг служб Windows в Zabbix: полное руководство по настройке</span></div>
+    </nav>
+
+    <main class="site-main">
+        <div class="container">
+            <div class="article-layout">
+                <article class="article-main">
+                    
+                    <h1>Как в Zabbix мониторить службы Windows</h1>
+                    <nav class="mobile-toc"><details><summary>📋 Содержание</summary><ul><li><a href="#введение-в-мониторинг-системных-сервисов">Введение в мониторинг системных сервисов</a></li><li><a href="#выбор-метода-агент-zabbix-против-wmi">Выбор метода: Агент Zabbix против WMI</a></li><li><a href="#базовая-настройка-ключей-агента">Базовая настройка ключей агента</a></li><li><a href="#создание-триггеров-для-автоматических-алертов">Создание триггеров для автоматических алертов</a></li><li><a href="#использование-wmi-для-глубокого-анализа">Использование WMI для глубокого анализа</a></li><li><a href="#таблица-популярных-служб-и-их-ключей">Таблица популярных служб и их ключей</a></li><li><a href="#настройка-уведомлений-и-эскалации">Настройка уведомлений и эскалации</a></li><li><a href="#анализ-производительности-и-ресурсы">Анализ производительности и ресурсы</a></li><li><a href="#решение-распространенных-проблем">Решение распространенных проблем</a></li><li><a href="#интеграция-с-внешними-системами">Интеграция с внешними системами</a></li><li><a href="#заключительные-рекомендации-по-безопасности">Заключительные рекомендации по безопасности</a></li></ul></details></nav>
+                    <!--#include virtual="/ssi/article_before.html" -->
+                    <div class="article-body"><h2 id="введение-в-мониторинг-системных-сервисов">Введение в мониторинг системных сервисов</h2>
+<p>Стабильность работы корпоративной инфраструктуры напрямую зависит от доступности критических системных процессов. Если служба <em>Windows Update</em> или <em>SQL Server</em> остановится, последствия могут быть катастрофическими для бизнеса. <strong>Zabbix</strong> предоставляет мощные инструменты для автоматического отслеживания состояния любого сервиса в реальном времени.</p>
+<p>Администраторам необходимо следить не только за фактом работы процесса, но и за его временем запуска, состоянием остановки и типом запуска. Это позволяет избегать простоев и быстро реагировать на сбои до того, как пользователи заметят проблему.</p>
+
+<h2 id="выбор-метода-агент-zabbix-против-wmi">Выбор метода: Агент Zabbix против WMI</h2>
+<p>Существует два основных способа получения информации о службах: использование <strong>агента Zabbix</strong> (нативный метод) и опрос через <em>WMI</em> (Windows Management Instrumentation). Первый вариант предпочтителен, так как он работает быстрее и создает меньшую нагрузку на операционную систему.</p>
+<p>Агент Zabbix должен быть установлен и настроен на целевом сервере с правами локального администратора. В конфигурационном файле <code>zabbix_agentd.conf</code> необходимо убедиться, что параметр <code>AllowRoot</code> установлен в значение <code>1</code> для корректного считывания системных данных.</p>
+<p>Метод WMI подходит для ситуаций, когда установка агента невозможна, но требует настройки прав доступа к WMI-репозиторию и открытия дополнительного порта 135 в брандмауэре. Этот способ более ресурсоемкий и может быть медленнее при большом количестве хостов.</p>
+<blockquote>⚠️ Внимание: При использовании WMI убедитесь, что учетная запись, от имени которой работает Zabbix Server, имеет права на удаленный доступ к WMI, иначе получите ошибку «Access is denied».</blockquote>
+
+<h2 id="базовая-настройка-ключей-агента">Базовая настройка ключей агента</h2>
+<p>Для начала работы необходимо определить <strong>ключи монитора</strong>, которые будут возвращать статус служб. Стандартный ключ <code>service.info</code> позволяет получить список всех служб, их состояние и тип запуска.</p>
+<p>Вы можете использовать синтаксис <code>service.info["ServiceName"]</code>, где вместо ServiceName указывается точное имя службы, например, <code>Spooler</code> или <code>LanmanWorkstation</code>. Если ключ возвращает значение <code>0</code>, это означает, что служба остановлена, а <code>1</code> — что она активна.</p>
+<p>Для проверки доступности всей категории служб можно использовать параметр <code>service.info["*"]</code>, который вернет массив данных. Это удобно для создания регулярных проверок, но требует настройки регулярных выражений в шаблонах.</p>
+<p>info["wuauserv"]</code> вместо <code>Wuauserv</code> вы можете получить пустой ответ или ошибку.</p>
+
+<div class="poll-widget" id="poll-3cc75c6d"><div class="poll-widget-question">📊 Какой метод мониторинга вы используете чаще?</div><div class="poll-widget-option" data-poll="3cc75c6d" data-idx="0" onclick="pbPollVote(this)"><span class="poll-widget-label">Агент Zabbix (нативный)</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="3cc75c6d" data-idx="1" onclick="pbPollVote(this)"><span class="poll-widget-label">WMI (без агента)</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="3cc75c6d" data-idx="2" onclick="pbPollVote(this)"><span class="poll-widget-label">PowerShell скрипты</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="3cc75c6d" data-idx="3" onclick="pbPollVote(this)"><span class="poll-widget-label">Комбинированный метод</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div></div>
+
+<h2 id="создание-триггеров-для-автоматических-алертов">Создание триггеров для автоматических алертов</h2>
+<p>Само по себе получение данных не решает проблему — нужно настроить реакцию системы. Триггеры в Zabbix позволяют автоматически генерировать события, когда статус службы меняется на нежелательный.</p>
+<p>Простой триггер для отслеживания остановки службы должен сравнивать текущее значение с единицей. Если <strong>значение ключа</strong> равно 0, система должна отправить уведомление администратору.</p>
+<p>Рекомендуется использовать функцию <code>change()</code> или <code>last()</code> в зависимости от задачи. Для мгновенного оповещения о падении службы лучше всего подходит функция <code>last()</code>, которая проверяет последнее полученное значение.</p>
+<p>Также можно настроить триггеры на зависание службы, когда время ее работы не меняется на протяжении заданного периода, хотя сервер продолжает работать. Это требует использования функции <code>fuzzytime()</code> в связке с метрикой времени запуска.</p>
+<blockquote>⚠️ Внимание: Избегайте чрезмерно чувствительных триггеров, которые срабатывают при кратковременных перезапусках службы, иначе вы рискуете получить лавину уведомлений во время плановых обновлений.</blockquote>
+
+<div class="checklist-block"><h4>☑️ Проверка настройки триггера</h4><label class="check-item"><input type="checkbox"><span>Ключ возвращает 1 (работает)</span></label><label class="check-item"><input type="checkbox"><span>Ключ возвращает 0 (остановлен)</span></label><label class="check-item"><input type="checkbox"><span>Создан элемент данных</span></label><label class="check-item"><input type="checkbox"><span>Настроен триггер</span></label><label class="check-item"><input type="checkbox"><span>Проверено уведомление в тестовом режиме</span></label><div class="check-progress">Выполнено: <span class="check-count">0</span> / 5</div></div>
+
+<h2 id="использование-wmi-для-глубокого-анализа">Использование WMI для глубокого анализа</h2>
+<p>Если вы отказались от использования агента, вам придется настроить коллектор <em>WMI</em> в Zabbix. Это позволяет обращаться к классу Win32_Service, получая детализированную информацию о каждом процессе.</p>
+<p>Ключ WMI имеет вид <code>wmi.get["root/cimv2","SELECT * FROM Win32_Service WHERE Name='ServiceName'"]</code>. Он возвращает JSON-объект, из которого нужно извлечь конкретные поля, например, <code>State</code> или <code>StartMode</code>.</p>
+<p>Обработка данных через WMI требует знания языка запросов WQL. Вы можете фильтровать службы по состоянию запуска, типу процесса и даже по имени пользователя, от которого запущен сервис.</p>
+<p>Использование WMI дает преимущество в виде возможности мониторинга служб на старых версиях Windows, где нативный агент может не поддерживаться или работать некорректно без глубокой модификации.</p>
+
+<details class="faq-item"><summary>Как проверить доступность WMI удаленно?</summary><div class="faq-answer"><p>Для проверки используйте консольный инструмент wmimgmt.msc или команду wmic /node:"IP_ADDRESS" service list brief. Если запрос не проходит, проверьте настройки DCOM и брандмауэра. Для диагностики также подойдет мониторинг счетчика perfmon "WMI" в Performance Monitor.</p></div></details>
+
+<h2 id="таблица-популярных-служб-и-их-ключей">Таблица популярных служб и их ключей</h2>
+<p>Ниже приведена сводная таблица с наиболее часто мониторимыми службами и соответствующими ключами для быстрой настройки шаблонов. Это поможет избежать ошибок при вводе имен в конфигурационных файлах.</p>
+
+<table>
+<thead>
+<tr>
+<th>Название службы</th>
+<th>Идентификатор (Service Name)</th>
+<th>Ключ Zabbix</th>
+<th>Ожидаемое значение</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Центр обновления Windows</td>
+<td>Wuauserv</td>
+<td>service.info["Wuauserv"]</td>
+<td>1 (Running)</td>
+</tr>
+<tr>
+<td>Служба печати</td>
+<td>Spooler</td>
+<td>service.info["Spooler"]</td>
+<td>1 (Running)</td>
+</tr>
+<tr>
+<td>SQL Server</td>
+<td>MSSQLSERVER</td>
+<td>service.info["MSSQLSERVER"]</td>
+<td>1 (Running)</td>
+</tr>
+<tr>
+<td>Служба DHCP</td>
+<td>Dhcp</td>
+<td>service.info["Dhcp"]</td>
+<td>1 (Running)</td>
+</tr>
+<tr>
+<td>Удаленный реестр</td>
+<td>RemoteRegistry</td>
+<td>service.info["RemoteRegistry"]</td>
+<td>3 (Disabled) или 1 (Running)</td>
+</tr>
+</tbody>
+</table>
+<p>Обратите внимание, что для некоторых служб, таких как удаленный реестр, допустимое состояние может быть отличным от «Работает». В таких случаях триггер должен быть настроен на <strong>запрет запуска</strong> или, наоборот, на контроль наличия конкретного состояния.</p>
+<p>Использование <mark>стандартных ключей</mark> service.info значительно упрощает поддержку конфигурации по сравнению с самописными скриптами, так как все обновления логики происходят внутри агента.</p>
+
+<div class="attention-box attention-tip"><span class="attention-icon">💡</span><p>Для сокращения времени обработки данных используйте регулярные выражения (Regexp) в макросах, чтобы группировать похожие службы, например, все SQL-сервисы, под одним шаблоном.</p></div>
+
+<h2 id="настройка-уведомлений-и-эскалации">Настройка уведомлений и эскалации</h2>
+<p>После создания триггеров необходимо настроить <strong>медиа-типы</strong> для отправки уведомлений. Zabbix поддерживает отправку писем, SMS, сообщений в Telegram, Slack или Microsoft Teams через вебхуки.</p>
+<p>Важно настроить эскалацию событий: если служба не восстановилась в течение 15 минут, уведомление должно отправляться старшему администратору или руководителю инфраструктуры.</p>
+<p>Настройте «окно тишины» (maintenance window) для плановых работ, чтобы система не выдавала ложные тревоги во время перезагрузки серверов или установки обновлений.</p>
+<p>Тестирование уведомлений должно проводиться регулярно. Отправьте тестовое сообщение через консоль Zabbix, чтобы убедиться, что каналы связи работают корректно идреса получателей актуальны.</p>
+
+<div class="attention-box attention-tip"><span class="attention-icon">💡</span><p>Регулярный аудит уведомлений и проверка срабатывания триггеров на тестовых серверах — залог того, что система сработает в критический момент.</p></div>
+
+<h2 id="анализ-производительности-и-ресурсы">Анализ производительности и ресурсы</h2>
+<p>Мониторинг служб не должен нагружать саму систему. Частота опроса (Update Interval) должна быть сбалансирована: слишком частые запросы могут создавать лишнюю нагрузку, особенно при использовании WMI.</p>
+<p>Для критических служб, состояние которых меняется часто (например, службы переподключения), используйте интервал опроса 30-60 секунд. Для стабильных системных сервисов достаточно 5 минут.</p>
+<p>Если вы используете WMI, следите за потреблением ресурсов на сервере Zabbix Proxy или Server. Длительные запросы WMI могут блокировать очередь обработки данных.</p>
+<p>В случае проблем с производительностью рассмотрите возможность использования <strong>неактивных агентов</strong> (Passive check) вместо активных (Active check), что позволит распределить нагрузку более равномерно.</p>
+
+<h2 id="решение-распространенных-проблем">Решение распространенных проблем</h2>
+<p>Частой проблемой является получение пустого ответа от ключа <code>service.info</code>. Это часто связано с тем, что учетная запись агента не имеет прав на чтение реестра служб или служба <strong>Remote Registry</strong> отключена.</p>
+<p>Другая распространенная ошибка — синтаксическая несовместимость в именах служб. Имя службы в консоли <code>services.msc</code> может отличаться от технического имени, используемого в Zabbix.</p>
+<p>Используйте утилиту <code>Get-Service</code> в PowerShell на целевом сервере, чтобы найти точное имя службы перед добавлением его в ключ мониторинга.</p>
+<p>Если агент не может подключиться к серверу, проверьте настройки <code>AllowDeny</code> в конфигурации и убедитесь, что порт 10050 открыт в обе стороны.</p>
+
+<details class="faq-item"><summary>Как найти точное имя службы?</summary><div class="faq-answer"><p>Запустите PowerShell и введите команду <code>Get-Service | Format-Table Name, DisplayName</code>. Столбец Name содержит технический идентификатор, который необходимо использовать в ключе Zabbix.</p></div></details>
+
+<h2 id="интеграция-с-внешними-системами">Интеграция с внешними системами</h2>
+<p>Современный мониторинг требует интеграции с ITSM-системами (Service Desk). Zabbix позволяет создавать тикеты автоматически при падении критической службы.</p>
+<p>Используйте функционал <strong>действий</strong> (Actions) для отправки вебхуков в Jira, ServiceNow или другие системы управления инцидентами.</p>
+<p>Это позволяет автоматизировать процесс регистрации инцидента и начать процедуру восстановления еще до того, как администратор увидит сообщение в почтовом ящике.</p>
+
+<blockquote>⚠️ Внимание: При интеграции с внешними системами убедитесь, что у Zabbix Server есть прямой доступ к API внешних сервисов, и проверьте срок действия API-ключей, используемых для аутентификации.</blockquote>
+
+<h2 id="заключительные-рекомендации-по-безопасности">Заключительные рекомендации по безопасности</h2>
+<p>Безопасность данных мониторинга не менее важна, чем сам мониторинг. Зашифруйте трафик между агентом и сервером с помощью TLS, чтобы избежать перехвата данных о состоянии инфраструктуры.</p>
+<p>Ограничьте права доступа к данным мониторинга, используя группы пользователей и права на чтение/запись только для необходимых администраторов.</p>
+<p>Регулярно обновляйте версию агента и сервера Zabbix, чтобы закрывать уязвимости, связанные с обработкой служб и реестра Windows.</p>
+<p>Правильно настроенный мониторинг служб — это фундамент надежности вашей IT-инфраструктуры, позволяющий минимизировать простои и быстро реагировать на угрозы.</p>
+
+<details>
+<summary>Как проверить, работает ли служба Zabbix Agent на Windows?</summary>
+<p>Введите команду <code>Get-Service -Name "Zabbix Agent"</code> в PowerShell. Если статус <code>Running</code>, агент активен. Также можно проверить логи в папке <code>C:\Program Files\Zabbix Agent\zabbix_agentd.log</code>.</p>
+</details>
+
+<details>
+<summary>Можно ли мониторить службы без установки агента?</summary>
+<p>Да, можно использовать WMI (Windows Management Instrumentation) или PowerShell-скрипты, выполняемые через Zabbix, но это требует настройки прав доступа и открытия портов 135 и 445.</p>
+</details>
+
+<details>
+<summary>Что делать, если триггер срабатывает ложно?</summary>
+<p>Увеличьте интервал опроса, добавьте условие <code>min()</code> за определенный период времени или настройте время восстановления (acknowledge timeout), чтобы игнорировать кратковременные сбои.</p>
+</details>
+
+<details>
+<summary>Как узнать имя службы для ключа мониторинга?</summary>
+<p>Используйте команду <code>sc query</code> в командной строке или просмотрите свойства службы в консоли <code>services.msc</code>. Имя службы в разделе <code>Name</code> используется в ключах Zabbix.</p>
+</details>
+
+<details>
+<summary>Можно ли мониторить время запуска службы?</summary>
+<p>Да, используйте ключ <code>service.info["ServiceName", "StartTime"]</code> (если поддерживается версией) или WMI-запрос для получения времени запуска и сравнивайте его с текущим временем.</p>
+</details></div>
+                    <!--#include virtual="/ssi/article_after.html" -->
+
+                </article>
+                <aside class="article-sidebar"><!--#include virtual="/ssi/sidebar_top.html" --><nav class="sidebar-search"><div class="sidebar-search-box"><input type="text" id="globalSearchInput" placeholder="🔍 Поиск статей..." autocomplete="off"><div class="search-dropdown" id="globalSearchDropdown"></div></div></nav><!--#include virtual="/ssi/sidebar_before_toc.html" --><nav class="sidebar-toc" id="sidebarToc"><h3>Содержание</h3><ul><li><a href="#введение-в-мониторинг-системных-сервисов">Введение в мониторинг системных сервисов</a></li><li><a href="#выбор-метода-агент-zabbix-против-wmi">Выбор метода: Агент Zabbix против WMI</a></li><li><a href="#базовая-настройка-ключей-агента">Базовая настройка ключей агента</a></li><li><a href="#создание-триггеров-для-автоматических-алертов">Создание триггеров для автоматических алертов</a></li><li><a href="#использование-wmi-для-глубокого-анализа">Использование WMI для глубокого анализа</a></li><li><a href="#таблица-популярных-служб-и-их-ключей">Таблица популярных служб и их ключей</a></li><li><a href="#настройка-уведомлений-и-эскалации">Настройка уведомлений и эскалации</a></li><li><a href="#анализ-производительности-и-ресурсы">Анализ производительности и ресурсы</a></li><li><a href="#решение-распространенных-проблем">Решение распространенных проблем</a></li><li><a href="#интеграция-с-внешними-системами">Интеграция с внешними системами</a></li><li><a href="#заключительные-рекомендации-по-безопасности">Заключительные рекомендации по безопасности</a></li></ul></nav><!--#include virtual="/ssi/sidebar_before_related.html" --><nav class="sidebar-related"><h3>Похожие статьи</h3><ul><li><a href="/articles/k/ka/kak-najti-i-ustanovit-drajvera-na-monitor.html" class="related-card">Как найти и установить драйвера на монитор: полная инструкция</a></li><li><a href="/articles/k/ka/kak-vyvesti-na-monitor-skorost-interneta.html" class="related-card">Как вывести скорость интернета на монитор: 5 способов (2026)</a></li><li><a href="/articles/k/ka/kak-zakhvatit-video-s-ekrana-monitora.html" class="related-card">Как захватить видео с экрана: лучшие программы и настройки</a></li><li><a href="/articles/t/th/the-dude-kak-monitorit.html" class="related-card">Как мониторить The Dude: настройка, опросы и алерты в MikroTik</a></li><li><a href="/articles/k/ka/kak-zablokirovat-monitor-kompyutera-na-parol.html" class="related-card">Как поставить пароль на монитор компьютера — 5 способов блокировки</a></li></ul></nav><!--#include virtual="/ssi/sidebar_after_related.html" --></aside>
+            </div>
+        </div>
+    </main>
+
+    <!--#include virtual="/ssi/before_related_bottom.html" -->
+    <section class="related-bottom">
+        <div class="container">
+            <h2 class="related-bottom-heading">📖 Читайте также</h2>
+            <div class="related-bottom-grid"><a href="/articles/k/ka/kak-najti-i-ustanovit-drajvera-na-monitor.html" class="related-bottom-card"><span class="related-bottom-title">Как найти и установить драйвера на монитор: полная инструкция</span><span class="related-bottom-desc">Пошаговое руководство по поиску, скачиванию и правильной установке драйверов монитора. Решаем пробле</span></a><a href="/articles/k/ka/kak-vyvesti-na-monitor-skorost-interneta.html" class="related-bottom-card"><span class="related-bottom-title">Как вывести скорость интернета на монитор: 5 способов (2026)</span><span class="related-bottom-desc">Пошаговые инструкции по отображению скорости интернета на экране монитора: через программы, виджеты </span></a><a href="/articles/k/ka/kak-zakhvatit-video-s-ekrana-monitora.html" class="related-bottom-card"><span class="related-bottom-title">Как захватить видео с экрана: лучшие программы и настройки</span><span class="related-bottom-desc">Полное руководство по записи экрана монитора. Обзор OBS, Bandicam, встроенных средств Windows. Настр</span></a><a href="/articles/t/th/the-dude-kak-monitorit.html" class="related-bottom-card"><span class="related-bottom-title">Как мониторить The Dude: настройка, опросы и алерты в MikroTik</span><span class="related-bottom-desc">Пошаговое руководство по настройке The Dude для мониторинга сети. Настройка discovery, создание карт</span></a><a href="/articles/k/ka/kak-zablokirovat-monitor-kompyutera-na-parol.html" class="related-bottom-card"><span class="related-bottom-title">Как поставить пароль на монитор компьютера — 5 способов блокировки</span><span class="related-bottom-desc">Пошаговые инструкции, как заблокировать монитор Windows/Mac/Linux на пароль. Горячие клавиши, настро</span></a><a href="/articles/k/ka/kak-uznat-svoj-monitor-na-pk-windows-7.html" class="related-bottom-card"><span class="related-bottom-title">Как узнать модель монитора на Windows 7: 5 рабочих способов</span><span class="related-bottom-desc">Узнайте точную модель и характеристики экрана в Windows 7 через свойства системы, драйверы и сторонн</span></a></div>
+        </div>
+    </section>
+    <!--#include virtual="/ssi/after_related_bottom.html" -->
+
+    <footer class="site-footer-premium">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-col">
+                    <div class="footer-brand">🖥️ Мониторум</div>
+                    <p class="footer-about">Полный справочник по настройке, ремонту и выбору компьютерных мониторов для любых задач.</p>
+                </div>
+                <div class="footer-col">
+                    <h4>Разделы</h4>
+                    <ul><li><a href="/category/nastrojka-ekrana/">⚙️ Настройка экрана</a></li>
+<li><a href="/category/podklyuchenie-ustrojstv/">🔌 Подключение устройств</a></li>
+<li><a href="/category/mnozhestvennye-ekrany/">🖥️🖥️ Множественные экраны</a></li>
+<li><a href="/category/zvuk-i-audio/">🔊 Звук и аудио</a></li>
+<li><a href="/category/remont-i-polomki/">🔧 Ремонт и поломки</a></li>
+<li><a href="/category/ukhod-i-chistka/">🧼 Уход и чистка</a></li></ul>
+                </div>
+                <div class="footer-col">
+                    <h4>Информация</h4>
+                    <ul>
+                        <li><a href="/">Главная</a></li>
+                        <li><a href="/about.html">О проекте</a></li>
+                        <li><a href="/categories.html">Все разделы</a></li>
+                        <li><a href="/contact.html">Контакты</a></li>
+                        <li><a href="/privacy.html">Конфиденциальность</a></li>
+                        <li><a href="/sitemap.xml">Карта сайта</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>© Мониторум. Все права защищены.</p>
+                <!--LiveInternet counter--><div style="margin-top:10px;"><a href="https://www.liveinternet.ru/click"
+                target="_blank"><img id="licnt06C4" width="88" height="15" style="border:0" 
+                title="LiveInternet: показано число посетителей за сегодня"
+                src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAEALAAAAAABAAEAAAIBTAA7"
+                alt=""/></a><script>(function(d,s){d.getElementById("licnt06C4").src=
+                "https://counter.yadro.ru/hit?t26.5;r"+escape(d.referrer)+
+                ((typeof(s)=="undefined")?"":";s"+s.width+"*"+s.height+"*"+
+                (s.colorDepth?s.colorDepth:s.pixelDepth))+";u"+escape(d.URL)+
+                ";h"+escape(d.title.substring(0,150))+";"+Math.random()})(document,screen)</script></div><!--/LiveInternet-->
+            </div>
+        </div>
+    </footer>
+    <div id="cookie-consent" class="cookie-popup">
+        <div class="cookie-inner">
+            <span>🍪 Мы используем файлы cookie для улучшения работы сайта.</span>
+            <button id="cookie-accept" class="cookie-btn">Принять</button>
+        </div>
+    </div>
+    <script src="/static/js/main.js"></script>
+    <script>
+    (function() {
+        const popup = document.getElementById('cookie-consent');
+        const btn = document.getElementById('cookie-accept');
+        if (popup && btn && !localStorage.getItem('cookie-accepted')) {
+            popup.classList.add('visible');
+            btn.onclick = () => {
+                localStorage.setItem('cookie-accepted', 'true');
+                popup.classList.remove('visible');
+            };
+        }
+    })();
+    </script>
+    <script>
+    function pbPollVote(el) {
+        var poll = el.closest('.poll-widget');
+        if (poll.classList.contains('voted')) return;
+        poll.classList.add('voted');
+        el.classList.add('selected');
+        var opts = poll.querySelectorAll('.poll-widget-option');
+        var n = opts.length;
+        var raw = [];
+        var sum = 0;
+        for (var i = 0; i < n; i++) {
+            var v = Math.random() * 50 + 5;
+            if (opts[i] === el) v += 30;
+            raw.push(v);
+            sum += v;
+        }
+        var pcts = raw.map(function(v) { return Math.round(v / sum * 100); });
+        var diff = 100 - pcts.reduce(function(a,b){ return a+b; }, 0);
+        pcts[Array.from(opts).indexOf(el)] += diff;
+        setTimeout(function() {
+            opts.forEach(function(opt, i) {
+                opt.querySelector('.poll-widget-bar').style.width = pcts[i] + '%';
+                opt.querySelector('.poll-widget-pct').textContent = pcts[i] + '%';
+            });
+        }, 50);
+    }
+    </script>
+    <!--#include virtual="/ssi/body_bottom.html" -->
+    <script src="/static/js/inject.js" defer></script>
+</body>
+</html>

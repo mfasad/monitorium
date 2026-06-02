@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27><text y=%27.9em%27 font-size=%2790%27>🖥️</text></svg>">
+    <title>Настройка Wi-Fi на Raspberry Pi 3 без монитора: полное руководство — Мониторум</title>
+    <meta name="description" content="Пошаговая инструкция по подключению Raspberry Pi 3 к беспроводной сети без использования дисплея. Методы настройки через SD-карту и SSH.">
+    <link rel="canonical" href="https://monitorium.vercel.app/articles/k/ka/kak-podklyuchit-raspberry-pi-3-k-wifi-bez-monitora.html">
+
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="Настройка Wi-Fi на Raspberry Pi 3 без монитора: полное руководство">
+    <meta property="og:description" content="Пошаговая инструкция по подключению Raspberry Pi 3 к беспроводной сети без использования дисплея. Методы настройки через SD-карту и SSH.">
+    <meta property="og:locale" content="ru_RU">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css?v=1780420684">
+    <style>
+    .site-footer-premium {
+        margin-top: 60px; padding: 40px 0 0; background: #1e293b; color: #94a3b8;
+    }
+    .footer-grid {
+        display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 40px;
+        padding-bottom: 32px; border-bottom: 1px solid #334155;
+    }
+    .footer-brand { font-size: 1.2rem; font-weight: 700; color: #f1f5f9; margin-bottom: 12px; }
+    .footer-about { font-size: 0.9rem; line-height: 1.6; margin-bottom: 8px; }
+    .footer-updated { font-size: 0.8rem; color: #64748b; }
+    .footer-col h4 { color: #f1f5f9; font-size: 0.95rem; margin-bottom: 16px; }
+    .footer-col ul { list-style: none; }
+    .footer-col li { margin-bottom: 8px; }
+    .footer-col a { color: #94a3b8; font-size: 0.9rem; transition: color 0.2s; }
+    .footer-col a:hover { color: #60a5fa; }
+    .footer-bottom { padding: 20px 0; text-align: center; font-size: 0.85rem; }
+    @media (max-width: 640px) {
+        .footer-grid { grid-template-columns: 1fr; gap: 24px; }
+    }
+    .cookie-popup {
+        position: fixed; bottom: 0; left: 0; right: 0; background: #1e293b; color: #fff;
+        padding: 16px; transition: transform 0.5s ease; z-index: 9999; border-top: 2px solid #2563eb;
+        transform: translateY(100%);
+    }
+    .cookie-popup.visible { transform: translateY(0); }
+    .cookie-inner { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; gap: 16px; font-size: 0.9rem; }
+    .cookie-btn { background: #2563eb; color: #fff; border: none; padding: 8px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+    .cookie-btn:hover { background: #1d4ed8; }
+    @media (max-width: 640px) {
+        .cookie-inner { flex-direction: column; text-align: center; }
+    }
+</style>
+    
+    <!--#include virtual="/ssi/head.html" -->
+</head>
+<body>
+        <!--#include virtual="/ssi/body_top.html" -->
+    <style>
+    .nav-dropdown { position: relative; display: inline-block; }
+    .dropdown-toggle {
+        background: none; border: none; cursor: pointer;
+        font: inherit; color: inherit; padding: 8px 12px;
+        border-radius: 8px; transition: background 0.2s;
+    }
+    .dropdown-toggle:hover { background: rgba(0,0,0,0.05); }
+    .dropdown-menu {
+        display: none; position: absolute; right: 0; top: 100%;
+        min-width: 240px; max-height: 70vh; overflow-y: auto;
+        background: var(--card-bg, #fff); border: 1px solid var(--border, #e5e7eb);
+        border-radius: 12px; box-shadow: 0 12px 40px rgba(0,0,0,0.12);
+        padding: 8px 0; z-index: 1000;
+    }
+    .nav-dropdown::after {
+        content: ''; position: absolute; left: 0; right: 0;
+        top: 100%; height: 12px;
+    }
+    .nav-dropdown:hover .dropdown-menu,
+    .nav-dropdown:focus-within .dropdown-menu { display: block; }
+    .dropdown-item {
+        display: block; padding: 10px 20px; color: var(--text, #1f2937);
+        text-decoration: none; font-size: 0.95rem; transition: background 0.15s;
+        white-space: nowrap;
+    }
+    .dropdown-item:hover { background: rgba(37,99,235,0.06); color: var(--primary, #2563eb); }
+    @media (max-width: 768px) {
+        .main-nav > .nav-link { display: none; }
+        .dropdown-toggle { display: none; }
+        .dropdown-menu {
+            display: block !important; position: static;
+            box-shadow: none; border: none; border-radius: 0;
+            min-width: auto; max-height: none; padding: 0;
+            background: transparent;
+        }
+        .dropdown-item {
+            padding: 8px 0; font-size: 1rem;
+        }
+    }
+    </style>
+    <header class="site-header">
+        <div class="container header-inner">
+            <a href="/" class="logo">
+                <span class="logo-icon">🖥️</span>
+                <span>Мониторум</span>
+            </a>
+            <button class="mobile-menu-btn" aria-label="Меню" id="menuBtn">☰</button>
+            <nav class="main-nav" id="mainNav">
+                <a href="/category/nastrojka-ekrana/" class="nav-link">⚙️ Настройка экрана</a>
+<a href="/category/podklyuchenie-ustrojstv/" class="nav-link">🔌 Подключение устройств</a>
+<a href="/category/mnozhestvennye-ekrany/" class="nav-link">🖥️🖥️ Множественные экраны</a>
+<a href="/category/zvuk-i-audio/" class="nav-link">🔊 Звук и аудио</a>
+<div class="nav-dropdown">
+            <button class="nav-link dropdown-toggle">📂 Все разделы ▾</button>
+            <div class="dropdown-menu"><a href="/category/nastrojka-ekrana/" class="dropdown-item">⚙️ Настройка экрана</a>
+<a href="/category/podklyuchenie-ustrojstv/" class="dropdown-item">🔌 Подключение устройств</a>
+<a href="/category/mnozhestvennye-ekrany/" class="dropdown-item">🖥️🖥️ Множественные экраны</a>
+<a href="/category/zvuk-i-audio/" class="dropdown-item">🔊 Звук и аудио</a>
+<a href="/category/remont-i-polomki/" class="dropdown-item">🔧 Ремонт и поломки</a>
+<a href="/category/ukhod-i-chistka/" class="dropdown-item">🧼 Уход и чистка</a>
+<a href="/category/vybor-i-kharakteristiki/" class="dropdown-item">📊 Выбор и характеристики</a>
+<a href="/category/drajvery-i-po/" class="dropdown-item">💿 Драйверы и ПО</a>
+<a href="/category/krepleniya-i-ustanovka/" class="dropdown-item">🔩 Крепления и установка</a>
+<a href="/category/utilizatsiya-i-prodazha/" class="dropdown-item">♻️ Утилизация и продажа</a>
+<a href="/category/spetsialnye-rezhimy/" class="dropdown-item">🎮 Специальные режимы</a>
+<a href="/category/drugoe/" class="dropdown-item">📁 Другое</a></div>
+        </div>
+            </nav>
+        </div>
+    </header>
+
+    <nav class="breadcrumbs" aria-label="Навигация">
+        <div class="container"><a href="/">Главная</a><span class="breadcrumb-sep">›</span><a href="/category/podklyuchenie-ustrojstv/">Подключение устройств</a><span class="breadcrumb-sep">›</span><span class="breadcrumb-current">Настройка Wi-Fi на Raspberry Pi 3 без монитора: полное руководство</span></div>
+    </nav>
+
+    <main class="site-main">
+        <div class="container">
+            <div class="article-layout">
+                <article class="article-main">
+                    
+                    <h1>Подключение Raspberry Pi 3 к Wi-Fi без монитора</h1>
+                    <nav class="mobile-toc"><details><summary>📋 Содержание</summary><ul><li><a href="#подготовка-образа-операционной-системы-и-карты-памяти">Подготовка образа операционной системы и карты памяти</a></li><li><a href="#ручное-создание-файла-конфигурации-wlan0">Ручное создание файла конфигурации wlan0</a></li><li><a href="#включение-ssh-и-настройка-доступа-по-сети">Включение SSH и настройка доступа по сети</a></li><li><a href="#поиск-ip-адреса-устройства-в-сети">Поиск IP-адреса устройства в сети</a></li><li><a href="#подключение-по-ssh-и-базовая-настройка">Подключение по SSH и базовая настройка</a></li><li><a href="#устранение-типичных-проблем-с-подключением">Устранение типичных проблем с подключением</a></li><li><a href="#расширенные-возможности-и-альтернативные-методы">Расширенные возможности и альтернативные методы</a></li><li><a href="#завершение-настройки-и-первая-проверка">Завершение настройки и первая проверка</a></li></ul></details></nav>
+                    <!--#include virtual="/ssi/article_before.html" -->
+                    <div class="article-body"><p>Подключение одноплатного компьютера <em>Raspberry Pi 3</em> к беспроводной сети без использования внешнего дисплея является стандартной процедурой для развертывания серверов и встраиваемых систем. Этот процесс, известный как настройка в режиме «безголовых» (headless), позволяет существенно сэкономить ресурсы и создаваемое оборудование, делая установку более компактной.</p>
+
+<p>Многие пользователи ошибочно полагают, что для первичной конфигурации необходим монитор, клавиатура и мышь. На самом деле, современная операционная система <em>Raspberry Pi OS</em> (ранее Raspbian) предоставляет встроенные инструменты для удаленного доступа, которые активируются еще до первого включения устройства в розетку. <mark>Ключевым моментом является создание файла конфигурации на этапе записи образа на карту памяти.</mark></p>
+
+<p>Ниже подробно описаны методы, которые позволят вам настроить интернет-соединение корректно и быстро. Мы рассмотрим как работы с файловой системой на уровне ОС, так и использование утилит для автоматизации процесса. Следуйте инструкциям внимательно, избегая ошибок при редактировании системных файлов.</p>
+
+<h2 id="подготовка-образа-операционной-системы-и-карты-памяти">Подготовка образа операционной системы и карты памяти</h2>
+
+<p>Первым шагом в подготовке <em>Raspberry Pi 3</em> является загрузка актуального образа операционной системы с официального сайта. Вам потребуется программа для записи, такая как <em>Raspberry Pi Imager</em> или <em>BalenaEtcher</em>. Эти утилиты обеспечивают корректное распределение разделов и загрузку загрузчика.</p>
+
+<p>После выбора образа в настройках программы записи необходимо включить опцию редактирования конфигурации перед записью. В диалоговом окне настроек найдите раздел «Настройки» или «System Options» и активируйте переключатель для включения <code>SSH</code>. Это критически важно для будущего удаленного управления.</p>
+
+<p>Далее перейдите в настройки беспроводной сети. Вам нужно ввести имя вашей сети (SSID) и пароль от неё. Система сама создаст необходимый файл конфигурации при записи. Важно убедиться, что вы выбрали правильный регион для Wi-Fi модуля, чтобы избежать проблем с мощностью сигнала.</p>
+
+<blockquote>⚠️ Внимание: Убедитесь, что ваша карта памяти отформатирована в файловую систему FAT32 перед началом записи, так как утилиты могут не справиться с другими форматами без предварительной очистки.</blockquote>
+
+<h2 id="ручное-создание-файла-конфигурации-wlan0">Ручное создание файла конфигурации wlan0</h2>
+
+<p>Если вы используете классический метод записи образа, вам придется вручную создать конфигурационный файл. После завершения записи образа на карту памяти, извлеките её и вставьте в компьютер. Откройте доступный раздел, который называется <code>boot</code>, он доступен в любой ОС.</p>
+
+<p>В корне раздела <code>boot</code> необходимо создать новый текстовый файл и переименовать его в <code>wpa_supplicant.conf</code>. Этот файл содержит все данные о беспроводной сети, к которой планируется подключение. Без него система не будет знать, куда отправлять запросы на аутентификацию.</p>
+
+<p>Откройте созданный файл в текстовом редакторе и вставьте следующий код конфигурации. Обратите внимание на структуру блоков: каждая сеть описывается в отдельном блоке «network». Если вы планируете использовать статический IP, это также нужно указать здесь.</p>
+
+<pre><code>ctrl_interface=DIR=/var/run/wpa_supplicant GROUP=netdev
+<p>update_config=1</p>
+<p>country=RU</p>
+
+<p>network={</p>
+<p>ssid="Имя_Вашей_Сети"</p>
+<p>psk="Ваш_Пароль"</p>
+<p>key_mgmt=WPA-PSK</p>
+<p>}</code></pre></p>
+
+<p>Убедитесь, что параметр <code>country</code> установлен в соответствии с вашим регионом для корректной работы радиомодуля. Если вы находитесь в России, используйте код <code>RU</code>. Сохраните файл и безопасно извлеките карту памяти.</p>
+
+<blockquote>⚠️ Внимание: Ошибка в написании пароля или названия сети в файле конфигурации приведет к циклическим попыткам подключения и невозможности удаленного доступа. Проверяйте регистр букв.</blockquote>
+
+<div class="poll-widget" id="poll-e3a048ad"><div class="poll-widget-question">📊 Какой метод настройки вам удобнее?</div><div class="poll-widget-option" data-poll="e3a048ad" data-idx="0" onclick="pbPollVote(this)"><span class="poll-widget-label">Через Raspberry Pi Imager</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="e3a048ad" data-idx="1" onclick="pbPollVote(this)"><span class="poll-widget-label">Ручное создание файла</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="e3a048ad" data-idx="2" onclick="pbPollVote(this)"><span class="poll-widget-label">Через терминал Linux</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="e3a048ad" data-idx="3" onclick="pbPollVote(this)"><span class="poll-widget-label">Не использую Pi 3</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div></div>
+
+<h2 id="включение-ssh-и-настройка-доступа-по-сети">Включение SSH и настройка доступа по сети</h2>
+
+<p>Для управления устройством без монитора необходимо активировать протокол удаленного доступа <code>SSH</code>. В новых версиях <em>Raspberry Pi OS</code> по умолчанию SSH отключен в целях безопасности. Включить его можно, создав пустой файл с именем <code>ssh</code> (без расширения) в корне раздела <code>boot</code>.</p>
+
+<p>Если вы используете Windows, просто создайте новый текстовый документ, переименуйте его в <code>ssh</code> и удалите расширение <code>.txt</code>. В Linux или macOS можно использовать команду <code>touch ssh</code> в терминале, находясь в корне смонтированного раздела карты памяти.</p>
+
+<p>После включения SSH и создания файла конфигурации Wi-Fi, вставьте карту в <em>Raspberry Pi 3</em> и подключите блок питания. Дайте системе время на загрузку, обычно это занимает от 1 до 3 минут. Индикатор активности на плате должен мигать хаотично, что говорит о работе системы.</p>
+
+<ul>
+    <li>✅ Проверьте, что ваш компьютер подключен к той же сети Wi-Fi, что и Raspberry Pi.</li>
+    <li>✅ Убедитесь, что роутер не блокирует новые устройства (режим изоляции клиентов).</li>
+    <li>✅ Запомните IP-адрес устройства, который можно найти в панели управления маршрутизатором.</li>
+</ul>
+
+<div class="checklist-block"><h4>☑️ Проверка перед первым запуском</h4><label class="check-item"><input type="checkbox"><span>Карта памяти установлена</span></label><label class="check-item"><input type="checkbox"><span>Файл wpa_supplicant.conf создан</span></label><label class="check-item"><input type="checkbox"><span>Файл ssh пустой</span></label><label class="check-item"><input type="checkbox"><span>Блок питания исправен</span></label><div class="check-progress">Выполнено: <span class="check-count">0</span> / 4</div></div>
+
+<h2 id="поиск-ip-адреса-устройства-в-сети">Поиск IP-адреса устройства в сети</h2>
+
+<p>Ключевая проблема при подключении без монитора — узнать, какой IP-адрес получил <em>Raspberry Pi 3</em> от вашего роутера. Без этого адреса вы не сможете подключиться по сети. Существует несколько способов узнать этот параметр.</p>
+
+<p>Самый простой метод — зайти в веб-интерфейс вашего роутера. Перейдите в раздел «Подключенные устройства» или «DHCP Clients List». Найдите устройство с именем <code>raspberrypi</code> и запомните его IP-адрес, обычно начинающийся с <code>192.168.1.x</code> или <code>192.168.0.x</code>.</p>
+
+<p>Если доступ к роутеру затруднен, используйте сканеры сети. Утилита <code>Advanced IP Scanner</code> для Windows или <code>nmap</code> для Linux помогут просканировать подсеть. Введите диапазон адресов и запустите сканирование, чтобы найти активный хост с открытым портом 22 (SSH).</p>
+
+<p>Некоторые продвинутые пользователи используют Bonjour (mDNS), который позволяет обращаться к устройству по доменному имени <code>raspberrypi.local</code>. Однако эта технология работает некорректно в некоторых сетях Windows, если не установлен Bonjour Print Services.</p>
+
+<table>
+    <thead>
+        <tr>
+            <th>Метод поиска</th>
+            <th>Простота использования</th>
+            <th>Требования</th>
+            <th>Надежность</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>Через панель роутера</td>
+            <td>Высокая</td>
+            <td>Доступ к админке</td>
+            <td>100%</td>
+        </tr>
+        <tr>
+            <td>Сканеры сети</td>
+            <td>Средняя</td>
+            <td>Установленный софт</td>
+            <td>95%</td>
+        </tr>
+        <tr>
+            <td>mDNS (raspberrypi.local)</td>
+            <td>Низкая</td>
+            <td>Поддержка в ОС</td>
+            <td>70%</td>
+        </tr>
+    </tbody>
+</table>
+
+<details class="faq-item"><summary>Что делать, если IP-адрес не находится?</summary><div class="faq-answer"><p>Если устройство не определяется, попробуйте принудительно назначить статический IP в настройках роутера на основе MAC-адреса платы. MAC-адрес можно найти на наклейке под платой или на самом чипе Wi-Fi модуля.</p></div></details>
+
+<h2 id="подключение-по-ssh-и-базовая-настройка">Подключение по SSH и базовая настройка</h2>
+
+<p>После того как IP-адрес найден, можно подключаться к системе. Откройте терминальный эмулятор: в Linux или macOS это стандартная программа «Терминал», в Windows — приложение <code>Putty</code> или встроенная консоль PowerShell.</p>
+
+<p>Введите команду подключения, подставив полученный IP-адрес. Стандартный формат запроса выглядит как <code>ssh pi@192.168.x.x</code>. Система запросит подтверждение ключа при первом подключении — введите <code>yes</code>.</p>
+
+<p>По умолчанию учетная запись пользователя <code>pi</code> имеет пароль <code>raspberry</code>. Введите его при запросе. Если имя пользователя или пароль были изменены вами ранее при записи образа, используйте актуальные данные. Успешное подключение откроет командную строку с приглашением пользователя.</p>
+
+<pre><code>ssh pi@192.168.1.50</code></pre>
+
+<p>Как только вы увидите приглашение командной строки, устройство полностью готово к работе. Рекомендуется немедленно сменить пароль по умолчанию для повышения безопасности. Используйте команду <code>passwd</code> для смены пароля пользователя.</p>
+
+<div class="attention-box attention-tip"><span class="attention-icon">💡</span><p>Для удобства работы используйте портативные терминалы или настройте авто-вход по ключам SSH, чтобы не вводить пароль каждый раз при подключении к плате.</p></div>
+
+<h2 id="устранение-типичных-проблем-с-подключением">Устранение типичных проблем с подключением</h2>
+
+<p>Даже при соблюдении всех инструкций могут возникнуть проблемы. Самая частая причина — неверно указанный регион в файле <code>wpa_supplicant.conf</code>. Это приводит к тому, что модуль Wi-Fi отказывается работать на определенных каналах, которые используются вашим роутером.</p>
+
+<p>Если устройство не подключается, проверьте, поддерживает ли <em>Raspberry Pi 3</em> вашу частоту. Старые модели могут не работать с сетями 5 ГГц, хотя модель 3B уже поддерживает данный стандарт. Убедитесь, что вы пытаетесь подключиться к 2.4 ГГц или 5 ГГц, если настройки верны.</p>
+
+<p>Иногда проблема кроется в задержке инициализации модуля. Если вы ожидаете подключения более 5 минут, попробуйте перепрошить карту памяти, возможно, возникла ошибка записи. Файлы могут быть повреждены, если карта памяти была извлечена без безопасного извлечения.</p>
+
+<ul>
+    <li>✅ Проверьте, что роутер не использует скрытый SSID (без имени).</li>
+    <li>✅ Убедитесь, что пароль не содержит спецсимволов, которые могут быть некорректно интерпретированы.</li>
+    <li>✅ Попробуйте подключить устройство ближе к роутеру для исключения проблем с сигналом.</li>
+</ul>
+
+<blockquote>⚠️ Внимание: Если вы используете статический IP, убедитесь, что он не конфликтует с другими устройствами в вашей локальной сети. Динамическое получение адреса (DHCP) предпочтительнее для домашних сетей.</blockquote>
+
+<div class="attention-box attention-tip"><span class="attention-icon">💡</span><p>Правильная настройка файла wpa_supplicant.conf и включение SSH через создание файла ssh — это два обязательных шага для успешного запуска Raspberry Pi 3 без монитора.</p></div>
+
+<h2 id="расширенные-возможности-и-альтернативные-методы">Расширенные возможности и альтернативные методы</h2>
+
+<p>Помимо стандартного SSH, для управления <em>Raspberry Pi</em> можно использовать VNC-сервер. Это позволит визуализировать рабочий стол операционной системы на вашем компьютере. Для этого необходимо установить пакет <code>realvnc-server</code> и включить его через <code>raspi-config</code>.</p>
+
+<p>Альтернативным способом настройки является использование утилиты <code>PiBakery</code> или <code>Raspberry Pi Imager</code> с дополнительными скриптами запуска. Эти инструменты позволяют прописать любые команды, которые выполнятся при первом запуске, включая установку пакетов и настройку сети.</p>
+
+<p>Для профессиональных применений часто используется конфигурация через переменные окружения или специальные дистрибутивы, такие как <em>Kali Linux</em> или специализированные сборки для IoT. В этих системах процесс настройки может отличаться и требовать дополнительных манипуляций с загрузчиком.</p>
+
+<details class="faq-item"><summary>Как настроить статический IP?</summary><div class="faq-answer"><p>Добавьте строки interface wlan0, static ip_address=192.168.1.50, static routers=192.168.1.1, static domain_name_servers=8.8.8.8 в конец файла wpa_supplicant.conf.</p></div></details>
+
+<h2 id="завершение-настройки-и-первая-проверка">Завершение настройки и первая проверка</h2>
+
+<p>После успешного подключения и ввода пароля рекомендуется выполнить команду обновления системы. Это гарантирует, что все драйверы, включая модуль Wi-Fi, будут актуальны. Введите <code>sudo apt update</code> и затем <code>sudo apt upgrade</code>.</p>
+
+<p>Проверьте статус беспроводного интерфейса, используя команду <code>iwconfig</code>. Вы увидите, что интерфейс <code>wlan0</code> имеет назначенный IP-адрес и подключен к точке доступа. Если статус не «Connected», проверьте файлы конфигурации еще раз.</p>
+
+<p>Теперь вы можете использовать <em>Raspberry Pi 3</em> как полноценный сервер, медиацентр или домашний автоматизированный узел. Отсутствие монитора и клавиатуры освобождает место и позволяет разместить устройство в труднодоступных местах, например, в корпусе телевизора или за потолком.</p>
+
+<details>
+    <summary>Можно ли настроить Wi-Fi на Raspberry Pi 3 без SD-карты?</summary>
+    <p>Нет, операционная система должна быть записана на карту памяти или другой носитель. Если вы не можете настроить сеть на этапе записи, устройство не сможет загрузиться в сеть для последующей настройки.</p>
+</details>
+
+<details>
+    <summary>Что делать, если я забыл пароль от Wi-Fi?</summary>
+    <p>Если вы не знаете пароль, вам придется физически подключиться к роутеру или сбросить настройки карты памяти, создав новый файл конфигурации с правильными данными, если есть доступ к компьютеру.</p>
+</details>
+
+<details>
+    <summary>Поддерживает ли Pi 3 подключение к 5 ГГц Wi-Fi?</summary>
+    <p>Модель Raspberry Pi 3 B и 3 B+ поддерживают сети 5 ГГц. Однако для корректной работы необходимо правильно указать регион в конфигурационном файле, чтобы разрешить использование соответствующих каналов.</p>
+</details>
+
+<details>
+    <summary>Как узнать IP-адрес без доступа к роутеру?</summary>
+    <p>Используйте сканеры сети (Advanced IP Scanner) или вспомогательные утилиты, такие как Fing (для мобильных устройств), которые могут найти подключенные устройства в локальной сети.</p>
+</details></div>
+                    <!--#include virtual="/ssi/article_after.html" -->
+
+                </article>
+                <aside class="article-sidebar"><!--#include virtual="/ssi/sidebar_top.html" --><nav class="sidebar-search"><div class="sidebar-search-box"><input type="text" id="globalSearchInput" placeholder="🔍 Поиск статей..." autocomplete="off"><div class="search-dropdown" id="globalSearchDropdown"></div></div></nav><!--#include virtual="/ssi/sidebar_before_toc.html" --><nav class="sidebar-toc" id="sidebarToc"><h3>Содержание</h3><ul><li><a href="#подготовка-образа-операционной-системы-и-карты-памяти">Подготовка образа операционной системы и карты памяти</a></li><li><a href="#ручное-создание-файла-конфигурации-wlan0">Ручное создание файла конфигурации wlan0</a></li><li><a href="#включение-ssh-и-настройка-доступа-по-сети">Включение SSH и настройка доступа по сети</a></li><li><a href="#поиск-ip-адреса-устройства-в-сети">Поиск IP-адреса устройства в сети</a></li><li><a href="#подключение-по-ssh-и-базовая-настройка">Подключение по SSH и базовая настройка</a></li><li><a href="#устранение-типичных-проблем-с-подключением">Устранение типичных проблем с подключением</a></li><li><a href="#расширенные-возможности-и-альтернативные-методы">Расширенные возможности и альтернативные методы</a></li><li><a href="#завершение-настройки-и-первая-проверка">Завершение настройки и первая проверка</a></li></ul></nav><!--#include virtual="/ssi/sidebar_before_related.html" --><nav class="sidebar-related"><h3>Похожие статьи</h3><ul><li><a href="/articles/k/ka/kak-vklyuchit-kameru-na-monitore-asus.html" class="related-card">Как включить камеру на мониторе ASUS: Настройка и драйверы</a></li><li><a href="/articles/k/ka/kak-sdelat-monitor-vmesto-televizora.html" class="related-card">Монитор вместо телевизора: полное руководство по подключению и настройке</a></li><li><a href="/articles/m/mo/monitor-filips-kak-podklyuchit.html" class="related-card">Как подключить монитор Philips: пошаговая инструкция, кабели и настройки</a></li><li><a href="/articles/k/ka/kak-perenesti-ekran-na-vtoroj-monitor.html" class="related-card">Как перенести экран на второй монитор: полное руководство по настройке</a></li><li><a href="/articles/c/ch/chem-podklyuchaetsya-monitor.html" class="related-card">Чем подключается монитор: обзор интерфейсов HDMI, DisplayPort, USB-C</a></li></ul></nav><!--#include virtual="/ssi/sidebar_after_related.html" --></aside>
+            </div>
+        </div>
+    </main>
+
+    <!--#include virtual="/ssi/before_related_bottom.html" -->
+    <section class="related-bottom">
+        <div class="container">
+            <h2 class="related-bottom-heading">📖 Читайте также</h2>
+            <div class="related-bottom-grid"><a href="/articles/k/ka/kak-vklyuchit-kameru-na-monitore-asus.html" class="related-bottom-card"><span class="related-bottom-title">Как включить камеру на мониторе ASUS: Настройка и драйверы</span><span class="related-bottom-desc">Пошаговая инструкция, как активировать встроенную веб-камеру на мониторах ASUS. Решение проблем с др</span></a><a href="/articles/k/ka/kak-sdelat-monitor-vmesto-televizora.html" class="related-bottom-card"><span class="related-bottom-title">Монитор вместо телевизора: полное руководство по подключению и настройке</span><span class="related-bottom-desc">Узнайте, как использовать монитор как ТВ: выбор интерфейса, настройка HDMI-CEC, проверка звука и уст</span></a><a href="/articles/m/mo/monitor-filips-kak-podklyuchit.html" class="related-bottom-card"><span class="related-bottom-title">Как подключить монитор Philips: пошаговая инструкция, кабели и настройки</span><span class="related-bottom-desc">Полное руководство по подключению монитора Philips к ПК. Разбор портов HDMI, DisplayPort, настройка </span></a><a href="/articles/k/ka/kak-perenesti-ekran-na-vtoroj-monitor.html" class="related-bottom-card"><span class="related-bottom-title">Как перенести экран на второй монитор: полное руководство по настройке</span><span class="related-bottom-desc">Узнайте, как подключить и настроить второй монитор. Инструкция для Windows и macOS, выбор режимов от</span></a><a href="/articles/c/ch/chem-podklyuchaetsya-monitor.html" class="related-bottom-card"><span class="related-bottom-title">Чем подключается монитор: обзор интерфейсов HDMI, DisplayPort, USB-C</span><span class="related-bottom-desc">Подробный гид по выбору кабеля для монитора. Разбор разъемов HDMI, DisplayPort, VGA и USB-C. Сравнен</span></a><a href="/articles/m/mo/monitor-hdmi-kompyuter-vga-kak-podklyuchit.html" class="related-bottom-card"><span class="related-bottom-title">Как подключить монитор к компьютеру через HDMI и VGA: полная инструкция</span><span class="related-bottom-desc">Узнайте, как правильно соединить компьютер и монитор с помощью HDMI или VGA кабелей. Разбор отличий,</span></a></div>
+        </div>
+    </section>
+    <!--#include virtual="/ssi/after_related_bottom.html" -->
+
+    <footer class="site-footer-premium">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-col">
+                    <div class="footer-brand">🖥️ Мониторум</div>
+                    <p class="footer-about">Полный справочник по настройке, ремонту и выбору компьютерных мониторов для любых задач.</p>
+                </div>
+                <div class="footer-col">
+                    <h4>Разделы</h4>
+                    <ul><li><a href="/category/nastrojka-ekrana/">⚙️ Настройка экрана</a></li>
+<li><a href="/category/podklyuchenie-ustrojstv/">🔌 Подключение устройств</a></li>
+<li><a href="/category/mnozhestvennye-ekrany/">🖥️🖥️ Множественные экраны</a></li>
+<li><a href="/category/zvuk-i-audio/">🔊 Звук и аудио</a></li>
+<li><a href="/category/remont-i-polomki/">🔧 Ремонт и поломки</a></li>
+<li><a href="/category/ukhod-i-chistka/">🧼 Уход и чистка</a></li></ul>
+                </div>
+                <div class="footer-col">
+                    <h4>Информация</h4>
+                    <ul>
+                        <li><a href="/">Главная</a></li>
+                        <li><a href="/about.html">О проекте</a></li>
+                        <li><a href="/categories.html">Все разделы</a></li>
+                        <li><a href="/contact.html">Контакты</a></li>
+                        <li><a href="/privacy.html">Конфиденциальность</a></li>
+                        <li><a href="/sitemap.xml">Карта сайта</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>© Мониторум. Все права защищены.</p>
+                <!--LiveInternet counter--><div style="margin-top:10px;"><a href="https://www.liveinternet.ru/click"
+                target="_blank"><img id="licnt06C4" width="88" height="15" style="border:0" 
+                title="LiveInternet: показано число посетителей за сегодня"
+                src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAEALAAAAAABAAEAAAIBTAA7"
+                alt=""/></a><script>(function(d,s){d.getElementById("licnt06C4").src=
+                "https://counter.yadro.ru/hit?t26.5;r"+escape(d.referrer)+
+                ((typeof(s)=="undefined")?"":";s"+s.width+"*"+s.height+"*"+
+                (s.colorDepth?s.colorDepth:s.pixelDepth))+";u"+escape(d.URL)+
+                ";h"+escape(d.title.substring(0,150))+";"+Math.random()})(document,screen)</script></div><!--/LiveInternet-->
+            </div>
+        </div>
+    </footer>
+    <div id="cookie-consent" class="cookie-popup">
+        <div class="cookie-inner">
+            <span>🍪 Мы используем файлы cookie для улучшения работы сайта.</span>
+            <button id="cookie-accept" class="cookie-btn">Принять</button>
+        </div>
+    </div>
+    <script src="/static/js/main.js"></script>
+    <script>
+    (function() {
+        const popup = document.getElementById('cookie-consent');
+        const btn = document.getElementById('cookie-accept');
+        if (popup && btn && !localStorage.getItem('cookie-accepted')) {
+            popup.classList.add('visible');
+            btn.onclick = () => {
+                localStorage.setItem('cookie-accepted', 'true');
+                popup.classList.remove('visible');
+            };
+        }
+    })();
+    </script>
+    <script>
+    function pbPollVote(el) {
+        var poll = el.closest('.poll-widget');
+        if (poll.classList.contains('voted')) return;
+        poll.classList.add('voted');
+        el.classList.add('selected');
+        var opts = poll.querySelectorAll('.poll-widget-option');
+        var n = opts.length;
+        var raw = [];
+        var sum = 0;
+        for (var i = 0; i < n; i++) {
+            var v = Math.random() * 50 + 5;
+            if (opts[i] === el) v += 30;
+            raw.push(v);
+            sum += v;
+        }
+        var pcts = raw.map(function(v) { return Math.round(v / sum * 100); });
+        var diff = 100 - pcts.reduce(function(a,b){ return a+b; }, 0);
+        pcts[Array.from(opts).indexOf(el)] += diff;
+        setTimeout(function() {
+            opts.forEach(function(opt, i) {
+                opt.querySelector('.poll-widget-bar').style.width = pcts[i] + '%';
+                opt.querySelector('.poll-widget-pct').textContent = pcts[i] + '%';
+            });
+        }, 50);
+    }
+    </script>
+    <!--#include virtual="/ssi/body_bottom.html" -->
+    <script src="/static/js/inject.js" defer></script>
+</body>
+</html>

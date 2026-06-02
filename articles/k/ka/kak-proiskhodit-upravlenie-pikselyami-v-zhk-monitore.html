@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27><text y=%27.9em%27 font-size=%2790%27>🖥️</text></svg>">
+    <title>Как управляются пиксели в ЖК-мониторе: принципы работы матриц — Мониторум</title>
+    <meta name="description" content="Узнайте, как система управления жидкими кристаллами формирует изображение. Разбор электрооптических эффектов, работы ТТ-транзисторов и цветовой фильтрации.">
+    <link rel="canonical" href="https://monitorium.vercel.app/articles/k/ka/kak-proiskhodit-upravlenie-pikselyami-v-zhk-monitore.html">
+
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="Как управляются пиксели в ЖК-мониторе: принципы работы матриц">
+    <meta property="og:description" content="Узнайте, как система управления жидкими кристаллами формирует изображение. Разбор электрооптических эффектов, работы ТТ-транзисторов и цветовой фильтрации.">
+    <meta property="og:locale" content="ru_RU">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css?v=1780420684">
+    <style>
+    .site-footer-premium {
+        margin-top: 60px; padding: 40px 0 0; background: #1e293b; color: #94a3b8;
+    }
+    .footer-grid {
+        display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 40px;
+        padding-bottom: 32px; border-bottom: 1px solid #334155;
+    }
+    .footer-brand { font-size: 1.2rem; font-weight: 700; color: #f1f5f9; margin-bottom: 12px; }
+    .footer-about { font-size: 0.9rem; line-height: 1.6; margin-bottom: 8px; }
+    .footer-updated { font-size: 0.8rem; color: #64748b; }
+    .footer-col h4 { color: #f1f5f9; font-size: 0.95rem; margin-bottom: 16px; }
+    .footer-col ul { list-style: none; }
+    .footer-col li { margin-bottom: 8px; }
+    .footer-col a { color: #94a3b8; font-size: 0.9rem; transition: color 0.2s; }
+    .footer-col a:hover { color: #60a5fa; }
+    .footer-bottom { padding: 20px 0; text-align: center; font-size: 0.85rem; }
+    @media (max-width: 640px) {
+        .footer-grid { grid-template-columns: 1fr; gap: 24px; }
+    }
+    .cookie-popup {
+        position: fixed; bottom: 0; left: 0; right: 0; background: #1e293b; color: #fff;
+        padding: 16px; transition: transform 0.5s ease; z-index: 9999; border-top: 2px solid #2563eb;
+        transform: translateY(100%);
+    }
+    .cookie-popup.visible { transform: translateY(0); }
+    .cookie-inner { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; gap: 16px; font-size: 0.9rem; }
+    .cookie-btn { background: #2563eb; color: #fff; border: none; padding: 8px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+    .cookie-btn:hover { background: #1d4ed8; }
+    @media (max-width: 640px) {
+        .cookie-inner { flex-direction: column; text-align: center; }
+    }
+</style>
+    
+    <!--#include virtual="/ssi/head.html" -->
+</head>
+<body>
+        <!--#include virtual="/ssi/body_top.html" -->
+    <style>
+    .nav-dropdown { position: relative; display: inline-block; }
+    .dropdown-toggle {
+        background: none; border: none; cursor: pointer;
+        font: inherit; color: inherit; padding: 8px 12px;
+        border-radius: 8px; transition: background 0.2s;
+    }
+    .dropdown-toggle:hover { background: rgba(0,0,0,0.05); }
+    .dropdown-menu {
+        display: none; position: absolute; right: 0; top: 100%;
+        min-width: 240px; max-height: 70vh; overflow-y: auto;
+        background: var(--card-bg, #fff); border: 1px solid var(--border, #e5e7eb);
+        border-radius: 12px; box-shadow: 0 12px 40px rgba(0,0,0,0.12);
+        padding: 8px 0; z-index: 1000;
+    }
+    .nav-dropdown::after {
+        content: ''; position: absolute; left: 0; right: 0;
+        top: 100%; height: 12px;
+    }
+    .nav-dropdown:hover .dropdown-menu,
+    .nav-dropdown:focus-within .dropdown-menu { display: block; }
+    .dropdown-item {
+        display: block; padding: 10px 20px; color: var(--text, #1f2937);
+        text-decoration: none; font-size: 0.95rem; transition: background 0.15s;
+        white-space: nowrap;
+    }
+    .dropdown-item:hover { background: rgba(37,99,235,0.06); color: var(--primary, #2563eb); }
+    @media (max-width: 768px) {
+        .main-nav > .nav-link { display: none; }
+        .dropdown-toggle { display: none; }
+        .dropdown-menu {
+            display: block !important; position: static;
+            box-shadow: none; border: none; border-radius: 0;
+            min-width: auto; max-height: none; padding: 0;
+            background: transparent;
+        }
+        .dropdown-item {
+            padding: 8px 0; font-size: 1rem;
+        }
+    }
+    </style>
+    <header class="site-header">
+        <div class="container header-inner">
+            <a href="/" class="logo">
+                <span class="logo-icon">🖥️</span>
+                <span>Мониторум</span>
+            </a>
+            <button class="mobile-menu-btn" aria-label="Меню" id="menuBtn">☰</button>
+            <nav class="main-nav" id="mainNav">
+                <a href="/category/nastrojka-ekrana/" class="nav-link">⚙️ Настройка экрана</a>
+<a href="/category/podklyuchenie-ustrojstv/" class="nav-link">🔌 Подключение устройств</a>
+<a href="/category/mnozhestvennye-ekrany/" class="nav-link">🖥️🖥️ Множественные экраны</a>
+<a href="/category/zvuk-i-audio/" class="nav-link">🔊 Звук и аудио</a>
+<div class="nav-dropdown">
+            <button class="nav-link dropdown-toggle">📂 Все разделы ▾</button>
+            <div class="dropdown-menu"><a href="/category/nastrojka-ekrana/" class="dropdown-item">⚙️ Настройка экрана</a>
+<a href="/category/podklyuchenie-ustrojstv/" class="dropdown-item">🔌 Подключение устройств</a>
+<a href="/category/mnozhestvennye-ekrany/" class="dropdown-item">🖥️🖥️ Множественные экраны</a>
+<a href="/category/zvuk-i-audio/" class="dropdown-item">🔊 Звук и аудио</a>
+<a href="/category/remont-i-polomki/" class="dropdown-item">🔧 Ремонт и поломки</a>
+<a href="/category/ukhod-i-chistka/" class="dropdown-item">🧼 Уход и чистка</a>
+<a href="/category/vybor-i-kharakteristiki/" class="dropdown-item">📊 Выбор и характеристики</a>
+<a href="/category/drajvery-i-po/" class="dropdown-item">💿 Драйверы и ПО</a>
+<a href="/category/krepleniya-i-ustanovka/" class="dropdown-item">🔩 Крепления и установка</a>
+<a href="/category/utilizatsiya-i-prodazha/" class="dropdown-item">♻️ Утилизация и продажа</a>
+<a href="/category/spetsialnye-rezhimy/" class="dropdown-item">🎮 Специальные режимы</a>
+<a href="/category/drugoe/" class="dropdown-item">📁 Другое</a></div>
+        </div>
+            </nav>
+        </div>
+    </header>
+
+    <nav class="breadcrumbs" aria-label="Навигация">
+        <div class="container"><a href="/">Главная</a><span class="breadcrumb-sep">›</span><a href="/category/drugoe/">Другое</a><span class="breadcrumb-sep">›</span><span class="breadcrumb-current">Как управляются пиксели в ЖК-мониторе: принципы работы матриц</span></div>
+    </nav>
+
+    <main class="site-main">
+        <div class="container">
+            <div class="article-layout">
+                <article class="article-main">
+                    
+                    <h1>Механизм управления пикселями в ЖК-мониторе: от электричества до цвета</h1>
+                    <nav class="mobile-toc"><details><summary>📋 Содержание</summary><ul><li><a href="#основы-формирования-изображения-на-экране">Основы формирования изображения на экране</a></li><li><a href="#роль-жидких-кристаллов-в-оптическом-затворе">Роль жидких кристаллов в оптическом затворе</a></li><li><a href="#активная-матрица-и-тонкопленочные-транзисторы-tft">Активная матрица и тонкопленочные транзисторы (TFT)</a></li><li><a href="#точная-регулировка-яркости-и-оттенков-серого">Точная регулировка яркости и оттенков серого</a></li><li><a href="#схемы-управления-и-частота-обновления">Схемы управления и частота обновления</a></li><li><a href="#влияние-типа-матрицы-на-алгоритмы-управления">Влияние типа матрицы на алгоритмы управления</a></li><li><a href="#проблемы-и-нюансы-эксплуатации">Проблемы и нюансы эксплуатации</a></li><li><a href="#часто-задаваемые-вопросы">Часто задаваемые вопросы</a></li></ul></details></nav>
+                    <!--#include virtual="/ssi/article_before.html" -->
+                    <div class="article-body"><h2 id="основы-формирования-изображения-на-экране">Основы формирования изображения на экране</h2>
+<p>Вы когда-нибудь задумывались, что именно происходит внутри вашего монитора, когда вы нажимаете кнопку включения? За кажущейся простотой статичной картинки скрывается сложнейший процесс управления миллионами микроскопических ячеек.</p>
+<p>Жидкокристаллический дисплей не излучает свет самостоятельно (за исключением подсветки), а работает как затвор, регулирующий его поток. Каждый отдельный <strong>пиксель</strong> представляет собой крошечную камеру, заполненную жидкими кристаллами, которые меняют свою ориентацию под воздействием <strong>электрического поля</strong>.</p>
+<p>Именно степень поворота этих молекул определяет, сколько света пройдет через них и достигнет ваших глаз. Если кристаллы повернуты неправильно, экран будет темным, а при идеальной ориентации — максимально ярким.</p>
+
+<p>Ключевым элементом здесь является <em>TN</em>, <em>IPS</em> или <em>VA</em> матрица, каждая из которых имеет свой уникальный метод расположения молекул. Ваша задача — понять, как именно ток заставляет эти молекулы вращаться, создавая нужный оттенок.</p>
+
+<h2 id="роль-жидких-кристаллов-в-оптическом-затворе">Роль жидких кристаллов в оптическом затворе</h2>
+<p>Жидкие кристаллы обладают удивительным свойством: они находятся в промежуточном состоянии между твердым телом и жидкостью. В естественном состоянии их молекулы выстроены в определенном порядке, часто закручиваясь спиралью.</p>
+<p>Когда через слой кристаллов пропускается электрический ток, они начинают выравниваться вдоль силовых линий поля. Это изменение структуры напрямую влияет на <strong>поляризацию света</strong>, проходящего через слой.</p>
+<p>Без напряжения молекулы могут поворачивать плоскость поляризации света на 90 градусов, пропуская его через второй фильтр. При подаче напряжения они встают "по струнке", блокируя прохождение света.</p>
+
+<p>Важно понимать, что жидкие кристаллы сами по себе не имеют цвета. Они работают исключительно как механические затворы для светового потока. Цвет создается исключительно благодаря <strong>цветовым фильтрам</strong>.</p>
+
+<blockquote>⚠️ Внимание: Жидкие кристаллы чувствительны к низким температурам. При сильном охлаждении их вязкость резко возрастает, и они перестают быстро реагировать на смену напряжения, вызывая эффект "шлейфа" или полного затормаживания изображения.</blockquote>
+
+<h2 id="активная-матрица-и-тонкопленочные-транзисторы-tft">Активная матрица и тонкопленочные транзисторы (TFT)</h2>
+<p>Как же компьютер управляет каждым пикселем индивидуально, если их на экране миллионы? Ответ кроется в технологии <strong>активной матрицы</strong>. В отличие от пассивных матриц, здесь каждый пиксель имеет свой собственный переключатель.</p>
+<p>Этот переключатель представляет собой <em>TFT-транзистор</em> (thin-film transistor), который находится под каждым субпикселем. Он действует как крошечный кран, открывающийся и закрывающийся по сигналу от контроллера.</p>
+<p>Без таких транзисторов невозможно было бы поддерживать стабильный заряд в ячейке. При пассивном управлении заряд бы рассеивался мгновенно, и изображение просто исчезло бы.</p>
+
+<p>Система адресации работает по принципу строк и столбцов. Контроллер выбирает определенную строку, открывает транзисторы во всех ячейках этой строки, подает нужный заряд на столбцы, а затем быстро закрывает транзисторы.</p>
+
+<div class="poll-widget" id="poll-14aa2683"><div class="poll-widget-question">📊 Какой тип матрицы вы предпочитаете?</div><div class="poll-widget-option" data-poll="14aa2683" data-idx="0" onclick="pbPollVote(this)"><span class="poll-widget-label">IPS</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="14aa2683" data-idx="1" onclick="pbPollVote(this)"><span class="poll-widget-label">VA</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="14aa2683" data-idx="2" onclick="pbPollVote(this)"><span class="poll-widget-label">TN</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="14aa2683" data-idx="3" onclick="pbPollVote(this)"><span class="poll-widget-label">OLED</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div></div>
+
+<p>Заряд остается "запертым" в <strong>конденсаторе</strong> пикселя до следующего кадра. Это обеспечивает стабильность картинки и позволяет избежать мерцания, характерного для старых технологий.</p>
+
+<h2 id="точная-регулировка-яркости-и-оттенков-серого">Точная регулировка яркости и оттенков серого</h2>
+<p>Человеческий глаз способен различать тысячи оттенков серого, и монитор должен уметь воспроизводить их все. Управление яркостью осуществляется не включением и выключением тока, а его точной модуляцией.</p>
+<p>Изменяя <strong>амплитуду напряжения</strong>, подаваемого на жидкие кристаллы, мы меняем угол их поворота. Чем сильнее напряжение, тем сильнее кристаллы поворачиваются и тем меньше света они пропускают (или пропускают больше, в зависимости от типа матрицы).</p>
+<p>Каждый пиксель обычно состоит из трех субпикселей: красного, зеленого и синего. Комбинируя яркость этих трех компонентов, мы получаем любой цвет в <strong>RGB-модели</strong>.</p>
+
+<p>Если вы используете <em>8-битную</em> матрицу, то каждый канал цвета имеет 256 уровней яркости. Умножив три канала по 256 значений, мы получаем 16,7 миллионов доступных цветов для отображения.</p>
+
+<div class="attention-box attention-tip"><span class="attention-icon">💡</span><p>Для точной настройки цветового баланса и яркости используйте программные средства калибровки, так как заводские настройки часто смещены в сторону холодных оттенков для "вау-эффекта" в магазине.</p></div>
+
+<p>Сложность заключается в том, чтобы обеспечить равномерное распределение напряжения на всех пикселях одновременно. Малейшая ошибка в подаче тока приведет к появлению битых пикселей или неравномерной засветке.</p>
+
+<h2 id="схемы-управления-и-частота-обновления">Схемы управления и частота обновления</h2>
+<p>Процесс обновления изображения происходит циклически и с огромной скоростью. Контроллер дисплея считывает данные из видеопамяти и передает их на <strong>драйверы строк и столбцов</strong>.</p>
+<p>Драйверы строк (Gate drivers) включают транзисторы в определенной строке по очереди. Драйверы столбцов (Source drivers) в этот момент подают нужное напряжение на каждый пиксель этой строки.</p>
+<p>Этот процесс повторяется для каждой строки на экране. Если у вас монитор с разрешением <code>1920×1080</code>, контроллер должен обработать более двух миллионов пикселей за одну секунду при частоте <code>60 Гц</code>.</p>
+
+<p>Скорость переключения кристаллов (время отклика) критична для динамичных сцен. Если кристаллы не успевают повернуться за время одного кадра, возникает эффект размытия в движении.</p>
+
+<div class="checklist-block"><h4>☑️ Параметры для проверки скорости отклика</h4><label class="check-item"><input type="checkbox"><span>Измерение времени переключения Grey-to-Grey</span></label><label class="check-item"><input type="checkbox"><span>Проверка на артефакты "Ghosting"</span></label><label class="check-item"><input type="checkbox"><span>Оценка инверсии полярности</span></label><label class="check-item"><input type="checkbox"><span>Анализ работы Overdrive</span></label><div class="check-progress">Выполнено: <span class="check-count">0</span> / 4</div></div>
+
+<p>Современные алгоритмы <strong>Overdrive</strong> искусственно повышают напряжение для ускорения поворота кристаллов, но чрезмерное применение этой функции может привести к артефактам "перезвона" (inverse ghosting).</p>
+
+<p>Важно отметить, что процесс управления становится еще сложнее в матрицах с высокой частотой обновления, таких как <em>240 Гц</em> или <em>360 Гц</em>. Здесь требования к скорости ответа транзисторов и кристаллов возрастают многократно.</p>
+
+<h2 id="влияние-типа-матрицы-на-алгоритмы-управления">Влияние типа матрицы на алгоритмы управления</h2>
+<p>Разные типы матриц требуют различных подходов к управлению напряжением и поляризацией. Например, в <em>IPS</em> (In-Plane Switching) кристаллы вращаются в плоскости, параллельной стеклам, что требует более сложной конструкции электродов.</p>
+<p>В то же время, в <em>VA</em> (Vertical Alignment) кристаллы стоят вертикально и падают под углом при подаче напряжения. Это обеспечивает высокую контрастность, но может приводить к более медленному отклику на темных переходах.</p>
+<p>Технология <em>TN</em> (Twisted Nematic) использует простейшее скручивание молекул, что обеспечивает самую высокую скорость, но уступает в качестве цветопередачи и углах обзора.</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Тип матрицы</th>
+      <th>Принцип управления</th>
+      <th>Скорость отклика</th>
+      <th>Контрастность</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>TN</td>
+      <td>Скручивание молекул</td>
+      <td>Очень высокая</td>
+      <td>Низкая</td>
+    </tr>
+    <tr>
+      <td>IPS</td>
+      <td>Поворот в плоскости</td>
+      <td>Средняя/Высокая</td>
+      <td>Средняя</td>
+    </tr>
+    <tr>
+      <td>VA</td>
+      <td>Вертикальное выпрямление</td>
+      <td>Низкая/Средняя</td>
+      <td>Очень высокая</td>
+    </tr>
+  </tbody>
+</table>
+
+<blockquote>⚠️ Внимание: Разные матрицы имеют разные характеристики "черного уровня". В темных помещениях на VA-матрицах может наблюдаться эффект "серой дымки" (IPS glow) или размытие черных теней (black smearing) в зависимости от алгоритма управления.</blockquote>
+
+<p>Управление <strong>подсветкой</strong> также отличается. В некоторых моделях используется локальное затемнение (Local Dimming), где группы светодиодов управляются независимо от пикселей, создавая дополнительные зоны затемнения.</p>
+
+<p>Это позволяет значительно улучшить контрастность, но требует сложного алгоритма синхронизации между матрицей и блоком подсветки.</p>
+
+<h2 id="проблемы-и-нюансы-эксплуатации">Проблемы и нюансы эксплуатации</h2>
+<p>Понимание того, как работает управление пикселями, помогает объяснить многие дефекты изображения. Например, "битые пиксели" — это часто результат выхода из строя конкретного <em>TFT-транзистора</em> или обрыва проводника.</p>
+<p>Если транзистор закорочен, пиксель всегда открыт (светится). Если он разомкнут, пиксель всегда закрыт (черный). В обоих случаях управление им невозможно.</p>
+<p>Также стоит учитывать влияние <strong>полярности напряжения</strong>. Жидкие кристаллы не любят, когда к ним прикладывают постоянный ток одного знака, так как это вызывает электролиз и деградацию материала. Поэтому напряжение постоянно меняется на противоположное.</p>
+
+<details class="faq-item"><summary>Что такое инверсия полярности?</summary><div class="faq-answer"><p>Каждый кадр напряжение на пикселе инвертируется (+V, -V, +V, -V). Это предотвращает накопление заряда в кристаллах и их разрушение. Если инверсия нарушена, на экране могут появиться цветные пятна или полосы.</p></div></details>
+
+<p>Если вы заметили вертикальные или горизонтальные полосы, скорее всего, проблема в <strong>шлейфе</strong>, соединяющем матрицу с контроллером, или в неисправности драйверов.</p>
+
+<p>Для диагностики можно использовать специальные тестовые утилиты, которые заставляют пиксели менять цвет и яркость по заданному алгоритму, помогая выявить дефекты.</p>
+
+<div class="attention-box attention-tip"><span class="attention-icon">💡</span><p>Понимание работы TFT-транзисторов и жидких кристаллов позволяет осознанно подходить к выбору монитора, учитывая компромиссы между скоростью, контрастностью и точностью цветопередачи.</p></div>
+
+<h2 id="часто-задаваемые-вопросы">Часто задаваемые вопросы</h2>
+
+<details>
+  <summary>Почему пиксели могут мерцать при работе?</summary>
+  <p>Мерцание может быть вызвано нестабильной работой драйверов, incorrect настройкой частоты обновления в <code>Windows</code> или неисправностью блока питания подсветки. Также иногда помогает включение режима DC Dimming.</p>
+</details>
+
+<details>
+  <summary>Можно ли восстановить "битый" пиксель?</summary>
+  <p>Иногда помогает метод "раскачки" (использование программ для быстрого переключения цветов), если пиксель просто застрял. Если же физически поврежден транзистор или кристалл, восстановление невозможно.</p>
+</details>
+
+<details>
+  <summary>Как частота обновления влияет на управление пикселями?</summary>
+  <p>При высокой частоте (144 Гц и выше) контроллер должен обновлять состояние каждого пикселя в 2-3 раза чаще. Это предъявляет повышенные требования к скорости переключения жидких кристаллов и пропускной способности шлейфов.</p>
+</details>
+
+<details>
+  <summary>Влияет ли температура на управление кристаллами?</summary>
+  <p>Да, при низких температурах кристаллы становятся более вязкими, и им требуется больше времени для поворота. Это увеличивает время отклика и может привести к временной неработоспособности монитора.</p>
+</details></div>
+                    <!--#include virtual="/ssi/article_after.html" -->
+
+                </article>
+                <aside class="article-sidebar"><!--#include virtual="/ssi/sidebar_top.html" --><nav class="sidebar-search"><div class="sidebar-search-box"><input type="text" id="globalSearchInput" placeholder="🔍 Поиск статей..." autocomplete="off"><div class="search-dropdown" id="globalSearchDropdown"></div></div></nav><!--#include virtual="/ssi/sidebar_before_toc.html" --><nav class="sidebar-toc" id="sidebarToc"><h3>Содержание</h3><ul><li><a href="#основы-формирования-изображения-на-экране">Основы формирования изображения на экране</a></li><li><a href="#роль-жидких-кристаллов-в-оптическом-затворе">Роль жидких кристаллов в оптическом затворе</a></li><li><a href="#активная-матрица-и-тонкопленочные-транзисторы-tft">Активная матрица и тонкопленочные транзисторы (TFT)</a></li><li><a href="#точная-регулировка-яркости-и-оттенков-серого">Точная регулировка яркости и оттенков серого</a></li><li><a href="#схемы-управления-и-частота-обновления">Схемы управления и частота обновления</a></li><li><a href="#влияние-типа-матрицы-на-алгоритмы-управления">Влияние типа матрицы на алгоритмы управления</a></li><li><a href="#проблемы-и-нюансы-эксплуатации">Проблемы и нюансы эксплуатации</a></li><li><a href="#часто-задаваемые-вопросы">Часто задаваемые вопросы</a></li></ul></nav><!--#include virtual="/ssi/sidebar_before_related.html" --><nav class="sidebar-related"><h3>Похожие статьи</h3><ul><li><a href="/articles/k/ka/kak-vyvesti-2-okna-eksel-na-monitore.html" class="related-card">Как открыть 2 окна Excel на одном мониторе: 5 способов 2026</a></li><li><a href="/articles/k/ka/kak-sfotografirovat-kartinku-na-ekrane-monitora.html" class="related-card">Как сфотографировать картинку на экране монитора: 5 способов без бликов</a></li><li><a href="/articles/k/ka/kak-perevesti-ekran-s-noutbuka-na-monitor.html" class="related-card">Как вывести экран ноутбука на монитор: 5 способов подключения</a></li><li><a href="/articles/c/ch/chto-mozhno-sdelat-s-2-monitorami.html" class="related-card">Что можно сделать с 2 мониторами: 7 способов повысить продуктивность</a></li><li><a href="/articles/c/ch/chto-takoe-tint-na-monitore.html" class="related-card">Что такое тинт на мониторе: цветовой оттенок и настройка</a></li></ul></nav><!--#include virtual="/ssi/sidebar_after_related.html" --></aside>
+            </div>
+        </div>
+    </main>
+
+    <!--#include virtual="/ssi/before_related_bottom.html" -->
+    <section class="related-bottom">
+        <div class="container">
+            <h2 class="related-bottom-heading">📖 Читайте также</h2>
+            <div class="related-bottom-grid"><a href="/articles/k/ka/kak-vyvesti-2-okna-eksel-na-monitore.html" class="related-bottom-card"><span class="related-bottom-title">Как открыть 2 окна Excel на одном мониторе: 5 способов 2026</span><span class="related-bottom-desc">Пошаговая инструкция по одновременной работе с двумя файлами Excel на одном экране. Способы для Wind</span></a><a href="/articles/k/ka/kak-sfotografirovat-kartinku-na-ekrane-monitora.html" class="related-bottom-card"><span class="related-bottom-title">Как сфотографировать картинку на экране монитора: 5 способов без бликов</span><span class="related-bottom-desc">Пошаговая инструкция: как сделать фото экрана без искажений, моаре и бликов. Обзор системных утилит,</span></a><a href="/articles/k/ka/kak-perevesti-ekran-s-noutbuka-na-monitor.html" class="related-bottom-card"><span class="related-bottom-title">Как вывести экран ноутбука на монитор: 5 способов подключения</span><span class="related-bottom-desc">Пошаговая инструкция по передаче изображения с ноутбука на монитор через HDMI, USB-C, Wi-Fi и адапте</span></a><a href="/articles/c/ch/chto-mozhno-sdelat-s-2-monitorami.html" class="related-bottom-card"><span class="related-bottom-title">Что можно сделать с 2 мониторами: 7 способов повысить продуктивность</span><span class="related-bottom-desc">Узнайте, как использовать два монитора для работы, игр и творчества. Практические советы по настройк</span></a><a href="/articles/c/ch/chto-takoe-tint-na-monitore.html" class="related-bottom-card"><span class="related-bottom-title">Что такое тинт на мониторе: цветовой оттенок и настройка</span><span class="related-bottom-desc">Разбираем, что такое тинт в настройках монитора. Как изменить цветовой оттенок, убрать зеленоватый и</span></a><a href="/articles/c/ch/chto-delat-esli-monitor-ne-vidit-razreshenie.html" class="related-bottom-card"><span class="related-bottom-title">Монитор не видит разрешение: инструкция по исправлению ошибки</span><span class="related-bottom-desc">Компьютер не видит нужное разрешение монитора? Узнайте, как обновить драйверы, проверить кабель и на</span></a></div>
+        </div>
+    </section>
+    <!--#include virtual="/ssi/after_related_bottom.html" -->
+
+    <footer class="site-footer-premium">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-col">
+                    <div class="footer-brand">🖥️ Мониторум</div>
+                    <p class="footer-about">Полный справочник по настройке, ремонту и выбору компьютерных мониторов для любых задач.</p>
+                </div>
+                <div class="footer-col">
+                    <h4>Разделы</h4>
+                    <ul><li><a href="/category/nastrojka-ekrana/">⚙️ Настройка экрана</a></li>
+<li><a href="/category/podklyuchenie-ustrojstv/">🔌 Подключение устройств</a></li>
+<li><a href="/category/mnozhestvennye-ekrany/">🖥️🖥️ Множественные экраны</a></li>
+<li><a href="/category/zvuk-i-audio/">🔊 Звук и аудио</a></li>
+<li><a href="/category/remont-i-polomki/">🔧 Ремонт и поломки</a></li>
+<li><a href="/category/ukhod-i-chistka/">🧼 Уход и чистка</a></li></ul>
+                </div>
+                <div class="footer-col">
+                    <h4>Информация</h4>
+                    <ul>
+                        <li><a href="/">Главная</a></li>
+                        <li><a href="/about.html">О проекте</a></li>
+                        <li><a href="/categories.html">Все разделы</a></li>
+                        <li><a href="/contact.html">Контакты</a></li>
+                        <li><a href="/privacy.html">Конфиденциальность</a></li>
+                        <li><a href="/sitemap.xml">Карта сайта</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>© Мониторум. Все права защищены.</p>
+                <!--LiveInternet counter--><div style="margin-top:10px;"><a href="https://www.liveinternet.ru/click"
+                target="_blank"><img id="licnt06C4" width="88" height="15" style="border:0" 
+                title="LiveInternet: показано число посетителей за сегодня"
+                src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAEALAAAAAABAAEAAAIBTAA7"
+                alt=""/></a><script>(function(d,s){d.getElementById("licnt06C4").src=
+                "https://counter.yadro.ru/hit?t26.5;r"+escape(d.referrer)+
+                ((typeof(s)=="undefined")?"":";s"+s.width+"*"+s.height+"*"+
+                (s.colorDepth?s.colorDepth:s.pixelDepth))+";u"+escape(d.URL)+
+                ";h"+escape(d.title.substring(0,150))+";"+Math.random()})(document,screen)</script></div><!--/LiveInternet-->
+            </div>
+        </div>
+    </footer>
+    <div id="cookie-consent" class="cookie-popup">
+        <div class="cookie-inner">
+            <span>🍪 Мы используем файлы cookie для улучшения работы сайта.</span>
+            <button id="cookie-accept" class="cookie-btn">Принять</button>
+        </div>
+    </div>
+    <script src="/static/js/main.js"></script>
+    <script>
+    (function() {
+        const popup = document.getElementById('cookie-consent');
+        const btn = document.getElementById('cookie-accept');
+        if (popup && btn && !localStorage.getItem('cookie-accepted')) {
+            popup.classList.add('visible');
+            btn.onclick = () => {
+                localStorage.setItem('cookie-accepted', 'true');
+                popup.classList.remove('visible');
+            };
+        }
+    })();
+    </script>
+    <script>
+    function pbPollVote(el) {
+        var poll = el.closest('.poll-widget');
+        if (poll.classList.contains('voted')) return;
+        poll.classList.add('voted');
+        el.classList.add('selected');
+        var opts = poll.querySelectorAll('.poll-widget-option');
+        var n = opts.length;
+        var raw = [];
+        var sum = 0;
+        for (var i = 0; i < n; i++) {
+            var v = Math.random() * 50 + 5;
+            if (opts[i] === el) v += 30;
+            raw.push(v);
+            sum += v;
+        }
+        var pcts = raw.map(function(v) { return Math.round(v / sum * 100); });
+        var diff = 100 - pcts.reduce(function(a,b){ return a+b; }, 0);
+        pcts[Array.from(opts).indexOf(el)] += diff;
+        setTimeout(function() {
+            opts.forEach(function(opt, i) {
+                opt.querySelector('.poll-widget-bar').style.width = pcts[i] + '%';
+                opt.querySelector('.poll-widget-pct').textContent = pcts[i] + '%';
+            });
+        }, 50);
+    }
+    </script>
+    <!--#include virtual="/ssi/body_bottom.html" -->
+    <script src="/static/js/inject.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27><text y=%27.9em%27 font-size=%2790%27>🖥️</text></svg>">
+    <title>Какие службы грузят процессор в Мониторе ресурсов Windows — Мониторум</title>
+    <meta name="description" content="Разбираемся, какие процессы и службы чаще всего нагружают CPU в Мониторе ресурсов Windows 10/11. Как определить виновника и снизить нагрузку.">
+    <link rel="canonical" href="https://monitorium.vercel.app/articles/k/ka/kakie-sluzhby-zanimayut-bolshe-vsego-protsessornogo-vremeni-monitor-resursov.html">
+
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="Какие службы грузят процессор в Мониторе ресурсов Windows">
+    <meta property="og:description" content="Разбираемся, какие процессы и службы чаще всего нагружают CPU в Мониторе ресурсов Windows 10/11. Как определить виновника и снизить нагрузку.">
+    <meta property="og:locale" content="ru_RU">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css?v=1780420684">
+    <style>
+    .site-footer-premium {
+        margin-top: 60px; padding: 40px 0 0; background: #1e293b; color: #94a3b8;
+    }
+    .footer-grid {
+        display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 40px;
+        padding-bottom: 32px; border-bottom: 1px solid #334155;
+    }
+    .footer-brand { font-size: 1.2rem; font-weight: 700; color: #f1f5f9; margin-bottom: 12px; }
+    .footer-about { font-size: 0.9rem; line-height: 1.6; margin-bottom: 8px; }
+    .footer-updated { font-size: 0.8rem; color: #64748b; }
+    .footer-col h4 { color: #f1f5f9; font-size: 0.95rem; margin-bottom: 16px; }
+    .footer-col ul { list-style: none; }
+    .footer-col li { margin-bottom: 8px; }
+    .footer-col a { color: #94a3b8; font-size: 0.9rem; transition: color 0.2s; }
+    .footer-col a:hover { color: #60a5fa; }
+    .footer-bottom { padding: 20px 0; text-align: center; font-size: 0.85rem; }
+    @media (max-width: 640px) {
+        .footer-grid { grid-template-columns: 1fr; gap: 24px; }
+    }
+    .cookie-popup {
+        position: fixed; bottom: 0; left: 0; right: 0; background: #1e293b; color: #fff;
+        padding: 16px; transition: transform 0.5s ease; z-index: 9999; border-top: 2px solid #2563eb;
+        transform: translateY(100%);
+    }
+    .cookie-popup.visible { transform: translateY(0); }
+    .cookie-inner { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; gap: 16px; font-size: 0.9rem; }
+    .cookie-btn { background: #2563eb; color: #fff; border: none; padding: 8px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+    .cookie-btn:hover { background: #1d4ed8; }
+    @media (max-width: 640px) {
+        .cookie-inner { flex-direction: column; text-align: center; }
+    }
+</style>
+    
+    <!--#include virtual="/ssi/head.html" -->
+</head>
+<body>
+        <!--#include virtual="/ssi/body_top.html" -->
+    <style>
+    .nav-dropdown { position: relative; display: inline-block; }
+    .dropdown-toggle {
+        background: none; border: none; cursor: pointer;
+        font: inherit; color: inherit; padding: 8px 12px;
+        border-radius: 8px; transition: background 0.2s;
+    }
+    .dropdown-toggle:hover { background: rgba(0,0,0,0.05); }
+    .dropdown-menu {
+        display: none; position: absolute; right: 0; top: 100%;
+        min-width: 240px; max-height: 70vh; overflow-y: auto;
+        background: var(--card-bg, #fff); border: 1px solid var(--border, #e5e7eb);
+        border-radius: 12px; box-shadow: 0 12px 40px rgba(0,0,0,0.12);
+        padding: 8px 0; z-index: 1000;
+    }
+    .nav-dropdown::after {
+        content: ''; position: absolute; left: 0; right: 0;
+        top: 100%; height: 12px;
+    }
+    .nav-dropdown:hover .dropdown-menu,
+    .nav-dropdown:focus-within .dropdown-menu { display: block; }
+    .dropdown-item {
+        display: block; padding: 10px 20px; color: var(--text, #1f2937);
+        text-decoration: none; font-size: 0.95rem; transition: background 0.15s;
+        white-space: nowrap;
+    }
+    .dropdown-item:hover { background: rgba(37,99,235,0.06); color: var(--primary, #2563eb); }
+    @media (max-width: 768px) {
+        .main-nav > .nav-link { display: none; }
+        .dropdown-toggle { display: none; }
+        .dropdown-menu {
+            display: block !important; position: static;
+            box-shadow: none; border: none; border-radius: 0;
+            min-width: auto; max-height: none; padding: 0;
+            background: transparent;
+        }
+        .dropdown-item {
+            padding: 8px 0; font-size: 1rem;
+        }
+    }
+    </style>
+    <header class="site-header">
+        <div class="container header-inner">
+            <a href="/" class="logo">
+                <span class="logo-icon">🖥️</span>
+                <span>Мониторум</span>
+            </a>
+            <button class="mobile-menu-btn" aria-label="Меню" id="menuBtn">☰</button>
+            <nav class="main-nav" id="mainNav">
+                <a href="/category/nastrojka-ekrana/" class="nav-link">⚙️ Настройка экрана</a>
+<a href="/category/podklyuchenie-ustrojstv/" class="nav-link">🔌 Подключение устройств</a>
+<a href="/category/mnozhestvennye-ekrany/" class="nav-link">🖥️🖥️ Множественные экраны</a>
+<a href="/category/zvuk-i-audio/" class="nav-link">🔊 Звук и аудио</a>
+<div class="nav-dropdown">
+            <button class="nav-link dropdown-toggle">📂 Все разделы ▾</button>
+            <div class="dropdown-menu"><a href="/category/nastrojka-ekrana/" class="dropdown-item">⚙️ Настройка экрана</a>
+<a href="/category/podklyuchenie-ustrojstv/" class="dropdown-item">🔌 Подключение устройств</a>
+<a href="/category/mnozhestvennye-ekrany/" class="dropdown-item">🖥️🖥️ Множественные экраны</a>
+<a href="/category/zvuk-i-audio/" class="dropdown-item">🔊 Звук и аудио</a>
+<a href="/category/remont-i-polomki/" class="dropdown-item">🔧 Ремонт и поломки</a>
+<a href="/category/ukhod-i-chistka/" class="dropdown-item">🧼 Уход и чистка</a>
+<a href="/category/vybor-i-kharakteristiki/" class="dropdown-item">📊 Выбор и характеристики</a>
+<a href="/category/drajvery-i-po/" class="dropdown-item">💿 Драйверы и ПО</a>
+<a href="/category/krepleniya-i-ustanovka/" class="dropdown-item">🔩 Крепления и установка</a>
+<a href="/category/utilizatsiya-i-prodazha/" class="dropdown-item">♻️ Утилизация и продажа</a>
+<a href="/category/spetsialnye-rezhimy/" class="dropdown-item">🎮 Специальные режимы</a>
+<a href="/category/drugoe/" class="dropdown-item">📁 Другое</a></div>
+        </div>
+            </nav>
+        </div>
+    </header>
+
+    <nav class="breadcrumbs" aria-label="Навигация">
+        <div class="container"><a href="/">Главная</a><span class="breadcrumb-sep">›</span><a href="/category/drajvery-i-po/">Драйверы и ПО</a><span class="breadcrumb-sep">›</span><span class="breadcrumb-current">Какие службы грузят процессор в Мониторе ресурсов Windows</span></div>
+    </nav>
+
+    <main class="site-main">
+        <div class="container">
+            <div class="article-layout">
+                <article class="article-main">
+                    
+                    <h1>Какие службы занимают больше всего процессорного времени в Мониторе ресурсов Windows: анализ и решения</h1>
+                    <nav class="mobile-toc"><details><summary>📋 Содержание</summary><ul><li><a href="#почему-монитор-ресурсов-показывает-высокую-нагрузку-на-cpu-когда-компьютер-ничего-не-делает">Почему Монитор ресурсов показывает высокую нагрузку на CPU, когда компьютер "ничего не делает"?</a></li><li><a href="#топ-5-системных-процессов-которые-чаще-всего-грузят-процессор">Топ-5 системных процессов, которые чаще всего грузят процессор</a></li><li><a href="#как-отличить-нормальную-нагрузку-от-вируса-или-майнера">Как отличить нормальную нагрузку от вируса или майнера?</a></li><li><a href="#почему-antimalware-service-executable-грузит-процессор-и-как-это-исправить">Почему Antimalware Service Executable грузит процессор и как это исправить?</a></li><li><a href="#процессы-runtimebrokerexe-и-shellexperiencehostexe-почему-они-грузят-cpu">Процессы RuntimeBroker.exe и ShellExperienceHost.exe: почему они грузят CPU?</a></li><li><a href="#службы-обновлений-wuauserv-и-tiworkerexe-как-уменьшить-нагрузку">Службы обновлений (wuauserv) и TiWorker.exe: как уменьшить нагрузку?</a></li><li><a href="#драйверы-и-внешние-устройства-скрытые-виновники-высокой-нагрузки">Драйверы и внешние устройства: скрытые виновники высокой нагрузки</a></li><li><a href="#faq-частые-вопросы-о-высокой-нагрузке-cpu-в-мониторе-ресурсов">FAQ: Частые вопросы о высокой нагрузке CPU в Мониторе ресурсов</a></li></ul></details></nav>
+                    <!--#include virtual="/ssi/article_before.html" -->
+                    <div class="article-body"><p>Вы открыли <strong>Монитор ресурсов</strong> (или <em>Resource Monitor</em>), чтобы разобраться, почему компьютер тормозит, и увидели, что процессор загружен на 80-100% — но не понятно, кто виноват. В списке десятки процессов с загадочными названиями вроде <code>svchost.exe</code>, <code>RuntimeBroker.exe</code> или <code>Antimalware Service Executable</code>. Какие из них <strong>нормальные системные службы</strong>, а какие могут сигнализировать о проблемах? И главное — как уменьшить нагрузку, не сломав систему?</p>
+
+<p>В этой статье мы детально разберём <strong>топ-10 процессов</strong>, которые чаще всего занимают процессорное время в <em>Windows 10/11</em>, объясним их назначение и дадим конкретные рекомендации по оптимизации. Вы узнаете, как отличить легитимную активность от вредоносной, почему даже "системные" процессы иногда ведут себя агрессивно, и что делать, если <mark>нагрузка на CPU не падает даже после закрытия всех программ</mark>. Материал будет полезен как начинающим пользователям, так и опытным админам — мы собрали данные из официальной документации <em>Microsoft</em>, форумов поддержки и собственного тестирования на разных конфигурациях.</p>
+
+<h2 id="почему-монитор-ресурсов-показывает-высокую-нагрузку-на-cpu-когда-компьютер-ничего-не-делает">Почему Монитор ресурсов показывает высокую нагрузку на CPU, когда компьютер "ничего не делает"?</h2>
+
+<p>Это один из самых распространённых вопросов. Пользователи открывают <strong>Монитор ресурсов</strong> (доступен через <code>resmon.exe</code> или вкладку "Производительность" в <em>Диспетчере задач</em>), видят загрузку процессора на 30-50% в состоянии простоя и паникуют. На самом деле <strong>даже "пустая" Windows</strong> постоянно выполняет фоновые задачи:</p>
+
+<ul>
+  <li>🔄 <strong>Обновление системы</strong> — служба <code>Windows Update</code> проверяет и скачивает патчи в фоновом режиме.</li>
+  <li>🛡️ <strong>Защита от вирусов</strong> — <em>Microsoft Defender</em> сканирует файлы в реальном времени.</li>
+  <li>📊 <strong>Индексирование поиска</strong> — процесс <code>SearchIndexer.exe</code> обновляет базу для быстрого поиска файлов.</li>
+  <li>🖥️ <strong>Синхронизация данных</strong> — <em>OneDrive</em>, <em>Google Drive</em> или другие облачные сервисы загружают/выгружают файлы.</li>
+</ul>
+
+<p>Кроме того, многие программы (например, <em>Discord</em>, <em>Steam</em>, <em>Telegram</em>) запускают фоновые процессы для уведомлений, автоматических обновлений или аналитики. Если суммарная нагрузка от них превышает 10-15%, это уже повод присмотреться повнимательнее.</p>
+
+<div class="poll-widget" id="poll-9fc96bce"><div class="poll-widget-question">📊 Как часто вы проверяете нагрузку на CPU?</div><div class="poll-widget-option" data-poll="9fc96bce" data-idx="0" onclick="pbPollVote(this)"><span class="poll-widget-label">Раз в неделю</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="9fc96bce" data-idx="1" onclick="pbPollVote(this)"><span class="poll-widget-label">Только когда компьютер тормозит</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="9fc96bce" data-idx="2" onclick="pbPollVote(this)"><span class="poll-widget-label">Никогда не проверял</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="9fc96bce" data-idx="3" onclick="pbPollVote(this)"><span class="poll-widget-label">Постоянно мониторю</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div></div>
+
+<blockquote>⚠️ <strong>Внимание:</strong> Если в Мониторе ресурсов вы видите процесс с именем <code>csrss.exe</code>, <code>lsass.exe</code> или <code>winlogon.exe</code>, который грузит CPU на 50%+, это может быть признаком вируса, маскирующегося под системный файл. Проверьте расположение файла (должен быть в <code>C:\Windows\System32</code>) и запустите сканирование антивирусом.</blockquote>
+
+<h2 id="топ-5-системных-процессов-которые-чаще-всего-грузят-процессор">Топ-5 системных процессов, которые чаще всего грузят процессор</h2>
+
+<p>Разберём <strong>легитимные процессы Windows</strong>, которые часто появляются в верхних строчках Монитора ресурсов. Их высокая активность не всегда означает проблему — иногда это нормальная работа ОС. Но в некоторых случаях нагрузку можно уменьшить.</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Процесс</th>
+      <th>Назначение</th>
+      <th>Нормальная нагрузка</th>
+      <th>Когда это проблема</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>System Idle Process</code></td>
+      <td>Показывает "свободное" время CPU</td>
+      <td>90-99% в простое</td>
+      <td>Если меньше 70% при отсутствии задач</td>
+    </tr>
+    <tr>
+      <td><code>svchost.exe</code></td>
+      <td>Хост для системных служб (обновления, сеть, драйверы)</td>
+      <td>0-10% (пики до 30% при обновлениях)</td>
+      <td>Постоянно >20% без видимой причины</td>
+    </tr>
+    <tr>
+      <td><code>Antimalware Service Executable (MsMpEng.exe)</code></td>
+      <td>Ядро <em>Windows Defender</em></td>
+      <td>0-5% (пики до 50% при сканировании)</td>
+      <td>Постоянно >15% без сканирования</td>
+    </tr>
+    <tr>
+      <td><code>SearchIndexer.exe</code></td>
+      <td>Индексирование файлов для поиска</td>
+      <td>0-10% (пики при первом включении)</td>
+      <td>Постоянно >10% после индексирования</td>
+    </tr>
+    <tr>
+      <td><code>RuntimeBroker.exe</code></td>
+      <td>Управление разрешениями для UWP-приложений</td>
+      <td>0-2%</td>
+      <td>>5% при закрытых приложениях</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>Особого внимания заслуживает <code>svchost.exe</code> — это "контейнер" для множества служб. Чтобы понять, какая именно служба грузит процессор, откройте <em>Командную строку</em> от имени администратора и выполните:</p>
+<pre><code>tasklist /svc /fi "imagename eq svchost.exe"</code></pre>
+<p>Это покажет все экземпляры <code>svchost.exe</code> с указанием запущенных в них служб. Чаще всего виновниками высокой нагрузки становятся:</p>
+<ul>
+  <li>🔄 <code>wuauserv</code> — служба обновлений <em>Windows Update</em>.</li>
+  <li>🌐 <code>nsi</code> или <code>Dnscache</code> — сетевые службы.</li>
+  <li>🖨️ <code>spoolsv</code> — очередь печати (даже если принтера нет!).</li>
+</ul>
+
+<div class="attention-box attention-tip"><span class="attention-icon">💡</span><p>Если <code>svchost.exe</code> грузит CPU после обновления Windows, перезагрузите компьютер — часто это решает проблему без дополнительных действий.</p></div>
+
+<h2 id="как-отличить-нормальную-нагрузку-от-вируса-или-майнера">Как отличить нормальную нагрузку от вируса или майнера?</h2>
+
+<p>Злоумышленники часто маскируют вредоносное ПО под системные процессы. Например, майнер криптовалюты может называться <code>svchost.exe</code>, но располагаться в папке <code>C:\Users\</code> вместо <code>C:\Windows\System32\</code>. Вот <strong>ключевые признаки</strong>, что процесс нелегитимен:</p>
+
+<ul>
+  <li>📍 <strong>Нетипичное расположение</strong> — системные файлы должны быть в <code>System32</code>, <code>SysWOW64</code> или <code>WinSxS</code>.</li>
+  <li>👤 <strong>Неизвестный издатель</strong> — проверьте свойства файла (правая кнопка → Свойства → Цифровые подписи). У легитимных процессов издатель — <em>Microsoft Windows</em>.</li>
+  <li>🔍 <strong>Отсутствие описания</strong> — в Мониторе ресурсов у системных процессов есть понятное описание (например, "Хост для служб Windows").</li>
+  <li>📈 <strong>Постоянная нагрузка</strong> — если процесс грузит CPU на 30-100% круглосуточно, это подозрительно.</li>
+</ul>
+
+<p>Для проверки подозрительного процесса:</p>
+<ol>
+  <li>Откройте <em>Диспетчер задач</em> (<code>Ctrl+Shift+Esc</code>).</li>
+  <li>Найдите процесс в списке, кликните правой кнопкой → <code>Открыть расположение файла</code>.</li>
+  <li>Если файл находится не в <code>C:\Windows\</code> — это почти наверняка вирус.</li>
+  <li>Проверьте файл на <a href="https://www.virustotal.com/" target="_blank" rel="noopener">VirusTotal</a> (загрузите или проверьте по хэшу).</li>
+</ol>
+
+<blockquote>⚠️ <strong>Внимание:</strong> Некоторые майнеры и трояны блокируют доступ к папкам, где они расположены. Если при попытке открыть расположение файла вы видите ошибку "Отказано в доступе", это серьёзный повод для беспокойства. Используйте <em>Process Explorer</em> от <em>Microsoft</em> (скачайте с официального сайта) для принудительного завершения процесса.</blockquote>
+
+<details class="faq-item"><summary>Как майнеры маскируются под системные процессы?</summary><div class="faq-answer"><p>Некоторые вредоносные программы копируют имена легитимных процессов (например, <code>svchost.exe</code> или <code>csrss.exe</code>), но размещают свои файлы в папках вроде <code>C:\Users\AppData\Roaming\</code> или <code>C:\ProgramData\</code>. Они также могут подделывать цифровые подписи, поэтому всегда проверяйте не только имя, но и путь к файлу, а также его хэш (например, через <em>7-Zip</em>: правая кнопка → CRC SHA → SHA-1).</p></div></details>
+
+<h2 id="почему-antimalware-service-executable-грузит-процессор-и-как-это-исправить">Почему <code>Antimalware Service Executable</code> грузит процессор и как это исправить?</h2>
+
+<p>Процесс <code>MsMpEng.exe</code> (он же <strong>Antimalware Service Executable</strong>) — это ядро <em>Windows Defender</em>. Он сканирует файлы в реальном времени, обновляет базы вирусов и выполняет запланированные проверки. В норме он должен занимать <strong>не более 5-10% CPU</strong>, но иногда нагрузка скачет до 50-80%. Причины:</p>
+
+<ul>
+  <li>🔍 <strong>Полное сканирование</strong> — если вы вручную запустили проверку системы, нагрузка будет высокой, пока она не завершится.</li>
+  <li>📥 <strong>Обновление баз</strong> — при загрузке новых определений вирусов процесс может кратковременно нагружать CPU.</li>
+  <li>📁 <strong>Работа с большими файлами</strong> — копирование, распаковка или открытие крупных архивов/образов дисков вызывает активность <em>Defender</em>.</li>
+  <li>⚙️ <strong>Конфликт с другим антивирусом</strong> — если у вас установлен <em>Kaspersky</em>, <em>ESET</em> или другой антивирус, он может мешать работе <em>Defender</em>.</li>
+</ul>
+
+<p>Чтобы уменьшить нагрузку:</p>
+<ol>
+  <li>Откройте <code>Параметры Windows → Обновление и безопасность → Безопасность Windows → Защита от вирусов и угроз</code>.</li>
+  <li>В разделе "Параметры сканирования" выберите "Быстрое сканирование" вместо "Полное".</li>
+  <li>Добавьте исключения для папок, где хранятся большие файлы (например, игры или видео):<br>
+  <code>Параметры защиты от вирусов → Исключения → Добавление или удаление исключений</code>.</li>
+  <li>Если используете сторонний антивирус, отключите <em>Defender</em> полностью через <em>gpedit.msc</em> (для <em>Windows Pro</em>) или <em>Редактор реестра</em>.</li>
+</ol>
+
+<div class="checklist-block"><h4>☑️ Оптимизация Windows Defender</h4><label class="check-item"><input type="checkbox"><span>Отключить сканирование архивов</span></label><label class="check-item"><input type="checkbox"><span>Добавить исключения для крупных файлов</span></label><label class="check-item"><input type="checkbox"><span>Запускать полное сканирование только вручную</span></label><label class="check-item"><input type="checkbox"><span>Отключить облачную защиту (если не нужна)</span></label><label class="check-item"><input type="checkbox"><span>Проверять наличие конфликтов с другими антивирусами</span></label><div class="check-progress">Выполнено: <span class="check-count">0</span> / 5</div></div>
+
+<h2 id="процессы-runtimebrokerexe-и-shellexperiencehostexe-почему-они-грузят-cpu">Процессы <code>RuntimeBroker.exe</code> и <code>ShellExperienceHost.exe</code>: почему они грузят CPU?</h2>
+
+<p>Эти два процесса связаны с работой <strong>интерфейса Windows 10/11</strong> и универсальных приложений (<em>UWP</em>). <code>RuntimeBroker.exe</code> управляет разрешениями для приложений из <em>Microsoft Store</em>, а <code>ShellExperienceHost.exe</code> отвечает за отображение элементов интерфейса (например, меню "Пуск" или панели задач). Их высокая активность обычно связана с:</p>
+
+<ul>
+  <li>🎮 <strong>Запущенными UWP-приложениями</strong> — <em>Xbox</em>, <em>Фотографии</em>, <em>Калькулятор</em> и другие.</li>
+  <li>🔄 <strong>Обновлениями приложений</strong> — <em>Microsoft Store</em> обновляет программы в фоновом режиме.</li>
+  <li>🖥️ <strong>Анимациями и эффектами</strong> — прозрачность, плавные переходы, живые плитки.</li>
+  <li>🐛 <strong>Ошибками в приложениях</strong> — если программа "зависла", эти процессы могут пытаться её перезапустить.</li>
+</ul>
+
+<p>Если <code>RuntimeBroker.exe</code> или <code>ShellExperienceHost.exe</code> постоянно грузят CPU на 10-30%+, попробуйте:</p>
+<ol>
+  <li>Закройте все приложения из <em>Microsoft Store</em> (даже фоновые, вроде <em>Погоды</em> или <em>Новостей</em>).</li>
+  <li>Отключите ненужные визуальные эффекты:<br>
+  <code>Параметры → Специальные возможности → Эффекты прозрачности</code> (отключите).</li>
+  <li>Сбросьте кэш <em>Microsoft Store</em> через <code>WSReset.exe</code> (запустите от имени администратора).</li>
+  <li>Проверьте целостность системных файлов:<br>
+  <pre><code>sfc /scannow
+<p>dism /online /cleanup-image /restorehealth</code></pre></li></p>
+</ol>
+
+<blockquote>⚠️ <strong>Внимание:</strong> Если после обновления <em>Windows 11</em> процесс <code>ShellExperienceHost.exe</code> постоянно грузит CPU на 20%+, это может быть багом новой версии. Проверьте наличие обновлений в <code>Параметры → Центр обновления Windows</code> или откатитесь на предыдущую сборку (если проблема появилась недавно).</blockquote>
+
+<h2 id="службы-обновлений-wuauserv-и-tiworkerexe-как-уменьшить-нагрузку">Службы обновлений (<code>wuauserv</code>) и <code>TiWorker.exe</code>: как уменьшить нагрузку?</h2>
+
+<p>Служба <em>Windows Update</em> (<code>wuauserv</code>) и процесс <code>TiWorker.exe</code> (он же <strong>TrustInstaller</strong>) отвечают за загрузку и установку обновлений. В норме они активны только во время проверки или установки патчей, но иногда "застревают" и грузят CPU часами. Причины:</p>
+
+<ul>
+  <li>🔄 <strong>Зависшее обновление</strong> — если процесс прервался (например, из-за отключения интернета).</li>
+  <li>📥 <strong>Большой объём обновлений</strong> — например, после переустановки Windows.</li>
+  <li>🐛 <strong>Ошибка в службе</strong> — повреждённые файлы или конфликт с драйверами.</li>
+  <li>⚙️ <strong>Настройки групповой политики</strong> — если обновления принудительно включены для корпоративных ПК.</li>
+</ul>
+
+<p>Чтобы исправить:</p>
+<ol>
+  <li>Перезагрузите компьютер — иногда это сбрасывает зависшую службу.</li>
+  <li>Принудительно остановите службу обновлений:<br>
+  <pre><code>net stop wuauserv
+<p>net stop bits</p>
+<p>net stop dosvc</code></pre></p>
+<p>Затем перезагрузите ПК.</li></p>
+  <li>Удалите временные файлы обновлений:<br>
+<p>Удалите содержимое папки <code>C:\Windows\SoftwareDistribution\Download</code>.</li></p>
+  <li>Используйте <em>Устранение неполадок с Центром обновления Windows</em> (найдите в <code>Параметры → Обновление и безопасность → Устранение неполадок</code>).</li>
+  <li>Если проблема повторяется, отключите автоматическое обновление через <em>Редактор локальной групповой политики</em> (<code>gpedit.msc</code> → <code>Конфигурация компьютера → Административные шаблоны → Компоненты Windows → Центр обновления Windows</code>).</li>
+</ol>
+
+<div class="attention-box attention-tip"><span class="attention-icon">💡</span><p>Если <code>TiWorker.exe</code> грузит CPU после крупного обновления (например, с Windows 10 на 11), дождитесь завершения процесса — это может занять несколько часов. Прерывать его не рекомендуется, так как это может привести к повреждению системных файлов.</p></div>
+
+<h2 id="драйверы-и-внешние-устройства-скрытые-виновники-высокой-нагрузки">Драйверы и внешние устройства: скрытые виновники высокой нагрузки</h2>
+
+<p>Иногда причиной высокой нагрузки на CPU становятся <strong>драйверы</strong> или подключённые устройства. Например:</p>
+<ul>
+  <li>🖨️ <strong>Принтеры/сканеры</strong> — служба очереди печати (<code>spoolsv.exe</code>) может грузить процессор даже без активных задач.</li>
+  <li>🎮 <strong>Игровые контроллеры</strong> — драйверы для джойстиков или рулей иногда работают некорректно.</li>
+  <li>📡 <strong>Wi-Fi/Bluetooth адаптеры</strong> — устаревшие драйверы вызывают высокое потребление CPU.</li>
+  <li>🔊 <strong>Звуковые карты</strong> — особенно часто проблемы с драйверами <em>Realtek</em> или <em>Creative</em>.</li>
+</ul>
+
+<p>Как диагностировать и исправить:</p>
+<ol>
+  <li>Откройте <em>Диспетчер устройств</em> (<code>devmgmt.msc</code>) и проверьте, нет ли устройств с восклицательным знаком.</li>
+  <li>Обновите драйверы для подозрительных устройств (правая кнопка → <code>Обновить драйвер</code>).</li>
+  <li>Если проблема с принтером — очистите очередь печати:<br>
+  <code>Службы → Остановка службы "Диспетчер печати" → Удаление файлов в <code>C:\Windows\System32\spool\PRINTERS\</code> → Запуск службы</code>.</li>
+  <li>Для сетевых адаптеров попробуйте отключить функции энергосбережения:<br>
+  <code>Диспетчер устройств → Сетевые адаптеры → Свойства → Управление электропитанием → Снять галочку с "Разрешить отключение..."</code>.</li>
+</ol>
+
+<blockquote>⚠️ <strong>Внимание:</strong> Если после подключения нового устройства (например, внешнего жёсткого диска или веб-камеры) CPU начал постоянно грузиться на 20-50%, проверьте его на другом компьютере. Возможно, устройство неисправно и постоянно перезапрашивает данные, что приводит к высокой нагрузке.</blockquote>
+
+<h2 id="faq-частые-вопросы-о-высокой-нагрузке-cpu-в-мониторе-ресурсов">FAQ: Частые вопросы о высокой нагрузке CPU в Мониторе ресурсов</h2>
+
+<details>
+  <summary>Почему <code>System Idle Process</code> показывает 99%, но компьютер тормозит?</summary>
+  <p>Процесс <code>System Idle Process</code> отображает <strong>свободное время CPU</strong>. Если он показывает 99%, это означает, что процессор почти не занят. Тормоза в этом случае связаны не с CPU, а с:</p>
+  <ul>
+    <li>💾 <strong>Диском</strong> — проверьте загрузку диска в Мониторе ресурсов (вкладка "Диск").</li>
+    <li>🧠 <strong>Оперативной памятью</strong> — если ОЗУ забита, система использует файл подкачки, что тормозит работу.</li>
+    <li>🔌 <strong>Драйверами</strong> — устаревшие драйверы чипсета или видеокарты могут вызывать задержки.</li>
+  </ul>
+  <p>Откройте <em>Диспетчер задач</em> и посмотрите, какой ресурс загружен на 100% — это укажет на настоящую причину тормозов.</p>
+</details>
+
+<details>
+  <summary>Можно ли отключить <code>svchost.exe</code>, если он грузит процессор?</summary>
+  <p><strong>Нет, нельзя.</strong> <code>svchost.exe</code> — критически важный процесс, отвечающий за работу системных служб. Его принудительное завершение приведёт к:</p>
+  <ul>
+    <li>❌ Краху Windows (синий экран <em>BSOD</em>).</li>
+    <li>❌ Потере сетевого подключения.</li>
+    <li>❌ Невозможности установки обновлений.</li>
+  </ul>
+  <p>Вместо этого:</p>
+  <ol>
+    <li>Определите, какая именно служба грузит CPU (через <code>tasklist /svc</code>).</li>
+    <li>Отключите ненужные службы в <code>services.msc</code> (например, <em>Superfetch</em> или <em>DiagTrack</em>).</li>
+    <li>Обновите Windows — часто высокое потребление CPU исправляется в новых сборках.</li>
+  </ol>
+</details>
+
+<details>
+  <summary>Как проверить, не майнит ли мой компьютер криптовалюту?</summary>
+  <p>Признаки скрытого майнинга:</p>
+  <ul>
+    <li>📈 CPU/GPU загружены на 80-100% даже в простое.</li>
+    <li>🔥 Компьютер сильно греется и шумит (кулеры работают на максимуме).</li>
+    <li>💻 В <em>Диспетчере задач</em> есть неизвестные процессы с высоким потреблением ресурсов.</li>
+    <li>📉 Производительность резко упала (игры/программы стали тормозить).</li>
+  </ul>
+  <p>Чтобы проверить:</p>
+  <ol>
+    <li>Откройте <em>Монитор ресурсов</em> и отсортируйте процессы по загрузке CPU.</li>
+    <li>Проверьте неизвестные процессы через <a href="https://www.virustotal.com/" target="_blank" rel="noopener">VirusTotal</a>.</li>
+    <li>Используйте <em>Process Explorer</em> для детального анализа (скачайте с официального сайта <em>Microsoft</em>).</li>
+    <li>Проверьте сетевую активность — майнеры часто обмениваются данными с серверами.</li>
+  </ol>
+  <p>Если обнаружен майнер:</p>
+  <ol>
+    <li>Отключите компьютер от интернета.</li>
+    <li>Завершите подозрительный процесс через <em>Диспетчер задач</em>.</li>
+    <li>Просканируйте систему <em>Malwarebytes</em> или <em>Kaspersky Virus Removal Tool</em>.</li>
+    <li>Удалите неизвестные программы в <code>Панель управления → Программы и компоненты</code>.</li>
+  </ol>
+</details>
+
+<details>
+  <summary>Что делать, если Монитор ресурсов не открывается?</summary>
+  <p>Если <code>resmon.exe</code> не запускается, причины могут быть следующими:</p>
+  <ul>
+    <li>🔒 <strong>Ограничения групповой политики</strong> — в корпоративных сетях доступ к инструментам диагностики может быть заблокирован.</li>
+    <li>🐛 <strong>Повреждение системных файлов</strong> — проверьте целостность командой <code>sfc /scannow</code>.</li>
+    <li>🦠 <strong>Вирусная активность</strong> — некоторые трояны блокируют диагностические утилиты.</li>
+  </ul>
+  <p>Решения:</p>
+  <ol>
+    <li>Попробуйте запустить через <em>Командную строку</em> от администратора: <code>resmon</code>.</li>
+    <li>Используйте альтернативы: <em>Process Explorer</em> или <em>Process Hacker</em>.</li>
+    <li>Проверьте систему на вирусы.</li>
+    <li>Восстановите Windows через точку восстановления (<code>rstrui.exe</code>).</li>
+  </ol>
+</details>
+
+<details>
+  <summary>Как уменьшить нагрузку от <code>SearchIndexer.exe</code>?</summary>
+  <p>Процесс <code>SearchIndexer.exe</code> отвечает за индексирование файлов для быстрого поиска. Чтобы снизить его активность:</p>
+  <ol>
+    <li>Отключите индексирование для ненужных папок:<br>
+    <code>Панель управления → Параметры индексирования → Изменить → Снять галочки с ненужных локаций</code>.</li>
+    <li>Исключите типы файлов, которые не нужно индексировать (например, видео или архивы).</li>
+    <li>Отключите индексирование полностью (не рекомендуется, если используете поиск Windows):<br>
+    <code>Службы → Windows Search → Тип запуска: Отключена</code>.</li>
+    <li>Если индексирование "зависло", перезапустите службу:<br>
+    <pre><code>net stop wsearch
+<p>net start wsearch</code></pre></li></p>
+  </ol>
+  <p>После изменений перезагрузите компьютер.</p>
+</details></div>
+                    <!--#include virtual="/ssi/article_after.html" -->
+
+                </article>
+                <aside class="article-sidebar"><!--#include virtual="/ssi/sidebar_top.html" --><nav class="sidebar-search"><div class="sidebar-search-box"><input type="text" id="globalSearchInput" placeholder="🔍 Поиск статей..." autocomplete="off"><div class="search-dropdown" id="globalSearchDropdown"></div></div></nav><!--#include virtual="/ssi/sidebar_before_toc.html" --><nav class="sidebar-toc" id="sidebarToc"><h3>Содержание</h3><ul><li><a href="#почему-монитор-ресурсов-показывает-высокую-нагрузку-на-cpu-когда-компьютер-ничего-не-делает">Почему Монитор ресурсов показывает высокую нагрузку на CPU, когда компьютер "ничего не делает"?</a></li><li><a href="#топ-5-системных-процессов-которые-чаще-всего-грузят-процессор">Топ-5 системных процессов, которые чаще всего грузят процессор</a></li><li><a href="#как-отличить-нормальную-нагрузку-от-вируса-или-майнера">Как отличить нормальную нагрузку от вируса или майнера?</a></li><li><a href="#почему-antimalware-service-executable-грузит-процессор-и-как-это-исправить">Почему Antimalware Service Executable грузит процессор и как это исправить?</a></li><li><a href="#процессы-runtimebrokerexe-и-shellexperiencehostexe-почему-они-грузят-cpu">Процессы RuntimeBroker.exe и ShellExperienceHost.exe: почему они грузят CPU?</a></li><li><a href="#службы-обновлений-wuauserv-и-tiworkerexe-как-уменьшить-нагрузку">Службы обновлений (wuauserv) и TiWorker.exe: как уменьшить нагрузку?</a></li><li><a href="#драйверы-и-внешние-устройства-скрытые-виновники-высокой-нагрузки">Драйверы и внешние устройства: скрытые виновники высокой нагрузки</a></li><li><a href="#faq-частые-вопросы-о-высокой-нагрузке-cpu-в-мониторе-ресурсов">FAQ: Частые вопросы о высокой нагрузке CPU в Мониторе ресурсов</a></li></ul></nav><!--#include virtual="/ssi/sidebar_before_related.html" --><nav class="sidebar-related"><h3>Похожие статьи</h3><ul><li><a href="/articles/k/ka/kak-najti-drajvera-monitora-na-kompyutere.html" class="related-card">Как найти драйвера для монитора: пошаговая инструкция 2026</a></li><li><a href="/articles/k/ka/kak-monitorit-sistemu-cherez-msi-afterburner.html" class="related-card">Мониторинг системы в MSI Afterburner: Настройка, графики и контроль</a></li><li><a href="/articles/k/ka/kak-pomenyat-drajvera-dlya-monitora.html" class="related-card">Как обновить драйвер монитора: пошаговая инструкция 2026</a></li><li><a href="/articles/k/ka/kak-sfotografirovat-ekran-monitora-na-make.html" class="related-card">Как сфотографировать экран монитора на Mac: 5 способов скриншота</a></li><li><a href="/articles/k/ka/kak-vruchnuyu-ustanovit-drajvery-monitora.html" class="related-card">Как вручную установить драйверы монитора: пошаговая инструкция</a></li></ul></nav><!--#include virtual="/ssi/sidebar_after_related.html" --></aside>
+            </div>
+        </div>
+    </main>
+
+    <!--#include virtual="/ssi/before_related_bottom.html" -->
+    <section class="related-bottom">
+        <div class="container">
+            <h2 class="related-bottom-heading">📖 Читайте также</h2>
+            <div class="related-bottom-grid"><a href="/articles/k/ka/kak-najti-drajvera-monitora-na-kompyutere.html" class="related-bottom-card"><span class="related-bottom-title">Как найти драйвера для монитора: пошаговая инструкция 2026</span><span class="related-bottom-desc">Не знаете, где скачать драйвер для монитора? Узнайте, как определить модель, найти официальное ПО и </span></a><a href="/articles/k/ka/kak-monitorit-sistemu-cherez-msi-afterburner.html" class="related-bottom-card"><span class="related-bottom-title">Мониторинг системы в MSI Afterburner: Настройка, графики и контроль</span><span class="related-bottom-desc">Полное руководство по настройке мониторинга в MSI Afterburner. Узнайте, как отображать FPS, температ</span></a><a href="/articles/k/ka/kak-pomenyat-drajvera-dlya-monitora.html" class="related-bottom-card"><span class="related-bottom-title">Как обновить драйвер монитора: пошаговая инструкция 2026</span><span class="related-bottom-desc">Узнайте, как правильно установить или обновить драйвер монитора в Windows. Полная инструкция: от пои</span></a><a href="/articles/k/ka/kak-sfotografirovat-ekran-monitora-na-make.html" class="related-bottom-card"><span class="related-bottom-title">Как сфотографировать экран монитора на Mac: 5 способов скриншота</span><span class="related-bottom-desc">Полное руководство по созданию скриншотов на macOS. Горячие клавиши, утилита «Снимок экрана», команд</span></a><a href="/articles/k/ka/kak-vruchnuyu-ustanovit-drajvery-monitora.html" class="related-bottom-card"><span class="related-bottom-title">Как вручную установить драйверы монитора: пошаговая инструкция</span><span class="related-bottom-desc">Подробное руководство по ручной установке драйверов монитора в Windows. Исправление ошибок разрешени</span></a><a href="/articles/k/ka/kak-pri-translyatsii-na-yutub-pokazat-ekran-monitora.html" class="related-bottom-card"><span class="related-bottom-title">Как транслировать экран монитора на YouTube: Полное руководство 2026</span><span class="related-bottom-desc">Пошаговая инструкция: настройка OBS, выбор программ, оптимизация звука и видео для стриминга экрана </span></a></div>
+        </div>
+    </section>
+    <!--#include virtual="/ssi/after_related_bottom.html" -->
+
+    <footer class="site-footer-premium">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-col">
+                    <div class="footer-brand">🖥️ Мониторум</div>
+                    <p class="footer-about">Полный справочник по настройке, ремонту и выбору компьютерных мониторов для любых задач.</p>
+                </div>
+                <div class="footer-col">
+                    <h4>Разделы</h4>
+                    <ul><li><a href="/category/nastrojka-ekrana/">⚙️ Настройка экрана</a></li>
+<li><a href="/category/podklyuchenie-ustrojstv/">🔌 Подключение устройств</a></li>
+<li><a href="/category/mnozhestvennye-ekrany/">🖥️🖥️ Множественные экраны</a></li>
+<li><a href="/category/zvuk-i-audio/">🔊 Звук и аудио</a></li>
+<li><a href="/category/remont-i-polomki/">🔧 Ремонт и поломки</a></li>
+<li><a href="/category/ukhod-i-chistka/">🧼 Уход и чистка</a></li></ul>
+                </div>
+                <div class="footer-col">
+                    <h4>Информация</h4>
+                    <ul>
+                        <li><a href="/">Главная</a></li>
+                        <li><a href="/about.html">О проекте</a></li>
+                        <li><a href="/categories.html">Все разделы</a></li>
+                        <li><a href="/contact.html">Контакты</a></li>
+                        <li><a href="/privacy.html">Конфиденциальность</a></li>
+                        <li><a href="/sitemap.xml">Карта сайта</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>© Мониторум. Все права защищены.</p>
+                <!--LiveInternet counter--><div style="margin-top:10px;"><a href="https://www.liveinternet.ru/click"
+                target="_blank"><img id="licnt06C4" width="88" height="15" style="border:0" 
+                title="LiveInternet: показано число посетителей за сегодня"
+                src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAEALAAAAAABAAEAAAIBTAA7"
+                alt=""/></a><script>(function(d,s){d.getElementById("licnt06C4").src=
+                "https://counter.yadro.ru/hit?t26.5;r"+escape(d.referrer)+
+                ((typeof(s)=="undefined")?"":";s"+s.width+"*"+s.height+"*"+
+                (s.colorDepth?s.colorDepth:s.pixelDepth))+";u"+escape(d.URL)+
+                ";h"+escape(d.title.substring(0,150))+";"+Math.random()})(document,screen)</script></div><!--/LiveInternet-->
+            </div>
+        </div>
+    </footer>
+    <div id="cookie-consent" class="cookie-popup">
+        <div class="cookie-inner">
+            <span>🍪 Мы используем файлы cookie для улучшения работы сайта.</span>
+            <button id="cookie-accept" class="cookie-btn">Принять</button>
+        </div>
+    </div>
+    <script src="/static/js/main.js"></script>
+    <script>
+    (function() {
+        const popup = document.getElementById('cookie-consent');
+        const btn = document.getElementById('cookie-accept');
+        if (popup && btn && !localStorage.getItem('cookie-accepted')) {
+            popup.classList.add('visible');
+            btn.onclick = () => {
+                localStorage.setItem('cookie-accepted', 'true');
+                popup.classList.remove('visible');
+            };
+        }
+    })();
+    </script>
+    <script>
+    function pbPollVote(el) {
+        var poll = el.closest('.poll-widget');
+        if (poll.classList.contains('voted')) return;
+        poll.classList.add('voted');
+        el.classList.add('selected');
+        var opts = poll.querySelectorAll('.poll-widget-option');
+        var n = opts.length;
+        var raw = [];
+        var sum = 0;
+        for (var i = 0; i < n; i++) {
+            var v = Math.random() * 50 + 5;
+            if (opts[i] === el) v += 30;
+            raw.push(v);
+            sum += v;
+        }
+        var pcts = raw.map(function(v) { return Math.round(v / sum * 100); });
+        var diff = 100 - pcts.reduce(function(a,b){ return a+b; }, 0);
+        pcts[Array.from(opts).indexOf(el)] += diff;
+        setTimeout(function() {
+            opts.forEach(function(opt, i) {
+                opt.querySelector('.poll-widget-bar').style.width = pcts[i] + '%';
+                opt.querySelector('.poll-widget-pct').textContent = pcts[i] + '%';
+            });
+        }, 50);
+    }
+    </script>
+    <!--#include virtual="/ssi/body_bottom.html" -->
+    <script src="/static/js/inject.js" defer></script>
+</body>
+</html>

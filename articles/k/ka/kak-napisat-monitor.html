@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27><text y=%27.9em%27 font-size=%2790%27>🖥️</text></svg>">
+    <title>Как написать монитор: создание тестовых программ и утилит — Мониторум</title>
+    <meta name="description" content="Пошаговое руководство по написанию программы-монитора для диагностики экрана. Языки, алгоритмы, генерация цветов и проверка битых пикселей.">
+    <link rel="canonical" href="https://monitorium.vercel.app/articles/k/ka/kak-napisat-monitor.html">
+
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="Как написать монитор: создание тестовых программ и утилит">
+    <meta property="og:description" content="Пошаговое руководство по написанию программы-монитора для диагностики экрана. Языки, алгоритмы, генерация цветов и проверка битых пикселей.">
+    <meta property="og:locale" content="ru_RU">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css?v=1780420684">
+    <style>
+    .site-footer-premium {
+        margin-top: 60px; padding: 40px 0 0; background: #1e293b; color: #94a3b8;
+    }
+    .footer-grid {
+        display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 40px;
+        padding-bottom: 32px; border-bottom: 1px solid #334155;
+    }
+    .footer-brand { font-size: 1.2rem; font-weight: 700; color: #f1f5f9; margin-bottom: 12px; }
+    .footer-about { font-size: 0.9rem; line-height: 1.6; margin-bottom: 8px; }
+    .footer-updated { font-size: 0.8rem; color: #64748b; }
+    .footer-col h4 { color: #f1f5f9; font-size: 0.95rem; margin-bottom: 16px; }
+    .footer-col ul { list-style: none; }
+    .footer-col li { margin-bottom: 8px; }
+    .footer-col a { color: #94a3b8; font-size: 0.9rem; transition: color 0.2s; }
+    .footer-col a:hover { color: #60a5fa; }
+    .footer-bottom { padding: 20px 0; text-align: center; font-size: 0.85rem; }
+    @media (max-width: 640px) {
+        .footer-grid { grid-template-columns: 1fr; gap: 24px; }
+    }
+    .cookie-popup {
+        position: fixed; bottom: 0; left: 0; right: 0; background: #1e293b; color: #fff;
+        padding: 16px; transition: transform 0.5s ease; z-index: 9999; border-top: 2px solid #2563eb;
+        transform: translateY(100%);
+    }
+    .cookie-popup.visible { transform: translateY(0); }
+    .cookie-inner { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; gap: 16px; font-size: 0.9rem; }
+    .cookie-btn { background: #2563eb; color: #fff; border: none; padding: 8px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+    .cookie-btn:hover { background: #1d4ed8; }
+    @media (max-width: 640px) {
+        .cookie-inner { flex-direction: column; text-align: center; }
+    }
+</style>
+    
+    <!--#include virtual="/ssi/head.html" -->
+</head>
+<body>
+        <!--#include virtual="/ssi/body_top.html" -->
+    <style>
+    .nav-dropdown { position: relative; display: inline-block; }
+    .dropdown-toggle {
+        background: none; border: none; cursor: pointer;
+        font: inherit; color: inherit; padding: 8px 12px;
+        border-radius: 8px; transition: background 0.2s;
+    }
+    .dropdown-toggle:hover { background: rgba(0,0,0,0.05); }
+    .dropdown-menu {
+        display: none; position: absolute; right: 0; top: 100%;
+        min-width: 240px; max-height: 70vh; overflow-y: auto;
+        background: var(--card-bg, #fff); border: 1px solid var(--border, #e5e7eb);
+        border-radius: 12px; box-shadow: 0 12px 40px rgba(0,0,0,0.12);
+        padding: 8px 0; z-index: 1000;
+    }
+    .nav-dropdown::after {
+        content: ''; position: absolute; left: 0; right: 0;
+        top: 100%; height: 12px;
+    }
+    .nav-dropdown:hover .dropdown-menu,
+    .nav-dropdown:focus-within .dropdown-menu { display: block; }
+    .dropdown-item {
+        display: block; padding: 10px 20px; color: var(--text, #1f2937);
+        text-decoration: none; font-size: 0.95rem; transition: background 0.15s;
+        white-space: nowrap;
+    }
+    .dropdown-item:hover { background: rgba(37,99,235,0.06); color: var(--primary, #2563eb); }
+    @media (max-width: 768px) {
+        .main-nav > .nav-link { display: none; }
+        .dropdown-toggle { display: none; }
+        .dropdown-menu {
+            display: block !important; position: static;
+            box-shadow: none; border: none; border-radius: 0;
+            min-width: auto; max-height: none; padding: 0;
+            background: transparent;
+        }
+        .dropdown-item {
+            padding: 8px 0; font-size: 1rem;
+        }
+    }
+    </style>
+    <header class="site-header">
+        <div class="container header-inner">
+            <a href="/" class="logo">
+                <span class="logo-icon">🖥️</span>
+                <span>Мониторум</span>
+            </a>
+            <button class="mobile-menu-btn" aria-label="Меню" id="menuBtn">☰</button>
+            <nav class="main-nav" id="mainNav">
+                <a href="/category/nastrojka-ekrana/" class="nav-link">⚙️ Настройка экрана</a>
+<a href="/category/podklyuchenie-ustrojstv/" class="nav-link">🔌 Подключение устройств</a>
+<a href="/category/mnozhestvennye-ekrany/" class="nav-link">🖥️🖥️ Множественные экраны</a>
+<a href="/category/zvuk-i-audio/" class="nav-link">🔊 Звук и аудио</a>
+<div class="nav-dropdown">
+            <button class="nav-link dropdown-toggle">📂 Все разделы ▾</button>
+            <div class="dropdown-menu"><a href="/category/nastrojka-ekrana/" class="dropdown-item">⚙️ Настройка экрана</a>
+<a href="/category/podklyuchenie-ustrojstv/" class="dropdown-item">🔌 Подключение устройств</a>
+<a href="/category/mnozhestvennye-ekrany/" class="dropdown-item">🖥️🖥️ Множественные экраны</a>
+<a href="/category/zvuk-i-audio/" class="dropdown-item">🔊 Звук и аудио</a>
+<a href="/category/remont-i-polomki/" class="dropdown-item">🔧 Ремонт и поломки</a>
+<a href="/category/ukhod-i-chistka/" class="dropdown-item">🧼 Уход и чистка</a>
+<a href="/category/vybor-i-kharakteristiki/" class="dropdown-item">📊 Выбор и характеристики</a>
+<a href="/category/drajvery-i-po/" class="dropdown-item">💿 Драйверы и ПО</a>
+<a href="/category/krepleniya-i-ustanovka/" class="dropdown-item">🔩 Крепления и установка</a>
+<a href="/category/utilizatsiya-i-prodazha/" class="dropdown-item">♻️ Утилизация и продажа</a>
+<a href="/category/spetsialnye-rezhimy/" class="dropdown-item">🎮 Специальные режимы</a>
+<a href="/category/drugoe/" class="dropdown-item">📁 Другое</a></div>
+        </div>
+            </nav>
+        </div>
+    </header>
+
+    <nav class="breadcrumbs" aria-label="Навигация">
+        <div class="container"><a href="/">Главная</a><span class="breadcrumb-sep">›</span><a href="/category/drajvery-i-po/">Драйверы и ПО</a><span class="breadcrumb-sep">›</span><span class="breadcrumb-current">Как написать монитор: создание тестовых программ и утилит</span></div>
+    </nav>
+
+    <main class="site-main">
+        <div class="container">
+            <div class="article-layout">
+                <article class="article-main">
+                    
+                    <h1>Как написать монитор: создание диагностической утилиты с нуля</h1>
+                    <nav class="mobile-toc"><details><summary>📋 Содержание</summary><ul><li><a href="#выбор-инструментов-и-среды-разработки">Выбор инструментов и среды разработки</a></li><li><a href="#реализация-полноэкранных-режимов-и-управления-окнами">Реализация полноэкранных режимов и управления окнами</a></li><li><a href="#алгоритмы-генерации-тестовых-паттернов">Алгоритмы генерации тестовых паттернов</a></li><li><a href="#работа-с-буфером-кадра-и-памятью">Работа с буфером кадра и памятью</a></li><li><a href="#тестирование-цветового-пространства-и-битовых-разрядов">Тестирование цветового пространства и битовых разрядов</a></li><li><a href="#оптимизация-и-устранение-проблем-синхронизации">Оптимизация и устранение проблем синхронизации</a></li><li><a href="#заключительные-шаги-и-упаковка-утилиты">Заключительные шаги и упаковка утилиты</a></li></ul></details></nav>
+                    <!--#include virtual="/ssi/article_before.html" -->
+                    <div class="article-body">
+
+<p>Многие пользователи сталкиваются с необходимостью проверить матрицу дисплея на наличие дефектов, таких как битые пиксели или инверсия цветов, но стандартные встроенные средства операционной системы часто ограничены. В таких ситуациях единственным надежным решением становится создание собственной утилиты, способной управлять каждым отдельным элементом матрицы. <strong>Написание монитора</strong> — это не только задача для опытных разработчиков, но и отличный способ глубоко понять принципы работы <strong>графического API</strong> и управления экраном.</p>
+
+<p>Процесс создания программы, которая превращает ваш дисплей в инструмент тестирования, требует четкого понимания того, как операционная система отправляет данные на видеокарту. Вам потребуется выбрать подходящий язык программирования и библиотеку, которая обеспечит прямой доступ к буферу кадра. <em>DirectX</em>, <em>OpenGL</em> или методы <strong>отрисовки окон</strong> станут вашими основными инструментами в борьбе за идеальную картинку.</p>
+
+<h2 id="выбор-инструментов-и-среды-разработки">Выбор инструментов и среды разработки</h2>
+
+<p>Первым шагом в создании вашей программы является определение технологического стека. Для задач, связанных с быстрым выводом графических примитивов и управлением пикселями, лучше всего подходят компилируемые языки, обеспечивающие минимальные задержки. <strong>C#</strong> с использованием <em>WinForms</em> или <em>WPF</em> подойдет для простых тестов, тогда как <strong>C++</strong> даст максимальную производительность и контроль над <strong>видеопотоком</strong>.</p>
+
+<p>Если вы планируете создать кроссплатформенное решение, рассмотрите использование <em>Python</em> с библиотекой <em>Pygame</em> или <em>SDL2</em>. Эти инструменты позволяют относительно легко манипулировать пикселями и создавать полноэкранные режимы. </p>
+
+<p>Для профессиональной разработки часто используют специализированные фреймворки, которые абстрагируют работу с видеокартой. Использование <strong>графического конвейера</strong> позволяет генерировать сложные паттерны и градиенты без необходимости вручную вычислять цвета для каждого пикселя.</p>
+
+<h2 id="реализация-полноэкранных-режимов-и-управления-окнами">Реализация полноэкранных режимов и управления окнами</h2>
+
+<p>Ключевым аспектом работы теста является способность утилиты занимать весь экран без рамок и заголовков. В программировании это реализуется через изменение свойств окна или переключение в режим <strong>Borderless Windowed</strong>. Необходимо установить ширину и высоту окна равными разрешению вашего дисплея, которое можно получить через <code>Screen.PrimaryScreen.Bounds</code> или аналогичные системные вызовы.</p>
+
+<p>В некоторых случаях стандартный полноэкранный режим может вызывать переключение частоты обновления или задержки, что недопустимо при тестировании <strong>времени отклика</strong>. Поэтому рекомендуется использовать полноэкранный режим без границ, который интегрируется в рабочий стол, но перекрывает его содержимое. Это позволяет избежать лишних перерисовок и сохранить стабильную <strong>частоту кадров</strong>.</p>
+
+<blockquote>⚠️ Внимание: Если вы пишете утилиту для тестирования HDR-мониторов, необходимо запросить права на управление динамическим диапазоном и включать режим полного охвата цветового пространства, иначе результаты проверки будут неточными.</blockquote>
+
+<div class="attention-box attention-tip"><span class="attention-icon">💡</span><p>Для корректного тестирования дисплея программа должна работать в режиме"безрамочного окна" на весь экран, чтобы исключить влияние панелей задач и курсора на визуальное восприятие.</p></div>
+
+<h2 id="алгоритмы-генерации-тестовых-паттернов">Алгоритмы генерации тестовых паттернов</h2>
+
+<p>Основная функция вашего монитора — это вывод на экран строго определенных цветов и геометрических фигур. Простейший алгоритм предполагает заполнение всего буфера кадра одним цветом, например, чистым красным (<code>#FF0000</code>), зеленым или синим. В <strong>цикле отрисовки</strong> вы просто меняете значение целевого цвета и вызываете метод обновления экрана.</p>
+
+<p>Для более продвинутого тестирования, например, проверки <strong>инверсии цветов</strong> или битых пикселей, необходимо реализовать генерацию градиентов. Это можно сделать, пройдя циклом по координатам X и Y экрана и вычислив значение цвета для каждой точки. Такой подход позволяет создавать плавные переходы, на фоне которых дефекты матрицы видны наиболее отчетливо.</p>
+
+<p>Следующий уровень сложности — создание движущихся объектов для проверки <strong>шлейфов</strong> и <strong>motion blur</strong>. В этом случае необходимо в каждом кадре очищать экран и рисовать объект на новой координате, вычисляемой через интервал времени. Использование <strong>двойной буферизации</strong> здесь критически важно, чтобы избежать мерцания и визуального артефакта"разрывов" изображения.</p>
+
+<div class="checklist-block"><h4>☑️ Настройка графического режима</h4><label class="check-item"><input type="checkbox"><span>Выбрать разрешение экрана</span></label><label class="check-item"><input type="checkbox"><span>Установить режим без границ</span></label><label class="check-item"><input type="checkbox"><span>Скрыть курсор мыши</span></label><label class="check-item"><input type="checkbox"><span>Отключить синхронизацию (по желанию)</span></label><div class="check-progress">Выполнено: <span class="check-count">0</span> / 4</div></div>
+
+<h2 id="работа-с-буфером-кадра-и-памятью">Работа с буфером кадра и памятью</h2>
+
+<p>Для максимальной производительности, особенно при работе с высоким разрешением (4K и выше), прямой доступ к <strong>буферу кадра</strong> через графические API является обязательным. Попытки отрисовки через стандартные методы рисования оконных форм могут привести к снижению частоты кадров и появлению артефактов. <strong>Видеопамять</strong> должна обновляться асинхронно, чтобы не блокировать основной поток программы.</p>
+
+<p>Если вы используете язык с автоматическим управлением памятью, следите за тем, чтобы не создавать новые объекты в каждом кадре. Это приведет к частым срабатываниям <strong>сборщика мусора</strong>, что вызовет рывки в изображении. Вместо этого создавайте массивы цветов или буферы один раз при запуске и просто меняйте их содержимое или указатели.</p>
+
+<blockquote>⚠️ Внимание: При работе с буфером кадра в реальном времени убедитесь, что вы не блокируете поток ввода. Пользователь должен иметь возможность нажать клавишу для выхода из теста, даже если программа работает на максимальном грузе видеокарты.</blockquote>
+
+<details class="faq-item"><summary>Технические детали прямого доступа</summary><div class="faq-answer"><p>Для прямого доступа к пикселям в C++ можно использовать функцию BitBlt или Direct2D. В C# это реализуется через класс Bitmap и метод LockBits, что позволяет записывать данные непосредственно в память видеокарты, минуя лишние преобразования системы.</p></div></details>
+
+<h2 id="тестирование-цветового-пространства-и-битовых-разрядов">Тестирование цветового пространства и битовых разрядов</h2>
+
+<p>Современные мониторы поддерживают различные глубины цвета, и ваша программа должна уметь их проверять. Тест на <strong>10-битную глубину</strong> требует вывода градиентов, где видны малейшие градации оттенков, которые не должны"разрываться" на полосы. Для этого необходимо генерировать цвета с высокой точностью, используя <strong>плавающую точку</strong> для вычислений.</p>
+
+<p>Проверка <strong>цветового профиля</strong> также важна. Утилита должна уметь выводить цвета в цветовых пространствах sRGB, Adobe RGB или DCI-P3, если целевое устройство поддерживает эти стандарты. Для этого необходимо корректно настроить матрицу преобразования цветов в вашей программе.</p>
+
+<p>Следующая таблица демонстрирует базовые параметры, которые стоит учитывать при разработке алгоритмов генерации тестовых полей для разных типов матриц.</p>
+
+<table>
+<thead>
+<tr>
+<th>Тип теста</th>
+<th>Рекомендуемый алгоритм</th>
+<th>Цель проверки</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Битые пиксели</td>
+<td>Чередование чистых цветов (R, G, B, Y, C, M, K)</td>
+<td>Выявление застрявших или мертвых точек</td>
+</tr>
+<tr>
+<td>Шлейфы (Ghosting)</td>
+<td>Движущийся черный квадрат на сером фоне</td>
+<td>Оценка времени отклика матрицы</td>
+</tr>
+<tr>
+<td>Градиенты</td>
+<td>Плавный переход от черного к белому</td>
+<td>Проверка на цветовую полосы (banding)</td>
+</tr>
+<tr>
+<td>Инверсия</td>
+<td>Режим инвертирования цветов (RGB -> BGR)</td>
+<td>Проверка работы цвета и контраста</td>
+</tr>
+</tbody>
+</table>
+
+<div class="poll-widget" id="poll-847b0181"><div class="poll-widget-question">📊 Какой метод отрисовки вы планируете использовать?</div><div class="poll-widget-option" data-poll="847b0181" data-idx="0" onclick="pbPollVote(this)"><span class="poll-widget-label">GDI+ (простота)</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="847b0181" data-idx="1" onclick="pbPollVote(this)"><span class="poll-widget-label">DirectX/OpenGL (производительность)</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="847b0181" data-idx="2" onclick="pbPollVote(this)"><span class="poll-widget-label">Web-технологии (кроссплатформенность)</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="847b0181" data-idx="3" onclick="pbPollVote(this)"><span class="poll-widget-label">Другой метод</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div></div>
+
+<h2 id="оптимизация-и-устранение-проблем-синхронизации">Оптимизация и устранение проблем синхронизации</h2>
+
+<p>Одной из частых проблем при написании тестовых утилит является рассинхронизация с <strong>частотой обновления</strong> монитора. Если программа обновляет экран быстрее или медленнее, чем это делает монитор, могут возникать визуальные артефакты, такие как tearing (разрывы изображения). Для решения этой проблемы необходимо включить <strong>вертикальную синхронизацию (V-Sync)</strong> или использовать адаптивное управление <strong>таймингами</strong>.</p>
+
+<p>При работе с переменными частотами обновления (G-Sync, FreeSync) логика отрисовки может усложниться. В таких случаях рекомендуется использовать <strong>адаптивный рендеринг</strong>, который подстраивает скорость обновления кадров под возможности дисплея. Это обеспечивает плавность картинки и точность теста.</p>
+
+<p>Также стоит обратить внимание на энергопотребление. Если тест запускается на длительное время, программа должна корректно управлять состоянием энергопотребления, чтобы не перегревать <strong>видеокарту</strong> или дисплей. Используйте таймеры для пауз и состояния ожидания.</p>
+
+<div class="attention-box attention-tip"><span class="attention-icon">💡</span><p>Перед запуском теста на битые пиксели отключите все фоновые процессы, особенно антивирусы и браузеры, так как они могут создавать свои окна поверх вашего приложения или мешать управлению курсором.</p></div>
+
+<h2 id="заключительные-шаги-и-упаковка-утилиты">Заключительные шаги и упаковка утилиты</h2>
+
+<p>После того как функционал отработан и тесты проходят успешно, необходимо подготовить приложение к распространению. Это включает в себя удаление отладочной инфографики, настройку иконок и создание установщика. Важно, чтобы <strong>исполняемый файл</strong> не требовал сложной установки, чтобы пользователь мог просто запустить его с флешки.</p>
+
+<p>Убедитесь, что ваша программа может корректно завершать работу и возвращать системные настройки в исходное состояние. Иногда тестовые режимы могут сбивать <strong>яркость</strong> или цветовую гамму, и программа должна иметь функцию сброса этих параметров при закрытии.</p>
+
+<blockquote>⚠️ Внимание: При создании финальной версии убедитесь, что код не содержит жестко заданных разрешений. Утилита должна автоматически определять текущее разрешение экрана пользователя и масштабироваться под него, даже если это нестандартное соотношение сторон.</blockquote>
+
+<div class="attention-box attention-tip"><span class="attention-icon">💡</span><p>Финальная сборка должна быть автономной, не зависеть от сторонних библиотек и автоматически подстраиваться под разрешение и частоту экрана пользователя.</p></div>
+
+<details>
+<summary>Как проверить битые пиксели с помощью написанной программы?</summary>
+<p>Запустите утилиту в режиме последовательного переключения цветов (черный, белый, красный, зеленый, синий). Внимательно осматривайте экран под разными углами. Битые пиксели будут выглядеть как неизменные точки другого цвета или как черные точки на цветном фоне.</p>
+</details>
+
+<details>
+<summary>Можно ли использовать веб-технологии для написания монитора?</summary>
+<p>Да, можно создать веб-страницу с полным экраном, используя CSS и JavaScript. Однако браузеры имеют свои ограничения по доступу к"железу" и могут не обеспечить той же точности отрисовки и скорости обновления, что и нативные приложения на C++ или C#.</p>
+</details>
+
+<details>
+<summary>Что делать, если монитор не переключается в нужный режим?</summary>
+<p>Проверьте настройки драйвера видеокарты и убедитесь, что программа имеет права администратора. Иногда смена разрешения требует перезагрузки видеодрайвера или перезапуска Windows. Также проверьте, поддерживает ли монитор нужное разрешение и частоту.</p>
+</details>
+
+<details class="faq-item"><summary>Возможные проблемы с совместимостью</summary><div class="faq-answer"><p>Некоторые старые мониторы могут некорректно реагировать на нестандартные сигналы синхронизации, генерируемые программой. В таких случаях рекомендуется использовать стандартные тестовые паттерны, принятые в индустрии, чтобы избежать повреждений матрицы или потери сигнала.</p></div></details></div>
+                    <!--#include virtual="/ssi/article_after.html" -->
+
+                </article>
+                <aside class="article-sidebar"><!--#include virtual="/ssi/sidebar_top.html" --><nav class="sidebar-search"><div class="sidebar-search-box"><input type="text" id="globalSearchInput" placeholder="🔍 Поиск статей..." autocomplete="off"><div class="search-dropdown" id="globalSearchDropdown"></div></div></nav><!--#include virtual="/ssi/sidebar_before_toc.html" --><nav class="sidebar-toc" id="sidebarToc"><h3>Содержание</h3><ul><li><a href="#выбор-инструментов-и-среды-разработки">Выбор инструментов и среды разработки</a></li><li><a href="#реализация-полноэкранных-режимов-и-управления-окнами">Реализация полноэкранных режимов и управления окнами</a></li><li><a href="#алгоритмы-генерации-тестовых-паттернов">Алгоритмы генерации тестовых паттернов</a></li><li><a href="#работа-с-буфером-кадра-и-памятью">Работа с буфером кадра и памятью</a></li><li><a href="#тестирование-цветового-пространства-и-битовых-разрядов">Тестирование цветового пространства и битовых разрядов</a></li><li><a href="#оптимизация-и-устранение-проблем-синхронизации">Оптимизация и устранение проблем синхронизации</a></li><li><a href="#заключительные-шаги-и-упаковка-утилиты">Заключительные шаги и упаковка утилиты</a></li></ul></nav><!--#include virtual="/ssi/sidebar_before_related.html" --><nav class="sidebar-related"><h3>Похожие статьи</h3><ul><li><a href="/articles/k/ka/kak-izmenit-universalnyj-monitor-pnp-na-standartnyj-vga-windows-7.html" class="related-card">Как заменить универсальный монитор PnP на стандартный VGA в Windows 7</a></li><li><a href="/articles/k/ka/kak-zakryt-torrent-esli-on-zakryt-i-net-na-monitore.html" class="related-card">Как принудительно закрыть торрент-клиент без доступа к экрану</a></li><li><a href="/articles/k/ka/kak-uznat-razreshenie-monitora-python.html" class="related-card">Как узнать разрешение монитора на Python: 5 работающих методов</a></li><li><a href="/articles/k/ka/kak-obnaruzhit-majner-cherez-monitor-resursov.html" class="related-card">Как обнаружить скрытый майнер через Монитор ресурсов Windows</a></li><li><a href="/articles/k/ka/kak-ustanovit-android-monitor-na-android.html" class="related-card">Как установить Android Monitor на Android: Полное руководство</a></li></ul></nav><!--#include virtual="/ssi/sidebar_after_related.html" --></aside>
+            </div>
+        </div>
+    </main>
+
+    <!--#include virtual="/ssi/before_related_bottom.html" -->
+    <section class="related-bottom">
+        <div class="container">
+            <h2 class="related-bottom-heading">📖 Читайте также</h2>
+            <div class="related-bottom-grid"><a href="/articles/k/ka/kak-izmenit-universalnyj-monitor-pnp-na-standartnyj-vga-windows-7.html" class="related-bottom-card"><span class="related-bottom-title">Как заменить универсальный монитор PnP на стандартный VGA в Windows 7</span><span class="related-bottom-desc">Пошаговая инструкция по смене драйвера монитора с универсального на стандартный VGA в Windows 7 для </span></a><a href="/articles/k/ka/kak-zakryt-torrent-esli-on-zakryt-i-net-na-monitore.html" class="related-bottom-card"><span class="related-bottom-title">Как принудительно закрыть торрент-клиент без доступа к экрану</span><span class="related-bottom-desc">Инструкция: как остановить торрент, если монитор выключен или интерфейс недоступен. Команды PowerShe</span></a><a href="/articles/k/ka/kak-uznat-razreshenie-monitora-python.html" class="related-bottom-card"><span class="related-bottom-title">Как узнать разрешение монитора на Python: 5 работающих методов</span><span class="related-bottom-desc">Пошаговые инструкции для определения разрешения экрана через Python с примерами кода. Работает на Wi</span></a><a href="/articles/k/ka/kak-obnaruzhit-majner-cherez-monitor-resursov.html" class="related-bottom-card"><span class="related-bottom-title">Как обнаружить скрытый майнер через Монитор ресурсов Windows</span><span class="related-bottom-desc">Полное руководство по выявлению скрытых майнеров в «Мониторе ресурсов». Читайте, как анализировать C</span></a><a href="/articles/k/ka/kak-ustanovit-android-monitor-na-android.html" class="related-bottom-card"><span class="related-bottom-title">Как установить Android Monitor на Android: Полное руководство</span><span class="related-bottom-desc">Подробная инструкция по установке и настройке Android Monitor на планшетах и телефонах. Обзор методо</span></a><a href="/articles/k/ka/kak-vyklyuchit-monitor-komandoj.html" class="related-bottom-card"><span class="related-bottom-title">Как выключить монитор командой: 5 способов для Windows и Linux</span><span class="related-bottom-desc">Пошаговые инструкции по отключению монитора через командную строку, PowerShell и терминал. Способы д</span></a></div>
+        </div>
+    </section>
+    <!--#include virtual="/ssi/after_related_bottom.html" -->
+
+    <footer class="site-footer-premium">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-col">
+                    <div class="footer-brand">🖥️ Мониторум</div>
+                    <p class="footer-about">Полный справочник по настройке, ремонту и выбору компьютерных мониторов для любых задач.</p>
+                </div>
+                <div class="footer-col">
+                    <h4>Разделы</h4>
+                    <ul><li><a href="/category/nastrojka-ekrana/">⚙️ Настройка экрана</a></li>
+<li><a href="/category/podklyuchenie-ustrojstv/">🔌 Подключение устройств</a></li>
+<li><a href="/category/mnozhestvennye-ekrany/">🖥️🖥️ Множественные экраны</a></li>
+<li><a href="/category/zvuk-i-audio/">🔊 Звук и аудио</a></li>
+<li><a href="/category/remont-i-polomki/">🔧 Ремонт и поломки</a></li>
+<li><a href="/category/ukhod-i-chistka/">🧼 Уход и чистка</a></li></ul>
+                </div>
+                <div class="footer-col">
+                    <h4>Информация</h4>
+                    <ul>
+                        <li><a href="/">Главная</a></li>
+                        <li><a href="/about.html">О проекте</a></li>
+                        <li><a href="/categories.html">Все разделы</a></li>
+                        <li><a href="/contact.html">Контакты</a></li>
+                        <li><a href="/privacy.html">Конфиденциальность</a></li>
+                        <li><a href="/sitemap.xml">Карта сайта</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>© Мониторум. Все права защищены.</p>
+                <!--LiveInternet counter--><div style="margin-top:10px;"><a href="https://www.liveinternet.ru/click"
+                target="_blank"><img id="licnt06C4" width="88" height="15" style="border:0" 
+                title="LiveInternet: показано число посетителей за сегодня"
+                src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAEALAAAAAABAAEAAAIBTAA7"
+                alt=""/></a><script>(function(d,s){d.getElementById("licnt06C4").src=
+                "https://counter.yadro.ru/hit?t26.5;r"+escape(d.referrer)+
+                ((typeof(s)=="undefined")?"":";s"+s.width+"*"+s.height+"*"+
+                (s.colorDepth?s.colorDepth:s.pixelDepth))+";u"+escape(d.URL)+
+                ";h"+escape(d.title.substring(0,150))+";"+Math.random()})(document,screen)</script></div><!--/LiveInternet-->
+            </div>
+        </div>
+    </footer>
+    <div id="cookie-consent" class="cookie-popup">
+        <div class="cookie-inner">
+            <span>🍪 Мы используем файлы cookie для улучшения работы сайта.</span>
+            <button id="cookie-accept" class="cookie-btn">Принять</button>
+        </div>
+    </div>
+    <script src="/static/js/main.js"></script>
+    <script>
+    (function() {
+        const popup = document.getElementById('cookie-consent');
+        const btn = document.getElementById('cookie-accept');
+        if (popup && btn && !localStorage.getItem('cookie-accepted')) {
+            popup.classList.add('visible');
+            btn.onclick = () => {
+                localStorage.setItem('cookie-accepted', 'true');
+                popup.classList.remove('visible');
+            };
+        }
+    })();
+    </script>
+    <script>
+    function pbPollVote(el) {
+        var poll = el.closest('.poll-widget');
+        if (poll.classList.contains('voted')) return;
+        poll.classList.add('voted');
+        el.classList.add('selected');
+        var opts = poll.querySelectorAll('.poll-widget-option');
+        var n = opts.length;
+        var raw = [];
+        var sum = 0;
+        for (var i = 0; i < n; i++) {
+            var v = Math.random() * 50 + 5;
+            if (opts[i] === el) v += 30;
+            raw.push(v);
+            sum += v;
+        }
+        var pcts = raw.map(function(v) { return Math.round(v / sum * 100); });
+        var diff = 100 - pcts.reduce(function(a,b){ return a+b; }, 0);
+        pcts[Array.from(opts).indexOf(el)] += diff;
+        setTimeout(function() {
+            opts.forEach(function(opt, i) {
+                opt.querySelector('.poll-widget-bar').style.width = pcts[i] + '%';
+                opt.querySelector('.poll-widget-pct').textContent = pcts[i] + '%';
+            });
+        }, 50);
+    }
+    </script>
+    <!--#include virtual="/ssi/body_bottom.html" -->
+    <script src="/static/js/inject.js" defer></script>
+</body>
+</html>

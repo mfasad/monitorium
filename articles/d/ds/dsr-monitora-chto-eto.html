@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27><text y=%27.9em%27 font-size=%2790%27>🖥️</text></svg>">
+    <title>DSR монитора: что это и как работает динамическое масштабирование — Мониторум</title>
+    <meta name="description" content="Разбираем технологию DSR (Dynamic Super Resolution) от NVIDIA. Узнайте, как получить crisp-картинку на мониторе, увеличивая разрешение графически.">
+    <link rel="canonical" href="https://monitorium.vercel.app/articles/d/ds/dsr-monitora-chto-eto.html">
+
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="DSR монитора: что это и как работает динамическое масштабирование">
+    <meta property="og:description" content="Разбираем технологию DSR (Dynamic Super Resolution) от NVIDIA. Узнайте, как получить crisp-картинку на мониторе, увеличивая разрешение графически.">
+    <meta property="og:locale" content="ru_RU">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css?v=1780420684">
+    <style>
+    .site-footer-premium {
+        margin-top: 60px; padding: 40px 0 0; background: #1e293b; color: #94a3b8;
+    }
+    .footer-grid {
+        display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 40px;
+        padding-bottom: 32px; border-bottom: 1px solid #334155;
+    }
+    .footer-brand { font-size: 1.2rem; font-weight: 700; color: #f1f5f9; margin-bottom: 12px; }
+    .footer-about { font-size: 0.9rem; line-height: 1.6; margin-bottom: 8px; }
+    .footer-updated { font-size: 0.8rem; color: #64748b; }
+    .footer-col h4 { color: #f1f5f9; font-size: 0.95rem; margin-bottom: 16px; }
+    .footer-col ul { list-style: none; }
+    .footer-col li { margin-bottom: 8px; }
+    .footer-col a { color: #94a3b8; font-size: 0.9rem; transition: color 0.2s; }
+    .footer-col a:hover { color: #60a5fa; }
+    .footer-bottom { padding: 20px 0; text-align: center; font-size: 0.85rem; }
+    @media (max-width: 640px) {
+        .footer-grid { grid-template-columns: 1fr; gap: 24px; }
+    }
+    .cookie-popup {
+        position: fixed; bottom: 0; left: 0; right: 0; background: #1e293b; color: #fff;
+        padding: 16px; transition: transform 0.5s ease; z-index: 9999; border-top: 2px solid #2563eb;
+        transform: translateY(100%);
+    }
+    .cookie-popup.visible { transform: translateY(0); }
+    .cookie-inner { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; gap: 16px; font-size: 0.9rem; }
+    .cookie-btn { background: #2563eb; color: #fff; border: none; padding: 8px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+    .cookie-btn:hover { background: #1d4ed8; }
+    @media (max-width: 640px) {
+        .cookie-inner { flex-direction: column; text-align: center; }
+    }
+</style>
+    
+    <!--#include virtual="/ssi/head.html" -->
+</head>
+<body>
+        <!--#include virtual="/ssi/body_top.html" -->
+    <style>
+    .nav-dropdown { position: relative; display: inline-block; }
+    .dropdown-toggle {
+        background: none; border: none; cursor: pointer;
+        font: inherit; color: inherit; padding: 8px 12px;
+        border-radius: 8px; transition: background 0.2s;
+    }
+    .dropdown-toggle:hover { background: rgba(0,0,0,0.05); }
+    .dropdown-menu {
+        display: none; position: absolute; right: 0; top: 100%;
+        min-width: 240px; max-height: 70vh; overflow-y: auto;
+        background: var(--card-bg, #fff); border: 1px solid var(--border, #e5e7eb);
+        border-radius: 12px; box-shadow: 0 12px 40px rgba(0,0,0,0.12);
+        padding: 8px 0; z-index: 1000;
+    }
+    .nav-dropdown::after {
+        content: ''; position: absolute; left: 0; right: 0;
+        top: 100%; height: 12px;
+    }
+    .nav-dropdown:hover .dropdown-menu,
+    .nav-dropdown:focus-within .dropdown-menu { display: block; }
+    .dropdown-item {
+        display: block; padding: 10px 20px; color: var(--text, #1f2937);
+        text-decoration: none; font-size: 0.95rem; transition: background 0.15s;
+        white-space: nowrap;
+    }
+    .dropdown-item:hover { background: rgba(37,99,235,0.06); color: var(--primary, #2563eb); }
+    @media (max-width: 768px) {
+        .main-nav > .nav-link { display: none; }
+        .dropdown-toggle { display: none; }
+        .dropdown-menu {
+            display: block !important; position: static;
+            box-shadow: none; border: none; border-radius: 0;
+            min-width: auto; max-height: none; padding: 0;
+            background: transparent;
+        }
+        .dropdown-item {
+            padding: 8px 0; font-size: 1rem;
+        }
+    }
+    </style>
+    <header class="site-header">
+        <div class="container header-inner">
+            <a href="/" class="logo">
+                <span class="logo-icon">🖥️</span>
+                <span>Мониторум</span>
+            </a>
+            <button class="mobile-menu-btn" aria-label="Меню" id="menuBtn">☰</button>
+            <nav class="main-nav" id="mainNav">
+                <a href="/category/nastrojka-ekrana/" class="nav-link">⚙️ Настройка экрана</a>
+<a href="/category/podklyuchenie-ustrojstv/" class="nav-link">🔌 Подключение устройств</a>
+<a href="/category/mnozhestvennye-ekrany/" class="nav-link">🖥️🖥️ Множественные экраны</a>
+<a href="/category/zvuk-i-audio/" class="nav-link">🔊 Звук и аудио</a>
+<div class="nav-dropdown">
+            <button class="nav-link dropdown-toggle">📂 Все разделы ▾</button>
+            <div class="dropdown-menu"><a href="/category/nastrojka-ekrana/" class="dropdown-item">⚙️ Настройка экрана</a>
+<a href="/category/podklyuchenie-ustrojstv/" class="dropdown-item">🔌 Подключение устройств</a>
+<a href="/category/mnozhestvennye-ekrany/" class="dropdown-item">🖥️🖥️ Множественные экраны</a>
+<a href="/category/zvuk-i-audio/" class="dropdown-item">🔊 Звук и аудио</a>
+<a href="/category/remont-i-polomki/" class="dropdown-item">🔧 Ремонт и поломки</a>
+<a href="/category/ukhod-i-chistka/" class="dropdown-item">🧼 Уход и чистка</a>
+<a href="/category/vybor-i-kharakteristiki/" class="dropdown-item">📊 Выбор и характеристики</a>
+<a href="/category/drajvery-i-po/" class="dropdown-item">💿 Драйверы и ПО</a>
+<a href="/category/krepleniya-i-ustanovka/" class="dropdown-item">🔩 Крепления и установка</a>
+<a href="/category/utilizatsiya-i-prodazha/" class="dropdown-item">♻️ Утилизация и продажа</a>
+<a href="/category/spetsialnye-rezhimy/" class="dropdown-item">🎮 Специальные режимы</a>
+<a href="/category/drugoe/" class="dropdown-item">📁 Другое</a></div>
+        </div>
+            </nav>
+        </div>
+    </header>
+
+    <nav class="breadcrumbs" aria-label="Навигация">
+        <div class="container"><a href="/">Главная</a><span class="breadcrumb-sep">›</span><a href="/category/drajvery-i-po/">Драйверы и ПО</a><span class="breadcrumb-sep">›</span><span class="breadcrumb-current">DSR монитора: что это и как работает динамическое масштабирование</span></div>
+    </nav>
+
+    <main class="site-main">
+        <div class="container">
+            <div class="article-layout">
+                <article class="article-main">
+                    
+                    <h1>Что такое DSR монитора и зачем он нужен геймерам</h1>
+                    <nav class="mobile-toc"><details><summary>📋 Содержание</summary><ul><li><a href="#принцип-работы-технологии-динамического-масштабирования">Принцип работы технологии динамического масштабирования</a></li><li><a href="#dsr-vs-dldsr-эволюция-алгоритмов-сглаживания">DSR vs DLDSR: эволюция алгоритмов сглаживания</a></li><li><a href="#настройка-параметров-в-панели-управления-nvidia">Настройка параметров в панели управления NVIDIA</a></li><li><a href="#влияние-технологии-на-производительность-и-fps">Влияние технологии на производительность и FPS</a></li><li><a href="#преимущества-и-недостатки-использования-dsr">Преимущества и недостатки использования DSR</a></li><li><a href="#чек-лист-для-оптимальной-настройки-качества">Чек-лист для оптимальной настройки качества</a></li><li><a href="#альтернативы-и-будущее-масштабирования">Альтернативы и будущее масштабирования</a></li><li><a href="#вопросы-и-ответы">Вопросы и ответы</a></li></ul></details></nav>
+                    <!--#include virtual="/ssi/article_before.html" -->
+                    <div class="article-body"><p>Технология <strong>DSR</strong> (Dynamic Super Resolution) — это одна из самых интересных функций в арсенале современных видеодрайверов, которая позволяет менять восприятие картинки на вашем устройстве. Суть метода заключается в том, что игра или приложение рендерится в разрешении, значительно превышающем физическое количество пикселей вашего <em>монитора</em>, после чего изображение программно уменьшается до родного разрешения экрана. Результат вы получаете на привычном дисплее, но с качеством, которое обычно доступно только на дорогих 4K-панелях.</p>
+<p>Многие пользователи ошибочно полагают, что для получения четкой картинки необходим только аппаратный апгрейд, однако <strong>программное масштабирование</strong> способно творить чудеса даже на старых 1080p дисплеях. Если вы устали от «лесенок» по краям объектов и хотите повысить детализацию без покупки нового оборудования, включение этой опции в панели управления видеокарты может стать отличным решением. Важно понимать, что за эту красоту придется заплатить производительностью, но в определенных сценариях компромисс того стоит.</p>
+
+<h2 id="принцип-работы-технологии-динамического-масштабирования">Принцип работы технологии динамического масштабирования</h2>
+<p>Чтобы понять, как именно работает этот механизм, нужно заглянуть в процесс формирования изображения. Когда вы запускаете игру в стандартном режиме, видеокарта отрисовывает кадр ровно в том количестве пикселей, которое поддерживает экран. При активации <strong>DSR</strong> ситуация меняется: система вынуждена просчитывать гораздо больше точек. Например, на мониторе с разрешением <em>1920×1080</em> можно включить режим 4K (3840×2160), когда видеопроцессор отрисовывает в 4 раза больше пикселей, чем может отобразить физическая матрица.</p>
+<p>После завершения рендеринга происходит процесс, называемый сверткой (downsampling). Специальный алгоритм сглаживания объединяет несколько микроскопических пикселей высокого разрешения в один большой пиксель вашего экрана. Это позволяет сгладить все неровности, устранить эффект ступенчатости на вертикальных и горизонтальных линиях, а также улучшить текстуры. Именно поэтому картинка кажется более четкой и детализированной, даже если вы смотрите на нее с того же расстояния.</p>
+<p>Особенность технологии в том, что она работает на уровне драйвера, а не на уровне конкретной игры. Это означает, что <strong>DSR</strong> будет работать в любом приложении, поддерживающем стандартный вывод изображения, независимо от наличия встроенных настроек масштабирования. Вы можете использовать эту функцию как в тяжелых современных проектах, так и в старых играх, где разработчики не предусмотрели поддержку высоких разрешений.</p>
+<blockquote>⚠️ Внимание: Убедитесь, что ваш блок питания способен выдержать дополнительную нагрузку. При рендеринге в 4K на разрешении 1080p нагрузка на GPU возрастает почти линейно, что может привести к перегреву или снижению частот кадров до неприемлемого уровня, если система охлаждения не справится.</blockquote>
+
+<h2 id="dsr-vs-dldsr-эволюция-алгоритмов-сглаживания">DSR vs DLDSR: эволюция алгоритмов сглаживания</h2>
+<p>Важно различать две версии технологии, которые часто путают новички. Базовая версия, <strong>DSR</strong>, использует стандартные фильтры сглаживания (например, Гауссовский фильтр) для уменьшения изображения. Она универсальна и работает на любом оборудовании, но иногда может давать размытость или артефакты на очень контрастных границах. Однако с выходом архитектуры Turing и драйверов для видеокарт серии <em>RTX</em> появилась более продвинутая версия — <strong>DLDSR</strong> (Deep Learning Dynamic Super Resolution).</p>
+<p>Главное отличие DLDSR заключается в использовании искусственного интеллекта и тензорных ядер для процессирования изображения. Нейросеть «учится» на огромном количестве изображений и знает, как идеально сгладить картинку, сохраняя при этом максимальную четкость мелких деталей. Это позволяет получить результат, который часто превосходит нативное разрешение 4K по субъективному качеству восприятия. Если ваша видеокарта поддерживает эту технологию, выбор в пользу <strong>DLDSR</strong> очевиден.</p>
+<p>Тем не менее, DLDSR требует значительно больше вычислительной мощности, чем классический DSR. На слабых системах включение этой функции может привести к тому, что игра превратится в слайд-шоу. Поэтому перед активацией нужно трезво оценить возможности своего железа. Для карт серии <em>GTX 16xx</em> и ниже доступен только обычный DSR, тогда как для <em>RTX 20xx</em> и новее стоит попробовать оба варианта и сравнить результат на практике.</p>
+<div class="poll-widget" id="poll-6917cd6b"><div class="poll-widget-question">📊 Какой способ масштабирования вы предпочитаете?</div><div class="poll-widget-option" data-poll="6917cd6b" data-idx="0" onclick="pbPollVote(this)"><span class="poll-widget-label">Нативное разрешение</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="6917cd6b" data-idx="1" onclick="pbPollVote(this)"><span class="poll-widget-label">Классический DSR</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="6917cd6b" data-idx="2" onclick="pbPollVote(this)"><span class="poll-widget-label">DLDSR (AI)</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="6917cd6b" data-idx="3" onclick="pbPollVote(this)"><span class="poll-widget-label">Растягивание картинки</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div></div>
+
+<h2 id="настройка-параметров-в-панели-управления-nvidia">Настройка параметров в панели управления NVIDIA</h2>
+<p>Перейти к управлению этой функцией проще простого, но есть нюансы, которые нужно знать. Откройте <code>Панель управления NVIDIA</code> и найдите раздел «Параметры 3D». В списке параметров прокрутите вниз до пункта <code>DSR — Степень</code>. Именно здесь вы выбираете, в каком разрешении будет рендериться изображение. Стандартный набор включает множители 1.78x, 2.25x и 4.0x, что соответствует переходу от Full HD к различным вариациям 1440p и 4K.</p>
+<p>Рядом с выбором степени масштаба находится ползунок <code>DSR — Плавность</code>. Этот параметр контролирует силу фильтра сглаживания, применяемого при уменьшении картинки. По умолчанию он стоит на 33%, но многие опытные пользователи рекомендуют экспериментировать с этим значением. Если картинка кажется слишком размытой, попробуйте уменьшить плавность, если же появляются «лесенки» — увеличьте. Идеальное значение подбирается индивидуально под конкретную игру и физиологию вашего зрения.</p>
+<p> Часто требуется перезапуск приложения или даже системы, чтобы изменения вступили в силу. Кроме того, в некоторых играх разрешение может быть заблокировано. В таких случаях поможет консольная команда или сторонний софт, но чаще всего достаточно просто разрешить изменение разрешения в настройках драйвера и перезапустить игру.</p>
+<p>Ниже приведена таблица соответствия множителей для популярного разрешения 1080p:</p>
+<table>
+<thead>
+<tr>
+<th>Множитель DSR</th>
+<th>Получаемое разрешение</th>
+<th>Примерное соответствие</th>
+<th>Нагрузка на GPU</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1.78x</td>
+<td>2560x1440</td>
+<td>2K (QHD)</td>
+<td>Умеренная</td>
+</tr>
+<tr>
+<td>2.25x</td>
+<td>2880x1620</td>
+<td>Между 2K и 4K</td>
+<td>Высокая</td>
+</tr>
+<tr>
+<td>4.0x</td>
+<td>3840x2160</td>
+<td>4K (UHD)</td>
+<td>Максимальная</td>
+</tr>
+<tr>
+<td>9.0x</td>
+<td>5760x3240</td>
+<td>5K+ (экспериментально)</td>
+<td>Критическая</td>
+</tr>
+</tbody>
+</table>
+<div class="attention-box attention-tip"><span class="attention-icon">💡</span><p>Перед изменением настроек DSR запишите текущие значения FPS в базовом режиме. Это поможет вам оценить реальную потерю производительности и понять, стоит ли игра свеч в плане визуального качества.</p></div>
+
+<h2 id="влияние-технологии-на-производительность-и-fps">Влияние технологии на производительность и FPS</h2>
+<p>Самый частый вопрос, который задают пользователи: «Сколько FPS я потеряю?». Ответ зависит от текущей загрузки вашего видеопроцессора. Если вы играете в игру, которая загружает видеокарту на 50-60% в нативном разрешении, включение DSR x4.0 (4K) может снизить частоту кадров в 3-4 раза. Это логично: ведь вы заставляете компьютер отрисовывать в 4 раза больше пикселей. Однако если игра уже упирается в процессор (CPU bottleneck), то прирост визуального качества может быть получен с меньшими потерями кадра.</p>
+<p>Существует правило: если ваш монитор имеет высокую частоту обновления, например, <em>144 Гц</em> или <em>240 Гц</em>, использование DSR может быть нецелесообразным. В таких сценариях приоритетом является плавность движения, а не максимальная четкость статичной картинки. Снижение FPS с 144 до 60 может сделать геймплей менее отзывчивым, что критично для соревновательных шутеров. В таких играх лучше оставить родное разрешение.</p>
+<p>С другой стороны, для сюжетных игр, симуляторов полетов или стратегий, где важна атмосфера и детализация окружения, жертва частоты кадров ради четкости оправдана. Вы увидите текстуры без пикселизации, четкие шрифты и плавные линии. Многие игроки включают DSR только при просмотре скриншотов или в спокойных моментах игры, отключая его в напряженных перестрелках.</p>
+<blockquote>⚠️ Внимание: В динамичных сценах с большим количеством частиц (взрывы, дождь, огонь) эффект сглаживания DSR может создать «кашу» вместо четкой картинки. Если вы заметили, что изображение стало мутным именно в движении, попробуйте уменьшить множитель DSR или отключить функцию в конкретном профиле игры.</blockquote>
+
+<details class="faq-item"><summary>Что делать, если игра не предлагает нужного разрешения?</summary><div class="faq-answer"><p>Если в списке разрешений игры нет нужного значения (например, 4K), нажмите в панели управления NVIDIA кнопку «Установить параметры DSR» и убедитесь, что галочка «Разрешать DSR-разрешения» стоит. Также проверьте, не ограничивает ли игра разрешение сторонними лаунчерами.</p></div></details>
+
+<h2 id="преимущества-и-недостатки-использования-dsr">Преимущества и недостатки использования DSR</h2>
+<p>Как и любая технология, DSR имеет свои сильные и слабые стороны, которые необходимо учитывать перед активацией. Главным преимуществом является, безусловно, качество изображения. Вы получаете эффект чистого 4K на обычном мониторе, что позволяет любоваться деталями, которые иначе были бы скрыты за «пиксельной решеткой». Это особенно актуально для старых игр, которые плохо масштабируются на современных экранах.</p>
+<p>К недостаткам относится, как уже упоминалось, высокая нагрузка на систему. Не каждый компьютер способен вытянуть 4K рендеринг в современных AAA-проектах. Кроме того, на некоторых типах матриц (особенно с плохими углами обзора или быстрым откликом) агрессивное сглаживание может создавать артефакты или эффект «мыла», если параметры подобраны неправильно. Также следует учитывать, что интерфейс самой игры может стать слишком мелким, если игра не адаптируется под разрешение рендеринга.</p>
+<p>Другим нюансом является совместимость. В редких случаях некоторые игры или драйверы могут конфликтовать с DSR, вызывая вылеты или мерцание экрана. Если вы столкнулись с подобной проблемой, попробуйте отключить функцию глобально или только для данной игры. В большинстве случаев это решает проблему, хотя и лишает вас повышения качества картинки.</p>
+<ul>
+<li>✅ Картинка становится значительно четче и детальнее без покупки нового монитора.</li>
+<li>✅ Технология работает в большинстве игр и приложений без необходимости модификации файлов.</li>
+<li>❌ Значительное снижение FPS, требующее мощной видеокарты.</li>
+<li>❌ Возможные проблемы с интерфейсом игры (текст становится слишком мелким).</li>
+</ul>
+<div class="attention-box attention-tip"><span class="attention-icon">💡</span><p>DSR — это инструмент для тех, кто готов пожертвовать частотой кадров ради визуального совершенства, но он требует мощного «железа» и тщательной настройки плавности.</p></div>
+
+<h2 id="чек-лист-для-оптимальной-настройки-качества">Чек-лист для оптимальной настройки качества</h2>
+<p>Чтобы получить максимальный эффект от технологии и не разочароваться в результате, следуйте этому алгоритму действий. Правильная настройка позволит найти баланс между красотой и плавностью, который подойдет именно вашему сценарию использования. Начните с малого и постепенно увеличивайте нагрузку, наблюдая за реакцией системы.</p>
+<div class="checklist-block"><h4>☑️ Настройка DSR для идеальной картинки</h4><label class="check-item"><input type="checkbox"><span>Войти в Панель управления NVIDIA</span></label><label class="check-item"><input type="checkbox"><span>Открыть «Параметры 3D»</span></label><label class="check-item"><input type="checkbox"><span>Включить DSR и выбрать степень (например, 2.25x)</span></label><label class="check-item"><input type="checkbox"><span>Отрегулировать ползунок «Плавность» (начать с 30-50%)</span></label><label class="check-item"><input type="checkbox"><span>Перезапустить игру и оценить результат</span></label><label class="check-item"><input type="checkbox"><span>Сравнить FPS с нативным разрешением</span></label><div class="check-progress">Выполнено: <span class="check-count">0</span> / 6</div></div>
+<p>Если вы используете несколько мониторов с разными разрешениями, помните, что настройки DSR применяются глобально или к конкретному профилю. Убедитесь, что вы настраиваете параметры для той игры, которая запущена на целевом экране. Неправильная конфигурация может привести к тому, что на вспомогательном мониторе интерфейс будет нечитаемым или игра будет запущена в неверном разрешении.</p>
+<p>Также стоит обратить внимание на настройки сглаживания внутри самой игры. Иногда имеет смысл отключить встроенное сглаживание (MSAA, FXAA), если вы используете DSR, так как двойное сглаживание может давать избыточный эффект размытия. Оставьте сглаживание на уровне драйвера, чтобы алгоритм работал только один раз на всем изображении.</p>
+<blockquote>⚠️ Внимание: Если вы используете технологию Freesync или G-Sync, включение DSR может добавить задержку ввода (input lag). В соревновательных режимах это может стать критическим фактором, поэтому тестируйте настройки в реальных условиях перед важным матчем.</blockquote>
+
+<h2 id="альтернативы-и-будущее-масштабирования">Альтернативы и будущее масштабирования</h2>
+<p>Хотя DSR является отличным решением, индустрия не стоит на месте. NVIDIA и AMD предлагают альтернативные методы повышения производительности с приемлемым качеством. Например, технология <strong>FidelityFX Super Resolution (FSR)</strong> от AMD работает наоборот: она рендерит картинку в низком разрешении и алгоритмически увеличивает её до разрешения монитора. Это позволяет получить высокий FPS, но качество обычно уступает нативному рендерингу и DSR.</p>
+<p>Еще один вариант — использование DLSS (Deep Learning Super Sampling) от NVIDIA. Это, пожалуй, самый эффективный на сегодня метод. DLSS рендерит игру в низком разрешении, а затем нейросеть восстанавливает картинку до высокого разрешения. В отличие от DSR, DLSS повышает FPS, а не снижает его, при этом сохраняя высокое качество. Однако DLSS поддерживается не во всех играх и требует наличия видеокарт серии RTX.</p>
+<p>Выбор между DSR и другими технологиями зависит от ваших приоритетов. Если вам нужна максимальная четкость и у вас мощный ПК — используйте DSR. Если важна плавность и вы хотите играть на максимальных настройках без просадок FPS — присмотритесь к DLSS или FSR. В будущем, вероятно, мы увидим еще более совершенные методы, которые объединят лучшее из обоих миров, но пока DSR остается надежным инструментом в арсенале энтузиастов.</p>
+<ul>
+<li>🚀 DSR: Рендеринг в высоком разрешении + свертка = Высокая четкость, низкий FPS.</li>
+<li>⚡ DLSS/FSR: Рендеринг в низком разрешении + апскейлинг = Высокий FPS, хорошее качество.</li>
+<li>🖥️ Нативное разрешение: Баланс между скоростью и качеством без дополнительных технологий.</li>
+</ul>
+
+<h2 id="вопросы-и-ответы">Вопросы и ответы</h2>
+<details>
+<summary>Влияет ли DSR на нагрузку на процессор или только на видеокарту?</summary>
+<p>Основная нагрузка ложится на видеокарту (GPU), так как именно она отрисовывает пиксели. Однако, если игра сильно зависит от процессора (например, в симуляторах или стратегиях), то увеличение разрешения рендеринга может также увеличить нагрузку на CPU, так как тот должен подготовить больше данных для обработки.</p>
+</details>
+<details>
+<summary>Можно ли использовать DSR на ноутбуках?</summary>
+<p>Да, технология доступна на ноутбуках с дискретными видеокартами NVIDIA. Однако следует быть осторожным: ноутбук может перегреться быстрее, чем десктопный ПК, из-за ограниченного пространства для охлаждения. Следите за температурами и используйте охлаждающую подставку.</p>
+</details>
+<details>
+<summary>Почему после включения DSR текст в игре стал мелким?</summary>
+<p>Это происходит потому, что игра отрисовывается в высоком разрешении, а интерфейс (UI) масштабируется вместе с ним, но не адаптируется под физическое разрешение вашего монитора. В некоторых играх есть настройка масштабирования интерфейса, в других придется мириться с мелким шрифтом или отключать DSR для этих проектов.</p>
+</details>
+<details>
+<summary>Работает ли DSR в играх с DirectX 12 и Vulkan?</summary>
+<p>Да, технология DSR работает на уровне драйвера и поддерживается в большинстве современных API, включая DirectX 12 и Vulkan. Однако в некоторых специфических случаях, когда игра самостоятельно управляет рендерингом, настройка может не сработать без дополнительных патчей или консольных команд.</p>
+</details>
+<details>
+<summary>Как сбросить настройки DSR, если игра работает некорректно?</summary>
+<p>Зайдите в <code>Панель управления NVIDIA</code>, перейдите в <code>Управление параметрами 3D</code>, найдите <code>DSR — Степень</code> и выберите значение <code>Выкл</code>. После этого нажмите «Применить» и перезапустите игру. Если проблема не решилась, попробуйте сбросить все настройки 3D на значения по умолчанию.</p>
+</details></div>
+                    <!--#include virtual="/ssi/article_after.html" -->
+
+                </article>
+                <aside class="article-sidebar"><!--#include virtual="/ssi/sidebar_top.html" --><nav class="sidebar-search"><div class="sidebar-search-box"><input type="text" id="globalSearchInput" placeholder="🔍 Поиск статей..." autocomplete="off"><div class="search-dropdown" id="globalSearchDropdown"></div></div></nav><!--#include virtual="/ssi/sidebar_before_toc.html" --><nav class="sidebar-toc" id="sidebarToc"><h3>Содержание</h3><ul><li><a href="#принцип-работы-технологии-динамического-масштабирования">Принцип работы технологии динамического масштабирования</a></li><li><a href="#dsr-vs-dldsr-эволюция-алгоритмов-сглаживания">DSR vs DLDSR: эволюция алгоритмов сглаживания</a></li><li><a href="#настройка-параметров-в-панели-управления-nvidia">Настройка параметров в панели управления NVIDIA</a></li><li><a href="#влияние-технологии-на-производительность-и-fps">Влияние технологии на производительность и FPS</a></li><li><a href="#преимущества-и-недостатки-использования-dsr">Преимущества и недостатки использования DSR</a></li><li><a href="#чек-лист-для-оптимальной-настройки-качества">Чек-лист для оптимальной настройки качества</a></li><li><a href="#альтернативы-и-будущее-масштабирования">Альтернативы и будущее масштабирования</a></li><li><a href="#вопросы-и-ответы">Вопросы и ответы</a></li></ul></nav><!--#include virtual="/ssi/sidebar_before_related.html" --><nav class="sidebar-related"><h3>Похожие статьи</h3><ul><li><a href="/articles/k/ka/kak-otkryt-monitor-stabilnosti.html" class="related-card">Как открыть монитор стабильности в Windows: настройка и анализ</a></li><li><a href="/articles/d/dl/dlya-chego-nuzhen-tsifrovoj-emulyator-monitora.html" class="related-card">Для чего нужен цифровой эмулятор монитора: применение и настройка</a></li><li><a href="/articles/v/v-/v-levom-verkhnem-uglu-monitora-pk-poyavlyaetsya-neupravlyaemyj-indikator-chto-eto.html" class="related-card">Неуправляемый индикатор в левом углу монитора: причины и решение</a></li><li><a href="/articles/k/ka/kak-posmotret-serijnyj-nomer-monitora-cherez-komandnuyu-stroku.html" class="related-card">Как найти серийный номер монитора через командную строку Windows</a></li><li><a href="/articles/k/ka/kak-ustanovit-novyj-drajver-monitora.html" class="related-card">Как установить драйвер монитора: пошаговая инструкция 2026</a></li></ul></nav><!--#include virtual="/ssi/sidebar_after_related.html" --></aside>
+            </div>
+        </div>
+    </main>
+
+    <!--#include virtual="/ssi/before_related_bottom.html" -->
+    <section class="related-bottom">
+        <div class="container">
+            <h2 class="related-bottom-heading">📖 Читайте также</h2>
+            <div class="related-bottom-grid"><a href="/articles/k/ka/kak-otkryt-monitor-stabilnosti.html" class="related-bottom-card"><span class="related-bottom-title">Как открыть монитор стабильности в Windows: настройка и анализ</span><span class="related-bottom-desc">Пошаговая инструкция по запуску монитора стабильности системы. Изучение графиков, анализ сбоев и мет</span></a><a href="/articles/d/dl/dlya-chego-nuzhen-tsifrovoj-emulyator-monitora.html" class="related-bottom-card"><span class="related-bottom-title">Для чего нужен цифровой эмулятор монитора: применение и настройка</span><span class="related-bottom-desc">Разбираем, зачем нужен цифровой эмулятор монитора (EDID). Учимся обманывать систему, настраивать уда</span></a><a href="/articles/v/v-/v-levom-verkhnem-uglu-monitora-pk-poyavlyaetsya-neupravlyaemyj-indikator-chto-eto.html" class="related-bottom-card"><span class="related-bottom-title">Неуправляемый индикатор в левом углу монитора: причины и решение</span><span class="related-bottom-desc">Почему в левом верхнем углу экрана появляется мигающий курсор или значок? Разбор причин: от драйверо</span></a><a href="/articles/k/ka/kak-posmotret-serijnyj-nomer-monitora-cherez-komandnuyu-stroku.html" class="related-bottom-card"><span class="related-bottom-title">Как найти серийный номер монитора через командную строку Windows</span><span class="related-bottom-desc">Пошаговая инструкция: как узнать серийный номер монитора через CMD без разборки корпуса. Команды WMI</span></a><a href="/articles/k/ka/kak-ustanovit-novyj-drajver-monitora.html" class="related-bottom-card"><span class="related-bottom-title">Как установить драйвер монитора: пошаговая инструкция 2026</span><span class="related-bottom-desc">Узнайте, как правильно установить драйвер монитора на Windows 10/11: автоматический и ручной методы,</span></a><a href="/articles/k/ka/kak-sdelat-zakhvat-video-s-ekrana-monitora-so-zvukom-s-pomoshchyu-windows-7.html" class="related-bottom-card"><span class="related-bottom-title">Запись экрана со звуком в Windows 7: полное руководство</span><span class="related-bottom-desc">Как записать видео с рабочего стола и аудио в Windows 7. Обзор встроенных средств, сторонних утилит </span></a></div>
+        </div>
+    </section>
+    <!--#include virtual="/ssi/after_related_bottom.html" -->
+
+    <footer class="site-footer-premium">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-col">
+                    <div class="footer-brand">🖥️ Мониторум</div>
+                    <p class="footer-about">Полный справочник по настройке, ремонту и выбору компьютерных мониторов для любых задач.</p>
+                </div>
+                <div class="footer-col">
+                    <h4>Разделы</h4>
+                    <ul><li><a href="/category/nastrojka-ekrana/">⚙️ Настройка экрана</a></li>
+<li><a href="/category/podklyuchenie-ustrojstv/">🔌 Подключение устройств</a></li>
+<li><a href="/category/mnozhestvennye-ekrany/">🖥️🖥️ Множественные экраны</a></li>
+<li><a href="/category/zvuk-i-audio/">🔊 Звук и аудио</a></li>
+<li><a href="/category/remont-i-polomki/">🔧 Ремонт и поломки</a></li>
+<li><a href="/category/ukhod-i-chistka/">🧼 Уход и чистка</a></li></ul>
+                </div>
+                <div class="footer-col">
+                    <h4>Информация</h4>
+                    <ul>
+                        <li><a href="/">Главная</a></li>
+                        <li><a href="/about.html">О проекте</a></li>
+                        <li><a href="/categories.html">Все разделы</a></li>
+                        <li><a href="/contact.html">Контакты</a></li>
+                        <li><a href="/privacy.html">Конфиденциальность</a></li>
+                        <li><a href="/sitemap.xml">Карта сайта</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>© Мониторум. Все права защищены.</p>
+                <!--LiveInternet counter--><div style="margin-top:10px;"><a href="https://www.liveinternet.ru/click"
+                target="_blank"><img id="licnt06C4" width="88" height="15" style="border:0" 
+                title="LiveInternet: показано число посетителей за сегодня"
+                src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAEALAAAAAABAAEAAAIBTAA7"
+                alt=""/></a><script>(function(d,s){d.getElementById("licnt06C4").src=
+                "https://counter.yadro.ru/hit?t26.5;r"+escape(d.referrer)+
+                ((typeof(s)=="undefined")?"":";s"+s.width+"*"+s.height+"*"+
+                (s.colorDepth?s.colorDepth:s.pixelDepth))+";u"+escape(d.URL)+
+                ";h"+escape(d.title.substring(0,150))+";"+Math.random()})(document,screen)</script></div><!--/LiveInternet-->
+            </div>
+        </div>
+    </footer>
+    <div id="cookie-consent" class="cookie-popup">
+        <div class="cookie-inner">
+            <span>🍪 Мы используем файлы cookie для улучшения работы сайта.</span>
+            <button id="cookie-accept" class="cookie-btn">Принять</button>
+        </div>
+    </div>
+    <script src="/static/js/main.js"></script>
+    <script>
+    (function() {
+        const popup = document.getElementById('cookie-consent');
+        const btn = document.getElementById('cookie-accept');
+        if (popup && btn && !localStorage.getItem('cookie-accepted')) {
+            popup.classList.add('visible');
+            btn.onclick = () => {
+                localStorage.setItem('cookie-accepted', 'true');
+                popup.classList.remove('visible');
+            };
+        }
+    })();
+    </script>
+    <script>
+    function pbPollVote(el) {
+        var poll = el.closest('.poll-widget');
+        if (poll.classList.contains('voted')) return;
+        poll.classList.add('voted');
+        el.classList.add('selected');
+        var opts = poll.querySelectorAll('.poll-widget-option');
+        var n = opts.length;
+        var raw = [];
+        var sum = 0;
+        for (var i = 0; i < n; i++) {
+            var v = Math.random() * 50 + 5;
+            if (opts[i] === el) v += 30;
+            raw.push(v);
+            sum += v;
+        }
+        var pcts = raw.map(function(v) { return Math.round(v / sum * 100); });
+        var diff = 100 - pcts.reduce(function(a,b){ return a+b; }, 0);
+        pcts[Array.from(opts).indexOf(el)] += diff;
+        setTimeout(function() {
+            opts.forEach(function(opt, i) {
+                opt.querySelector('.poll-widget-bar').style.width = pcts[i] + '%';
+                opt.querySelector('.poll-widget-pct').textContent = pcts[i] + '%';
+            });
+        }, 50);
+    }
+    </script>
+    <!--#include virtual="/ssi/body_bottom.html" -->
+    <script src="/static/js/inject.js" defer></script>
+</body>
+</html>

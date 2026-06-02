@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27><text y=%27.9em%27 font-size=%2790%27>🖥️</text></svg>">
+    <title>ASM на мониторе: что это, как включить и настроить (2026) — Мониторум</title>
+    <meta name="description" content="ASM (Adaptive Sync Module) на мониторе — разбираемся, что это за технология, как она работает с AMD FreeSync и NVIDIA G-Sync, и как правильно настроить для плавного геймплея без разрывов.">
+    <link rel="canonical" href="https://monitorium.vercel.app/articles/c/ch/chto-takoe-asm-na-monitore.html">
+
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="ASM на мониторе: что это, как включить и настроить (2026)">
+    <meta property="og:description" content="ASM (Adaptive Sync Module) на мониторе — разбираемся, что это за технология, как она работает с AMD FreeSync и NVIDIA G-Sync, и как правильно настроить для плавного геймплея без разрывов.">
+    <meta property="og:locale" content="ru_RU">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css?v=1780420684">
+    <style>
+    .site-footer-premium {
+        margin-top: 60px; padding: 40px 0 0; background: #1e293b; color: #94a3b8;
+    }
+    .footer-grid {
+        display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 40px;
+        padding-bottom: 32px; border-bottom: 1px solid #334155;
+    }
+    .footer-brand { font-size: 1.2rem; font-weight: 700; color: #f1f5f9; margin-bottom: 12px; }
+    .footer-about { font-size: 0.9rem; line-height: 1.6; margin-bottom: 8px; }
+    .footer-updated { font-size: 0.8rem; color: #64748b; }
+    .footer-col h4 { color: #f1f5f9; font-size: 0.95rem; margin-bottom: 16px; }
+    .footer-col ul { list-style: none; }
+    .footer-col li { margin-bottom: 8px; }
+    .footer-col a { color: #94a3b8; font-size: 0.9rem; transition: color 0.2s; }
+    .footer-col a:hover { color: #60a5fa; }
+    .footer-bottom { padding: 20px 0; text-align: center; font-size: 0.85rem; }
+    @media (max-width: 640px) {
+        .footer-grid { grid-template-columns: 1fr; gap: 24px; }
+    }
+    .cookie-popup {
+        position: fixed; bottom: 0; left: 0; right: 0; background: #1e293b; color: #fff;
+        padding: 16px; transition: transform 0.5s ease; z-index: 9999; border-top: 2px solid #2563eb;
+        transform: translateY(100%);
+    }
+    .cookie-popup.visible { transform: translateY(0); }
+    .cookie-inner { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; gap: 16px; font-size: 0.9rem; }
+    .cookie-btn { background: #2563eb; color: #fff; border: none; padding: 8px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+    .cookie-btn:hover { background: #1d4ed8; }
+    @media (max-width: 640px) {
+        .cookie-inner { flex-direction: column; text-align: center; }
+    }
+</style>
+    
+    <!--#include virtual="/ssi/head.html" -->
+</head>
+<body>
+        <!--#include virtual="/ssi/body_top.html" -->
+    <style>
+    .nav-dropdown { position: relative; display: inline-block; }
+    .dropdown-toggle {
+        background: none; border: none; cursor: pointer;
+        font: inherit; color: inherit; padding: 8px 12px;
+        border-radius: 8px; transition: background 0.2s;
+    }
+    .dropdown-toggle:hover { background: rgba(0,0,0,0.05); }
+    .dropdown-menu {
+        display: none; position: absolute; right: 0; top: 100%;
+        min-width: 240px; max-height: 70vh; overflow-y: auto;
+        background: var(--card-bg, #fff); border: 1px solid var(--border, #e5e7eb);
+        border-radius: 12px; box-shadow: 0 12px 40px rgba(0,0,0,0.12);
+        padding: 8px 0; z-index: 1000;
+    }
+    .nav-dropdown::after {
+        content: ''; position: absolute; left: 0; right: 0;
+        top: 100%; height: 12px;
+    }
+    .nav-dropdown:hover .dropdown-menu,
+    .nav-dropdown:focus-within .dropdown-menu { display: block; }
+    .dropdown-item {
+        display: block; padding: 10px 20px; color: var(--text, #1f2937);
+        text-decoration: none; font-size: 0.95rem; transition: background 0.15s;
+        white-space: nowrap;
+    }
+    .dropdown-item:hover { background: rgba(37,99,235,0.06); color: var(--primary, #2563eb); }
+    @media (max-width: 768px) {
+        .main-nav > .nav-link { display: none; }
+        .dropdown-toggle { display: none; }
+        .dropdown-menu {
+            display: block !important; position: static;
+            box-shadow: none; border: none; border-radius: 0;
+            min-width: auto; max-height: none; padding: 0;
+            background: transparent;
+        }
+        .dropdown-item {
+            padding: 8px 0; font-size: 1rem;
+        }
+    }
+    </style>
+    <header class="site-header">
+        <div class="container header-inner">
+            <a href="/" class="logo">
+                <span class="logo-icon">🖥️</span>
+                <span>Мониторум</span>
+            </a>
+            <button class="mobile-menu-btn" aria-label="Меню" id="menuBtn">☰</button>
+            <nav class="main-nav" id="mainNav">
+                <a href="/category/nastrojka-ekrana/" class="nav-link">⚙️ Настройка экрана</a>
+<a href="/category/podklyuchenie-ustrojstv/" class="nav-link">🔌 Подключение устройств</a>
+<a href="/category/mnozhestvennye-ekrany/" class="nav-link">🖥️🖥️ Множественные экраны</a>
+<a href="/category/zvuk-i-audio/" class="nav-link">🔊 Звук и аудио</a>
+<div class="nav-dropdown">
+            <button class="nav-link dropdown-toggle">📂 Все разделы ▾</button>
+            <div class="dropdown-menu"><a href="/category/nastrojka-ekrana/" class="dropdown-item">⚙️ Настройка экрана</a>
+<a href="/category/podklyuchenie-ustrojstv/" class="dropdown-item">🔌 Подключение устройств</a>
+<a href="/category/mnozhestvennye-ekrany/" class="dropdown-item">🖥️🖥️ Множественные экраны</a>
+<a href="/category/zvuk-i-audio/" class="dropdown-item">🔊 Звук и аудио</a>
+<a href="/category/remont-i-polomki/" class="dropdown-item">🔧 Ремонт и поломки</a>
+<a href="/category/ukhod-i-chistka/" class="dropdown-item">🧼 Уход и чистка</a>
+<a href="/category/vybor-i-kharakteristiki/" class="dropdown-item">📊 Выбор и характеристики</a>
+<a href="/category/drajvery-i-po/" class="dropdown-item">💿 Драйверы и ПО</a>
+<a href="/category/krepleniya-i-ustanovka/" class="dropdown-item">🔩 Крепления и установка</a>
+<a href="/category/utilizatsiya-i-prodazha/" class="dropdown-item">♻️ Утилизация и продажа</a>
+<a href="/category/spetsialnye-rezhimy/" class="dropdown-item">🎮 Специальные режимы</a>
+<a href="/category/drugoe/" class="dropdown-item">📁 Другое</a></div>
+        </div>
+            </nav>
+        </div>
+    </header>
+
+    <nav class="breadcrumbs" aria-label="Навигация">
+        <div class="container"><a href="/">Главная</a><span class="breadcrumb-sep">›</span><a href="/category/spetsialnye-rezhimy/">Специальные режимы</a><span class="breadcrumb-sep">›</span><span class="breadcrumb-current">ASM на мониторе: что это, как включить и настроить (2026)</span></div>
+    </nav>
+
+    <main class="site-main">
+        <div class="container">
+            <div class="article-layout">
+                <article class="article-main">
+                    
+                    <h1>ASM на мониторе: что это такое и как работает адаптивная синхронизация</h1>
+                    <nav class="mobile-toc"><details><summary>📋 Содержание</summary><ul><li><a href="#что-такое-asm-на-мониторе-расшифровка-и-принцип-работы">Что такое ASM на мониторе: расшифровка и принцип работы</a></li><li><a href="#отличия-asm-от-freesync-и-g-sync-что-лучше-для-гейминга">Отличия ASM от FreeSync и G-Sync: что лучше для гейминга?</a></li><li><a href="#как-проверить-поддерживает-ли-ваш-монитор-asm">Как проверить, поддерживает ли ваш монитор ASM</a></li><li><a href="#пошаговая-инструкция-как-включить-asm-на-мониторе">Пошаговая инструкция: как включить ASM на мониторе</a></li><li><a href="#типичные-проблемы-с-asm-и-как-их-решить">Типичные проблемы с ASM и как их решить</a></li><li><a href="#asm-и-производительность-стоит-ли-отключать-для-конкурентных-игр">ASM и производительность: стоит ли отключать для конкурентных игр?</a></li><li><a href="#asm-и-контент-не-только-для-игр">ASM и контент: не только для игр</a></li><li><a href="#faq-частые-вопросы-об-asm-на-мониторе">FAQ: Частые вопросы об ASM на мониторе</a></li></ul></details></nav>
+                    <!--#include virtual="/ssi/article_before.html" -->
+                    <div class="article-body"><p>Вы когда-нибудь замечали на экране монитора надпись <strong>ASM</strong> (или <em>Adaptive Sync Module</em>) в настройках и задавались вопросом, что это значит? Эта аббревиатура часто встречается в современных игровых и профессиональных мониторах, но её назначение не всегда очевидно. В этой статье мы разберёмся, что такое <strong>ASM</strong>, как эта технология связана с <em>FreeSync</em> и <em>G-Sync</em>, и почему её правильная настройка может кардинально улучшить качество изображения — особенно в динамичных сценах, где важна плавность.</p>
+
+<p>Если вы сталкивались с разрывами изображения (<em>screen tearing</em>), подтормаживаниями или нестабильной частотой кадров, то <strong>ASM</strong> как раз и призван решать эти проблемы. Но не все мониторы поддерживают эту функцию одинаково: некоторые требуют ручной активации, другие работают только с определёнными видеокартами. Мы расскажем, как проверить совместимость вашего оборудования, включить адаптивную синхронизацию и избежать типичных ошибок при настройке.</p>
+
+<p>Важно понимать, что <strong>ASM</strong> — это не просто маркетинговый термин, а реальная технологическая основа для <em>FreeSync</em> (от <em>AMD</em>) и <em>G-Sync</em> (от <em>NVIDIA</em>). Без неё эти функции просто не смогут работать. Поэтому, даже если вы не геймер, знание принципов <strong>ASM</strong> поможет оптимизировать отображение видео, анимации и других динамичных контента.</p>
+
+<h2 id="что-такое-asm-на-мониторе-расшифровка-и-принцип-работы">Что такое ASM на мониторе: расшифровка и принцип работы</h2>
+
+<p><strong>ASM</strong> расшифровывается как <em>Adaptive Sync Module</em> — модуль адаптивной синхронизации. Это аппаратное или программно-аппаратное решение, которое позволяет монитору <mark>динамически подстраивать частоту обновления экрана под частоту кадров, выдаваемую видеокартой</mark>. В традиционных мониторах частота обновления фиксирована (например, <code>60 Гц</code>, <code>144 Гц</code>), что приводит к конфликту между скоростью рендеринга графики и скоростью отображения кадров.</p>
+
+<p>Основная проблема, которую решает <strong>ASM</strong>, — это <em>screen tearing</em> (разрывы изображения). Она возникает, когда видеокарта выдаёт кадры быстрее, чем монитор успевает их отобразить. В результате экран показывает часть одного кадра и часть другого одновременно, что выглядит как горизонтальные "разрывы". Адаптивная синхронизация устраняет этот эффект, синхронизируя монитор с графическим процессором.</p>
+
+<p>Технология <strong>ASM</strong> стала основой для двух популярных стандартов:</p>
+<ul>
+  <li>🔹 <em>AMD FreeSync</em> — открытый стандарт, не требующий лицензионных отчислений, поддерживается большинством современных мониторов.</li>
+  <li>🔹 <em>NVIDIA G-Sync</em> — проприетарное решение с дополнительным аппаратным модулем, обеспечивающим более широкий диапазон синхронизации.</li>
+  <li>🔹 <em>HDMI 2.1 VRR</em> — адаптивная синхронизация через интерфейс <em>HDMI</em>, актуальна для консолей (<em>PS5</em>, <em>Xbox Series X</em>) и новых мониторов.</li>
+</ul>
+
+<p>Важно отметить, что <strong>ASM</strong> сам по себе не гарантирует поддержку <em>FreeSync</em> или <em>G-Sync</em>. Монитор должен быть сертифицирован производителем видеокарт. Например, для <em>NVIDIA G-Sync</em> требуется специальный чип, а <em>FreeSync</em> может работать и на базовом <strong>ASM</strong>-модуле.</p>
+
+<div class="poll-widget" id="poll-a2d69eae"><div class="poll-widget-question">📊 Какой стандарт адаптивной синхронизации использует ваш монитор?</div><div class="poll-widget-option" data-poll="a2d69eae" data-idx="0" onclick="pbPollVote(this)"><span class="poll-widget-label">FreeSync</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="a2d69eae" data-idx="1" onclick="pbPollVote(this)"><span class="poll-widget-label">G-Sync</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="a2d69eae" data-idx="2" onclick="pbPollVote(this)"><span class="poll-widget-label">VRR (HDMI 2.1)</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="a2d69eae" data-idx="3" onclick="pbPollVote(this)"><span class="poll-widget-label">Не знаю</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="a2d69eae" data-idx="4" onclick="pbPollVote(this)"><span class="poll-widget-label">Нет адаптивной синхронизации</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div></div>
+
+<h2 id="отличия-asm-от-freesync-и-g-sync-что-лучше-для-гейминга">Отличия ASM от FreeSync и G-Sync: что лучше для гейминга?</h2>
+
+<p>Многие пользователи путают <strong>ASM</strong> с <em>FreeSync</em> или <em>G-Sync</em>, но это не одно и то же. <strong>ASM</strong> — это "фундамент", на котором строятся эти технологии. Чтобы понять разницу, рассмотрим ключевые особенности:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Характеристика</th>
+      <th>ASM (базовый модуль)</th>
+      <th>AMD FreeSync</th>
+      <th>NVIDIA G-Sync</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Требует лицензионных отчислений</td>
+      <td>❌ Нет</td>
+      <td>❌ Нет</td>
+      <td>✅ Да (для производителей мониторов)</td>
+    </tr>
+    <tr>
+      <td>Диапазон синхронизации</td>
+      <td>Ограничен аппаратными возможностями монитора</td>
+      <td>Широкий, но зависит от модели</td>
+      <td>Максимально широкий (часто от <code>1 Гц</code>)</td>
+    </tr>
+    <tr>
+      <td>Дополнительный аппаратный чип</td>
+      <td>❌ Нет</td>
+      <td>❌ Нет</td>
+      <td>✅ Да (в большинстве случаев)</td>
+    </tr>
+    <tr>
+      <td>Поддержка через DisplayPort</td>
+      <td>✅ Да</td>
+      <td>✅ Да</td>
+      <td>✅ Да</td>
+    </tr>
+    <tr>
+      <td>Поддержка через HDMI</td>
+      <td>❌ Только в новых моделях</td>
+      <td>✅ Да (FreeSync Premium Pro)</td>
+      <td>✅ Да (G-Sync Ultimate)</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>Для гейминга <em>NVIDIA G-Sync</em> traditionally считается более надёжным решением благодаря:</p>
+<ul>
+  <li>🎮 Более широкому диапазону синхронизации (например, <code>1–240 Гц</code> вместо <code>48–144 Гц</code> у базового <em>FreeSync</em>).</li>
+  <li>🔧 Лучшей оптимизации для игр с резкими скачками FPS (например, в шутерах).</li>
+  <li>🖥️ Поддержке дополнительных функций, таких как <em>ULMB</em> (устранение размытия при движении).</li>
+</ul>
+
+<p>Однако <em>AMD FreeSync</em> имеет свои преимущества:</p>
+<ul>
+  <li>💰 Более доступная цена мониторов (нет лицензионных отчислений <em>NVIDIA</em>).</li>
+  <li>🔄 Широкое распространение (поддерживается даже в бюджетных моделях).</li>
+  <li>🎬 Хорошо работает с консолями (<em>PS5</em>, <em>Xbox Series X|S</em>).</li>
+</ul>
+
+<div class="attention-box attention-tip"><span class="attention-icon">💡</span><p>Если у вас видеокарта <em>NVIDIA</em> и монитор с <em>FreeSync</em>, проверьте список сертифицированных моделей на сайте производителя. Некоторые мониторы поддерживают <em>G-Sync Compatible</em> даже без официального чипа.</p></div>
+
+<h2 id="как-проверить-поддерживает-ли-ваш-монитор-asm">Как проверить, поддерживает ли ваш монитор ASM</h2>
+
+<p>Прежде чем настраивать адаптивную синхронизацию, нужно убедиться, что ваш монитор её поддерживает. Вот несколько способов проверки:</p>
+
+<ol>
+  <li>
+    <p><strong>Изучите спецификации монитора.</strong> Найдите модель на официальном сайте производителя (например, <em>ASUS</em>, <em>LG</em>, <em>Acer</em>) и проверьте раздел "Технические характеристики". Ищите упоминания:</p>
+    <ul>
+      <li>🔍 <em>Adaptive Sync</em> или <em>ASM</em></li>
+      <li>🔍 <em>FreeSync</em> (указывается уровень: <em>FreeSync</em>, <em>FreeSync Premium</em>, <em>FreeSync Premium Pro</em>)</li>
+      <li>🔍 <em>G-Sync</em> или <em>G-Sync Compatible</em></li>
+      <li>🔍 <em>VRR</em> (Variable Refresh Rate)</li>
+    </ol>
+  </li>
+  <li>
+    <p><strong>Проверьте настройки монитора.</strong> Зайдите в OSD-меню (кнопки на корпусе) и найдите раздел, связанный с синхронизацией. Часто он называется:</p>
+    <ul>
+      <li>📺 <code>Game Settings → Adaptive Sync</code></li>
+      <li>📺 <code>Display → FreeSync</code></li>
+      <li>📺 <code>OverDrive / AMD FreeSync</code></li>
+    </ol>
+  </li>
+  <li>
+    <p><strong>Используйте утилиты для диагностики.</strong> Программы вроде <em>NVIDIA Control Panel</em> или <em>AMD Radeon Software</em> могут показать, доступна ли адаптивная синхронизация. Например, в <em>NVIDIA Control Panel</em> перейдите в:</p>
+    <pre><code>Display → Set up G-SYNC</code></pre>
+    <p>Если монитор поддерживается, вы увидите его модель в списке.</p>
+  </li>
+</ol>
+
+<details class="faq-item"><summary>Что делать, если в спецификациях нет упоминания ASM, но монитор новый?</summary><div class="faq-answer"><p>
+<p>Иногда производители не указывают <strong>ASM</strong> явно, но монитор может поддерживать базовую адаптивную синхронизацию через <em>DisplayPort 1.2a+</em> или <em>HDMI 2.1</em>. Попробуйте подключить его к ПК и проверить наличие опции в драйверах видеокарты. Если опция есть, но не работает — обновите прошивку монитора (инструкция обычно есть на сайте бренда).</p></div></details></p>
+
+<p>Если ни один из методов не сработал, вероятно, ваш монитор не поддерживает <strong>ASM</strong>. В этом случае альтернативой может стать включение <em>V-Sync</em> в настройках игры, но это добавит задержку ввода (<em>input lag</em>).</p>
+
+<h2 id="пошаговая-инструкция-как-включить-asm-на-мониторе">Пошаговая инструкция: как включить ASM на мониторе</h2>
+
+<p>Если ваш монитор поддерживает <strong>ASM</strong>, остаётся только правильно его настроить. Процесс немного отличается в зависимости от типа видеокарты и интерфейса подключения (<em>DisplayPort</em> или <em>HDMI</em>). Рассмотрим оба варианта.</p>
+
+<h3>Для видеокарт AMD (FreeSync)</h3>
+
+<p>Подключить монитор через DisplayPort 1.2+ или HDMI 2.1</p>
+<p>Обновить драйверы AMD Radeon до последней версии</p>
+<p>Включить FreeSync в настройках монитора (OSD-меню)</p>
+<p>Активировать Adaptive Sync в Radeon Software</p>
+<p>Перезагрузить ПК--></p>
+
+<p>1. <strong>Подключите монитор правильным кабелем.</strong> Для полноценной работы <em>FreeSync</em> нужен <em>DisplayPort 1.2</em> или новее. <em>HDMI</em> поддерживает <em>FreeSync</em> только в версиях <code>2.0</code> и <code>2.1</code> (проверьте спецификации монитора).</p>
+
+<p>2. <strong>Включите <em>FreeSync</em> в меню монитора.</em> Обычно опция находится в разделе <code>Game Settings</code> или <code>Display</code>. Установите режим <code>On</code> или <code>Extended</code> (если есть выбор).</p>
+
+<p>3. **Активируйте Adaptive Sync в драйверах <em>AMD</em>:</p>
+<ol>
+  <li>Откройте <em>AMD Radeon Software</strong> (клик правой кнопкой по рабочему столу → <code>AMD Software</code>).</li>
+  <li>Перейдите в <code>Display</code> → <code>AMD FreeSync</code>.</li>
+  <li>Включите переключатель и выберите режим (обычно <code>Fullscreen</code> или <code>Fullscreen + Borderless</code>).</li>
+</ul>
+
+<p>4. <strong>Настройте диапазон синхронизации.</em> В некоторых мониторах можно задать минимальную и максимальную частоту (например, <code>48–144 Гц</code>). Если FPS игры выходит за эти пределы, <em>FreeSync</em> отключается.</p>
+
+<h3>Для видеокарт NVIDIA (G-Sync или G-Sync Compatible)</h3>
+
+<p>1. <strong>Проверьте совместимость монитора.</strong> Даже если у вас нет официального <em>G-Sync</em>-монитора, многие <em>FreeSync</em>-дисплеи работают в режиме <em>G-Sync Compatible</em>. Список поддерживаемых моделей есть на сайте <em>NVIDIA</em>.</p>
+
+<p>2. <strong>Подключите монитор через DisplayPort.</strong> <em>G-Sync</em> не работает по <em>HDMI</em> на большинстве мониторов (исключение — модели с <em>G-Sync Ultimate</em>).</p>
+
+<p>3. **Включите G-Sync в панель управления <em>NVIDIA</em>:</p>
+<ol>
+  <li>Клик правой кнопкой по рабочему столу → <code>NVIDIA Control Panel</code>.</li>
+  <li>Перейдите в <code>Display → Set up G-SYNC</code>.</li>
+  <li>Поставьте галочку напротив <code>Enable G-SYNC, G-SYNC Compatible</code>.</li>
+  <li>Выберите режим: <code>Full screen</code> или <code>Full screen and windowed</code>.</li>
+</ul>
+
+<p>4. <strong>Отключите V-Sync в играх.</strong> Если одновременно включены <em>G-Sync</em> и <em>V-Sync</em>, может появиться дополнительная задержка. Лучше использовать только <em>G-Sync</em> и ограничивать FPS на 2–3 кадра ниже максимума монитора (например, <code>141 FPS</code> для <code>144 Гц</code>).</p>
+
+<div class="attention-box attention-tip"><span class="attention-icon">💡</span><p>Если после включения <strong>ASM</strong> изображение начинает "моргать" или появляются артефакты, попробуйте ограничить диапазон синхронизации в настройках монитора (например, с <code>60–144 Гц</code> вместо <code>48–144 Гц</code>).</p></div>
+
+<h2 id="типичные-проблемы-с-asm-и-как-их-решить">Типичные проблемы с ASM и как их решить</h2>
+
+<p>Даже после правильной настройки <strong>ASM</strong> могут возникать проблемы. Вот самые распространённые из них и способы их устранения:</p>
+
+<p>🔸 <strong>ASM не включается в настройках монитора</strong></p>
+<ul>
+  <li>✅ Проверьте кабель: <em>FreeSync/G-Sync</em> часто не работает через <em>HDMI 1.4</em> или старые версии <em>DisplayPort</em>.</li>
+  <li>✅ Обновите прошивку монитора (инструкция обычно есть на сайте производителя).</li>
+  <li>✅ Убедитесь, что в драйверах видеокарты включён режим <code>Adaptive Sync</code>.</li>
+</ul>
+
+<p>🔸 <strong>Изображение "моргает" или появляются артефакты</strong></p>
+<ul>
+  <li>✅ Ограничьте диапазон синхронизации в настройках монитора (например, установите минимум <code>60 Гц</code> вместо <code>48 Гц</code>).</li>
+  <li>✅ Отключите <em>OverDrive</em> (если есть) — эта функция может конфликтовать с <strong>ASM</strong>.</li>
+  <li>✅ Проверьте, не перегревается ли видеокарта (используйте <em>MSI Afterburner</em> или <em>HWMonitor</em>).</li>
+</ul>
+
+<p>🔸 <strong>ASM работает, но FPS выходит за пределы диапазона</strong></p>
+<ul>
+  <li>✅ Включите <em>V-Sync</em> в настройках игры, но только если FPS стабильно превышает максимум монитора (например, <code>150 FPS</code> на <code>144 Гц</code>).</li>
+  <li>✅ Используйте ограничитель FPS (например, <em>RTSS</em> или встроенный в <em>NVIDIA Reflext</em>/<em>AMD Radeon Chill</em>).</li>
+  <li>✅ Если FPS падает ниже минимума (например, <code>40 FPS</code> при диапазоне <code>48–144 Гц</code>), попробуйте снизить графические настройки.</li>
+</ul>
+
+<p>🔸 <strong>ASM не работает с консолью (PS5, Xbox Series X)</strong></p>
+<ul>
+  <li>✅ Убедитесь, что монитор поддерживает <em>HDMI 2.1 VRR</em> (не все <em>FreeSync</em>-мониторы совместимы с консолями).</li>
+  <li>✅ Включите <em>VRR</em> в настройках консоли:</li>
+  <ul>
+    <li>🎮 На <em>PS5</em>: <code>Settings → Screen and Video → Video Output → VRR</code>.</li>
+    <li>🎮 На <em>Xbox Series X|S</em>: <code>Settings → General → TV & display options → Video modes → Allow VRR</code>.</li>
+  </ul>
+</ul>
+
+<div class="attention-box attention-tip"><span class="attention-icon">💡</span><p>Если после включения <strong>ASM</strong> мышь начинает "тормозить" в играх, попробуйте отключить <em>V-Sync</em> в настройках игры и использовать только адаптивную синхронизацию.</p></div>
+
+<h2 id="asm-и-производительность-стоит-ли-отключать-для-конкурентных-игр">ASM и производительность: стоит ли отключать для конкурентных игр?</h2>
+
+<p>В киберспортивных дисциплинах, где важна минимальная задержка ввода (<em>input lag</em>), некоторые игроки отключают <strong>ASM</strong>, считая, что это добавляет лишние миллисекунды. Но так ли это на самом деле?</p>
+
+<p>🔹 <strong>Когда <strong>ASM</strong> полезен:</strong>
+  <ul>
+    <li>🎯 В играх с нестабильным FPS (например, <em>Battlefield 2042</em>, <em>Cyberpunk 2077</em>).</li>
+    <li>🎯 При использовании мониторов с высокой частотой обновления (<code>240 Гц+</code>), где разрывы изображения особенно заметны.</li>
+    <li>🎯 На консолях (<em>PS5</em>, <em>Xbox Series X</em>), где FPS часто колеблется.</li>
+  </ul>
+</p>
+
+<p>🔹 <strong>Когда <strong>ASM</strong> можно отключить:</strong>
+  <ul>
+    <li>🎯 В играх с стабильно высоким FPS (например, <em>CS2</em>, <em>Valorant</em>), где разрывов нет.</li>
+    <li>🎯 Если вы используете <em>NVIDIA Reflext</em> или <em>AMD Anti-Lag</em> и хотите минимизировать задержку.</li>
+    <li>🎯 На мониторах с <em>ULMB</em> (устранение размытия при движении), так как <strong>ASM</strong> и <em>ULMB</em> не работают одновременно.</li>
+  </ul>
+</p>
+
+<p>📊 **Сравнение задержки ввода (по данным <em>RTINGS.com</em>):</p>
+<table>
+  <thead>
+    <tr>
+      <th>Режим</th>
+      <th>Задержка ввода (мс)</th>
+      <th>Примечания</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>ASM выключен, V-Sync выключен</td>
+      <td>~5 мс</td>
+      <td>Минимальная задержка, но возможны разрывы.</td>
+    </tr>
+    <tr>
+      <td>ASM включён</td>
+      <td>~6–8 мс</td>
+      <td>Добавляет ~1–3 мс, но устраняет разрывы.</td>
+    </tr>
+    <tr>
+      <td>V-Sync включён</td>
+      <td>~15–30 мс</td>
+      <td>Максимальная задержка, но нет разрывов.</td>
+    </tr>
+    <tr>
+      <td>ASM + ограничение FPS (на 3 кадра ниже максимума)</td>
+      <td>~7 мс</td>
+      <td>Оптимальный баланс для большинства игр.</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>💡 <strong>Вывод:</strong> Для большинства игроков <strong>ASM</strong> даёт больше плюсов, чем минусов. Отключать его стоит только в случае критически важной минимальной задержки (например, в профессиональном киберспорте). В остальных случаях лучше использовать <strong>ASM</strong> вместе с ограничителем FPS.</p>
+
+<div class="attention-box attention-tip"><span class="attention-icon">💡</span><p>Если вы играете на мониторе с частотой <code>360 Гц</code>, отключение <strong>ASM</strong> может дать выигрыш в 1–2 мс задержки, но только при стабильных <code>360 FPS</code>. В остальных случаях адаптивная синхронизация предпочтительнее.</p></div>
+
+<h2 id="asm-и-контент-не-только-для-игр">ASM и контент: не только для игр</h2>
+
+<p>Многие считают, что <strong>ASM</strong> нужен только геймерам, но это не так. Технология адаптивной синхронизации полезна и в других сценариях:</p>
+
+<p>🎬 <strong>Просмотр видео</strong>
+  <ul>
+    <li>📺 Устраняет дергания при воспроизведении видео с нестабильным FPS (например, стримы или записанный геймплей).</li>
+    <li>📺 Полезно для фильмов с переменной частотой кадров (например, <code>23.976 Гц</code> для кино).</li>
+  </ul>
+</p>
+
+<p>🖥️ <strong>Работа с графикой и видео</strong>
+  <ul>
+    <li>🎨 Плавный скроллинг в <em>Photoshop</em> или <em>Figma</em> (если монитор поддерживает высокие частоты).</li>
+    <li>🎬 Устранение артефактов при просмотре таймлайн-рендера в <em>Premiere Pro</em> или <em>DaVinci Resolve</em>.</li>
+  </ol>
+</p>
+
+<p>💻 <strong>Общая работа за ПК</strong>
+  <ul>
+    <li>🖱️ Плавная анимация интерфейса (особенно заметно на мониторах с <code>120 Гц+</code>).</li>
+    <li>📊 Устранение микрозаиканий при прокрутке длинных веб-страниц или документов.</li>
+  </ol>
+</p>
+
+<p>🔧 <strong>Как включить ASM для неигровых задач:</strong>
+  <ol>
+    <li>Активируйте <strong>ASM</strong> в настройках монитора и драйверов (как описано выше).</li>
+    <li>Включите адаптивную синхронизацию для оконного режима (в <em>NVIDIA Control Panel</em> или <em>AMD Radeon Software</em>).</li>
+    <li>Для видео используйте плееры с поддержкой <em>VRR</em> (например, <em>MPV</em> или <em>PotPlayer</em> с настройкой <code>Sync to Display</code>).</li>
+  </ul>
+</p>
+
+<details class="faq-item"><summary>Почему ASM может не работать в оконном режиме?</summary><div class="faq-answer"><p>
+<p>Некоторые мониторы и видеокарты ограничивают адаптивную синхронизацию только полноэкранным режимом. Это связано с особенностями работы <em>Windows</em> и драйверов. Если <strong>ASM</strong> не активируется в оконном режиме, попробуйте переключиться в полноэкранный или обновить драйверы.</p></div></details></p>
+
+<h2 id="faq-частые-вопросы-об-asm-на-мониторе">FAQ: Частые вопросы об ASM на мониторе</h2>
+
+<details>
+  <summary>❓ Можно ли включить ASM на мониторе без FreeSync/G-Sync?</summary>
+  <p>Технически <strong>ASM</strong> — это базовая технология, но без поддержки <em>FreeSync</em> или <em>G-Sync</em> она не будет работать на пользовательском уровне. Если монитор не сертифицирован, адаптивная синхронизация может быть заблокирована на уровне прошивки. Исключение — некоторые мониторы с <em>DisplayPort 1.2a+</em>, где <strong>ASM</strong> можно активировать вручную через драйверы, но это не гарантирует стабильную работу.</p>
+</details>
+
+<details>
+  <summary>❓ Влияет ли ASM на цветопередачу или яркость?</summary>
+  <p>Нет, <strong>ASM</strong> не изменяет цветовые настройки или яркость экрана. Однако некоторые мониторы при активации <em>FreeSync/G-Sync</em> автоматически переключаются в "игровой" режим, который может менять профиль цвета. В этом случае настройки можно вернуть вручную в OSD-меню.</p>
+</details>
+
+<details>
+  <summary>❓ Работает ли ASM с MacBook или ноутбуками?</summary>
+  <p>На ноутбуках с дискретной видеокартой (<em>NVIDIA</em> или <em>AMD</em>) <strong>ASM</strong> может работать, если монитор поддерживает <em>FreeSync/G-Sync</em> и подключён через <em>DisplayPort</em> или <em>HDMI 2.1</em>. На <em>MacBook</em> (с чипами <em>Apple Silicon</em> или <em>Intel</em>) адаптивная синхронизация не поддерживается на уровне драйверов, даже если монитор совместим.</p>
+</details>
+
+<details>
+  <summary>❓ Можно ли использовать ASM и HDR одновременно?</summary>
+  <p>Да, но не на всех мониторах. Для одновременной работы <strong>ASM</strong> и <em>HDR</em> требуется поддержка <em>FreeSync Premium Pro</em> или <em>G-Sync Ultimate</em>. В бюджетных моделях при активации <em>HDR</em> адаптивная синхронизация может отключаться автоматически. Проверьте спецификации вашего монитора.</p>
+</details>
+
+<details>
+  <summary>❓ Почему ASM не работает на частоте 144 Гц?</summary>
+  <p>Возможные причины:</p>
+  <ul>
+    <li>🔌 Неправильный кабель (нужен <em>DisplayPort 1.2+</em> или <em>HDMI 2.1</em>).</li>
+    <li>📋 Ограничение диапазона в настройках монитора (например, <strong>ASM</strong> работает только до <code>120 Гц</code>).</li>
+    <li>🔄 Конфликт с <em>OverDrive</em> или другими технологиями (отключите их в OSD-меню).</li>
+    <li>🔧 Устаревшие драйверы видеокарты или прошивка монитора.</li>
+  </ol>
+</details></div>
+                    <!--#include virtual="/ssi/article_after.html" -->
+
+                </article>
+                <aside class="article-sidebar"><!--#include virtual="/ssi/sidebar_top.html" --><nav class="sidebar-search"><div class="sidebar-search-box"><input type="text" id="globalSearchInput" placeholder="🔍 Поиск статей..." autocomplete="off"><div class="search-dropdown" id="globalSearchDropdown"></div></div></nav><!--#include virtual="/ssi/sidebar_before_toc.html" --><nav class="sidebar-toc" id="sidebarToc"><h3>Содержание</h3><ul><li><a href="#что-такое-asm-на-мониторе-расшифровка-и-принцип-работы">Что такое ASM на мониторе: расшифровка и принцип работы</a></li><li><a href="#отличия-asm-от-freesync-и-g-sync-что-лучше-для-гейминга">Отличия ASM от FreeSync и G-Sync: что лучше для гейминга?</a></li><li><a href="#как-проверить-поддерживает-ли-ваш-монитор-asm">Как проверить, поддерживает ли ваш монитор ASM</a></li><li><a href="#пошаговая-инструкция-как-включить-asm-на-мониторе">Пошаговая инструкция: как включить ASM на мониторе</a></li><li><a href="#типичные-проблемы-с-asm-и-как-их-решить">Типичные проблемы с ASM и как их решить</a></li><li><a href="#asm-и-производительность-стоит-ли-отключать-для-конкурентных-игр">ASM и производительность: стоит ли отключать для конкурентных игр?</a></li><li><a href="#asm-и-контент-не-только-для-игр">ASM и контент: не только для игр</a></li><li><a href="#faq-частые-вопросы-об-asm-на-мониторе">FAQ: Частые вопросы об ASM на мониторе</a></li></ul></nav><!--#include virtual="/ssi/sidebar_before_related.html" --><nav class="sidebar-related"><h3>Похожие статьи</h3><ul><li><a href="/articles/k/ka/kak-ustanovit-parol-na-monitore.html" class="related-card">Как установить пароль на монитор: методы защиты и блокировки меню</a></li><li><a href="/articles/k/ka/kak-perevesti-adapter-v-rezhim-monitora-kali-linux.html" class="related-card">Как перевести WiFi адаптер в режим монитора в Kali Linux: Полное руководство</a></li><li><a href="/articles/a/av/avtomaticheskij-rezhim-ozhidaniya-lg-monitor-chto-eto.html" class="related-card">Автоматический режим ожидания LG монитор: что это и как настроить</a></li><li><a href="/articles/k/ka/kak-ustanovit-gts-na-monitore.html" class="related-card">Как настроить ГЦ на мониторе: точная настройка гейм-режима</a></li><li><a href="/articles/k/ka/kak-vyklyuchit-monitor-na-kompyutere-ne-vyklyuchaya-kompyuter-knopkoj.html" class="related-card">Как выключить монитор без отключения ПК: способы и утилиты</a></li></ul></nav><!--#include virtual="/ssi/sidebar_after_related.html" --></aside>
+            </div>
+        </div>
+    </main>
+
+    <!--#include virtual="/ssi/before_related_bottom.html" -->
+    <section class="related-bottom">
+        <div class="container">
+            <h2 class="related-bottom-heading">📖 Читайте также</h2>
+            <div class="related-bottom-grid"><a href="/articles/k/ka/kak-ustanovit-parol-na-monitore.html" class="related-bottom-card"><span class="related-bottom-title">Как установить пароль на монитор: методы защиты и блокировки меню</span><span class="related-bottom-desc">Гид по защите монитора от несанкционированного доступа. Инструкция по использованию функции Key Lock</span></a><a href="/articles/k/ka/kak-perevesti-adapter-v-rezhim-monitora-kali-linux.html" class="related-bottom-card"><span class="related-bottom-title">Как перевести WiFi адаптер в режим монитора в Kali Linux: Полное руководство</span><span class="related-bottom-desc">Пошаговая инструкция по переключению сетевых карт в режим мониторинга в Kali Linux. Настройка aircra</span></a><a href="/articles/a/av/avtomaticheskij-rezhim-ozhidaniya-lg-monitor-chto-eto.html" class="related-bottom-card"><span class="related-bottom-title">Автоматический режим ожидания LG монитор: что это и как настроить</span><span class="related-bottom-desc">Разбираем функцию автоматического перехода в режим ожидания на мониторах LG. Узнайте, как работает э</span></a><a href="/articles/k/ka/kak-ustanovit-gts-na-monitore.html" class="related-bottom-card"><span class="related-bottom-title">Как настроить ГЦ на мониторе: точная настройка гейм-режима</span><span class="related-bottom-desc">Пошаговая инструкция по настройке ГЦ (Game Center) на мониторах. Настройка частоты обновления, G-Syn</span></a><a href="/articles/k/ka/kak-vyklyuchit-monitor-na-kompyutere-ne-vyklyuchaya-kompyuter-knopkoj.html" class="related-bottom-card"><span class="related-bottom-title">Как выключить монитор без отключения ПК: способы и утилиты</span><span class="related-bottom-desc">Полное руководство по отключению дисплея при работающем компьютере. Программные методы, горячие клав</span></a><a href="/articles/k/ka/kak-zajti-v-bios-bez-monitora.html" class="related-bottom-card"><span class="related-bottom-title">Как войти в BIOS без монитора: методы управления ПК вслепую</span><span class="related-bottom-desc">Пошаговая инструкция: вход в UEFI/BIOS без видеосигнала, настройка через сеть, использование IPMI и </span></a></div>
+        </div>
+    </section>
+    <!--#include virtual="/ssi/after_related_bottom.html" -->
+
+    <footer class="site-footer-premium">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-col">
+                    <div class="footer-brand">🖥️ Мониторум</div>
+                    <p class="footer-about">Полный справочник по настройке, ремонту и выбору компьютерных мониторов для любых задач.</p>
+                </div>
+                <div class="footer-col">
+                    <h4>Разделы</h4>
+                    <ul><li><a href="/category/nastrojka-ekrana/">⚙️ Настройка экрана</a></li>
+<li><a href="/category/podklyuchenie-ustrojstv/">🔌 Подключение устройств</a></li>
+<li><a href="/category/mnozhestvennye-ekrany/">🖥️🖥️ Множественные экраны</a></li>
+<li><a href="/category/zvuk-i-audio/">🔊 Звук и аудио</a></li>
+<li><a href="/category/remont-i-polomki/">🔧 Ремонт и поломки</a></li>
+<li><a href="/category/ukhod-i-chistka/">🧼 Уход и чистка</a></li></ul>
+                </div>
+                <div class="footer-col">
+                    <h4>Информация</h4>
+                    <ul>
+                        <li><a href="/">Главная</a></li>
+                        <li><a href="/about.html">О проекте</a></li>
+                        <li><a href="/categories.html">Все разделы</a></li>
+                        <li><a href="/contact.html">Контакты</a></li>
+                        <li><a href="/privacy.html">Конфиденциальность</a></li>
+                        <li><a href="/sitemap.xml">Карта сайта</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>© Мониторум. Все права защищены.</p>
+                <!--LiveInternet counter--><div style="margin-top:10px;"><a href="https://www.liveinternet.ru/click"
+                target="_blank"><img id="licnt06C4" width="88" height="15" style="border:0" 
+                title="LiveInternet: показано число посетителей за сегодня"
+                src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAEALAAAAAABAAEAAAIBTAA7"
+                alt=""/></a><script>(function(d,s){d.getElementById("licnt06C4").src=
+                "https://counter.yadro.ru/hit?t26.5;r"+escape(d.referrer)+
+                ((typeof(s)=="undefined")?"":";s"+s.width+"*"+s.height+"*"+
+                (s.colorDepth?s.colorDepth:s.pixelDepth))+";u"+escape(d.URL)+
+                ";h"+escape(d.title.substring(0,150))+";"+Math.random()})(document,screen)</script></div><!--/LiveInternet-->
+            </div>
+        </div>
+    </footer>
+    <div id="cookie-consent" class="cookie-popup">
+        <div class="cookie-inner">
+            <span>🍪 Мы используем файлы cookie для улучшения работы сайта.</span>
+            <button id="cookie-accept" class="cookie-btn">Принять</button>
+        </div>
+    </div>
+    <script src="/static/js/main.js"></script>
+    <script>
+    (function() {
+        const popup = document.getElementById('cookie-consent');
+        const btn = document.getElementById('cookie-accept');
+        if (popup && btn && !localStorage.getItem('cookie-accepted')) {
+            popup.classList.add('visible');
+            btn.onclick = () => {
+                localStorage.setItem('cookie-accepted', 'true');
+                popup.classList.remove('visible');
+            };
+        }
+    })();
+    </script>
+    <script>
+    function pbPollVote(el) {
+        var poll = el.closest('.poll-widget');
+        if (poll.classList.contains('voted')) return;
+        poll.classList.add('voted');
+        el.classList.add('selected');
+        var opts = poll.querySelectorAll('.poll-widget-option');
+        var n = opts.length;
+        var raw = [];
+        var sum = 0;
+        for (var i = 0; i < n; i++) {
+            var v = Math.random() * 50 + 5;
+            if (opts[i] === el) v += 30;
+            raw.push(v);
+            sum += v;
+        }
+        var pcts = raw.map(function(v) { return Math.round(v / sum * 100); });
+        var diff = 100 - pcts.reduce(function(a,b){ return a+b; }, 0);
+        pcts[Array.from(opts).indexOf(el)] += diff;
+        setTimeout(function() {
+            opts.forEach(function(opt, i) {
+                opt.querySelector('.poll-widget-bar').style.width = pcts[i] + '%';
+                opt.querySelector('.poll-widget-pct').textContent = pcts[i] + '%';
+            });
+        }, 50);
+    }
+    </script>
+    <!--#include virtual="/ssi/body_bottom.html" -->
+    <script src="/static/js/inject.js" defer></script>
+</body>
+</html>

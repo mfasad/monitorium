@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27><text y=%27.9em%27 font-size=%2790%27>🖥️</text></svg>">
+    <title>Настройка двух мониторов в CentOS 7: пошаговая инструкция — Мониторум</title>
+    <meta name="description" content="Пошаговое руководство по настройке расширенного рабочего стола в CentOS 7. Настройка через xrandr, arandr и конфиги Xorg для NVIDIA и AMD.">
+    <link rel="canonical" href="https://monitorium.vercel.app/articles/k/ka/kak-nastroit-dva-monitora-na-centos-7.html">
+
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="Настройка двух мониторов в CentOS 7: пошаговая инструкция">
+    <meta property="og:description" content="Пошаговое руководство по настройке расширенного рабочего стола в CentOS 7. Настройка через xrandr, arandr и конфиги Xorg для NVIDIA и AMD.">
+    <meta property="og:locale" content="ru_RU">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css?v=1780420684">
+    <style>
+    .site-footer-premium {
+        margin-top: 60px; padding: 40px 0 0; background: #1e293b; color: #94a3b8;
+    }
+    .footer-grid {
+        display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 40px;
+        padding-bottom: 32px; border-bottom: 1px solid #334155;
+    }
+    .footer-brand { font-size: 1.2rem; font-weight: 700; color: #f1f5f9; margin-bottom: 12px; }
+    .footer-about { font-size: 0.9rem; line-height: 1.6; margin-bottom: 8px; }
+    .footer-updated { font-size: 0.8rem; color: #64748b; }
+    .footer-col h4 { color: #f1f5f9; font-size: 0.95rem; margin-bottom: 16px; }
+    .footer-col ul { list-style: none; }
+    .footer-col li { margin-bottom: 8px; }
+    .footer-col a { color: #94a3b8; font-size: 0.9rem; transition: color 0.2s; }
+    .footer-col a:hover { color: #60a5fa; }
+    .footer-bottom { padding: 20px 0; text-align: center; font-size: 0.85rem; }
+    @media (max-width: 640px) {
+        .footer-grid { grid-template-columns: 1fr; gap: 24px; }
+    }
+    .cookie-popup {
+        position: fixed; bottom: 0; left: 0; right: 0; background: #1e293b; color: #fff;
+        padding: 16px; transition: transform 0.5s ease; z-index: 9999; border-top: 2px solid #2563eb;
+        transform: translateY(100%);
+    }
+    .cookie-popup.visible { transform: translateY(0); }
+    .cookie-inner { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; gap: 16px; font-size: 0.9rem; }
+    .cookie-btn { background: #2563eb; color: #fff; border: none; padding: 8px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+    .cookie-btn:hover { background: #1d4ed8; }
+    @media (max-width: 640px) {
+        .cookie-inner { flex-direction: column; text-align: center; }
+    }
+</style>
+    
+    <!--#include virtual="/ssi/head.html" -->
+</head>
+<body>
+        <!--#include virtual="/ssi/body_top.html" -->
+    <style>
+    .nav-dropdown { position: relative; display: inline-block; }
+    .dropdown-toggle {
+        background: none; border: none; cursor: pointer;
+        font: inherit; color: inherit; padding: 8px 12px;
+        border-radius: 8px; transition: background 0.2s;
+    }
+    .dropdown-toggle:hover { background: rgba(0,0,0,0.05); }
+    .dropdown-menu {
+        display: none; position: absolute; right: 0; top: 100%;
+        min-width: 240px; max-height: 70vh; overflow-y: auto;
+        background: var(--card-bg, #fff); border: 1px solid var(--border, #e5e7eb);
+        border-radius: 12px; box-shadow: 0 12px 40px rgba(0,0,0,0.12);
+        padding: 8px 0; z-index: 1000;
+    }
+    .nav-dropdown::after {
+        content: ''; position: absolute; left: 0; right: 0;
+        top: 100%; height: 12px;
+    }
+    .nav-dropdown:hover .dropdown-menu,
+    .nav-dropdown:focus-within .dropdown-menu { display: block; }
+    .dropdown-item {
+        display: block; padding: 10px 20px; color: var(--text, #1f2937);
+        text-decoration: none; font-size: 0.95rem; transition: background 0.15s;
+        white-space: nowrap;
+    }
+    .dropdown-item:hover { background: rgba(37,99,235,0.06); color: var(--primary, #2563eb); }
+    @media (max-width: 768px) {
+        .main-nav > .nav-link { display: none; }
+        .dropdown-toggle { display: none; }
+        .dropdown-menu {
+            display: block !important; position: static;
+            box-shadow: none; border: none; border-radius: 0;
+            min-width: auto; max-height: none; padding: 0;
+            background: transparent;
+        }
+        .dropdown-item {
+            padding: 8px 0; font-size: 1rem;
+        }
+    }
+    </style>
+    <header class="site-header">
+        <div class="container header-inner">
+            <a href="/" class="logo">
+                <span class="logo-icon">🖥️</span>
+                <span>Мониторум</span>
+            </a>
+            <button class="mobile-menu-btn" aria-label="Меню" id="menuBtn">☰</button>
+            <nav class="main-nav" id="mainNav">
+                <a href="/category/nastrojka-ekrana/" class="nav-link">⚙️ Настройка экрана</a>
+<a href="/category/podklyuchenie-ustrojstv/" class="nav-link">🔌 Подключение устройств</a>
+<a href="/category/mnozhestvennye-ekrany/" class="nav-link">🖥️🖥️ Множественные экраны</a>
+<a href="/category/zvuk-i-audio/" class="nav-link">🔊 Звук и аудио</a>
+<div class="nav-dropdown">
+            <button class="nav-link dropdown-toggle">📂 Все разделы ▾</button>
+            <div class="dropdown-menu"><a href="/category/nastrojka-ekrana/" class="dropdown-item">⚙️ Настройка экрана</a>
+<a href="/category/podklyuchenie-ustrojstv/" class="dropdown-item">🔌 Подключение устройств</a>
+<a href="/category/mnozhestvennye-ekrany/" class="dropdown-item">🖥️🖥️ Множественные экраны</a>
+<a href="/category/zvuk-i-audio/" class="dropdown-item">🔊 Звук и аудио</a>
+<a href="/category/remont-i-polomki/" class="dropdown-item">🔧 Ремонт и поломки</a>
+<a href="/category/ukhod-i-chistka/" class="dropdown-item">🧼 Уход и чистка</a>
+<a href="/category/vybor-i-kharakteristiki/" class="dropdown-item">📊 Выбор и характеристики</a>
+<a href="/category/drajvery-i-po/" class="dropdown-item">💿 Драйверы и ПО</a>
+<a href="/category/krepleniya-i-ustanovka/" class="dropdown-item">🔩 Крепления и установка</a>
+<a href="/category/utilizatsiya-i-prodazha/" class="dropdown-item">♻️ Утилизация и продажа</a>
+<a href="/category/spetsialnye-rezhimy/" class="dropdown-item">🎮 Специальные режимы</a>
+<a href="/category/drugoe/" class="dropdown-item">📁 Другое</a></div>
+        </div>
+            </nav>
+        </div>
+    </header>
+
+    <nav class="breadcrumbs" aria-label="Навигация">
+        <div class="container"><a href="/">Главная</a><span class="breadcrumb-sep">›</span><a href="/category/drugoe/">Другое</a><span class="breadcrumb-sep">›</span><span class="breadcrumb-current">Настройка двух мониторов в CentOS 7: пошаговая инструкция</span></div>
+    </nav>
+
+    <main class="site-main">
+        <div class="container">
+            <div class="article-layout">
+                <article class="article-main">
+                    
+                    <h1>Настройка двух мониторов на CentOS 7: полное руководство</h1>
+                    <nav class="mobile-toc"><details><summary>📋 Содержание</summary><ul><li><a href="#проверка-аппаратной-поддержки-и-драйверов">Проверка аппаратной поддержки и драйверов</a></li><li><a href="#использование-утилиты-xrandr-для-динамической-настройки">Использование утилиты xrandr для динамической настройки</a></li><li><a href="#постоянная-конфигурация-через-файлы-конфигурации">Постоянная конфигурация через файлы конфигурации</a></li><li><a href="#специфика-настройки-видеокарт-nvidia">Специфика настройки видеокарт NVIDIA</a></li><li><a href="#альтернативные-методы-и-утилиты">Альтернативные методы и утилиты</a></li><li><a href="#решение-распространенных-проблем">Решение распространенных проблем</a></li><li><a href="#faq-частые-вопросы-пользователей">FAQ: Частые вопросы пользователей</a></li></ul></details></nav>
+                    <!--#include virtual="/ssi/article_before.html" -->
+                    <div class="article-body"><p>Центос 7 остается надежной основой для серверных и рабочих станций, где стабильность графической подсистемы критически важна. Однако настройка нескольких дисплеев в этой ОС может вызвать затруднения у администраторов, привыкших к автоматизации в десктопных дистрибутивах Linux.</p>
+
+<p>В отличие от современных систем с поддержкой Wayland по умолчанию, <em>CentOS 7</em> опирается на классический <code>Xorg</code>, что требует ручного вмешательства или использования специфических утилит. Правильная конфигурация позволяет не только дублировать изображение, но и расширить рабочее пространство, что существенно повышает производительность при программировании или анализе данных.</p>
+
+<p>Процесс настройки может варьироваться в зависимости от используемой видеокарты и версии драйверов. Вам предстоит выбрать между автоматическим обнаружением конфигурации через утилиты или жесткой пропиской параметров в конфигурационных файлах системы для максимальной стабильности.</p>
+
+<h2 id="проверка-аппаратной-поддержки-и-драйверов">Проверка аппаратной поддержки и драйверов</h2>
+
+<p>Перед началом любых манипуляций необходимо убедиться, что операционная система корректно видит ваше оборудование. Запустите терминал и введите команду <code>lspci | grep VGA</code>, чтобы получить список установленных видеоадаптеров. Если система показывает интегрированную графику Intel или дискретную карту NVIDIA/AMD, это хороший знак.</p>
+
+<p>Ключевым фактором успеха является наличие корректных драйверов. Для карт <em>NVIDIA</em> часто требуется установка проприетарных драйверов через репозиторий <strong>EPEL</strong> или <strong>RPM Fusion</strong>, так как драйверы Nouveau могут не поддерживать современные функции многомониторных конфигураций в полной мере.</p>
+
+<p>Убедитесь, что утилита <code>xrandr</code> установлена в системе, так как она является основным инструментом управления выводом изображения. Если команда не найдена, выполните <pre><code>sudo yum install xrandr</code></pre>. Без этого инструмента настройка будет невозможна, так как именно он взаимодействует с подсистемой X11 для изменения режимов дисплеев.</p>
+
+<p>Важно проверить, запущен ли графический сервер Xorg. В некоторых минимальных установках сервер может не стартовать автоматически. Вы можете проверить это по наличию процесса <code>Xorg</code> через утилиту <code>ps aux | grep Xorg</code>.</p>
+
+<blockquote>⚠️ Внимание: Использование проприетарных драйверов NVIDIA в CentOS 7 требует отключения <strong>Secure Boot</strong> в BIOS, иначе модуль ядра не загрузится, и графическая подсистема некорректно отобразит два экрана.</blockquote>
+
+<h2 id="использование-утилиты-xrandr-для-динамической-настройки">Использование утилиты xrandr для динамической настройки</h2>
+
+<p>Самый быстрый способ настроить два монитора без перезагрузки сервера — использовать утилиту <code>xrandr</code>. Сначала выполните команду <code>xrandr</code> без параметров, чтобы увидеть список доступных выходов и поддерживаемых разрешений. Вы увидите имена портов, например <em>HDMI-0</em>, <em>DVI-D-0</em> или <em>VGA-0</em>.</p>
+
+<p>Допустим, ваш основной монитор — <em>HDMI-0</em>, а второй — <em>DVI-0</em>. Чтобы включить второй экран справа от первого, используйте команду <pre><code>xrandr --output HDMI-0 --auto --right-of DVI-0</code></pre>. Система мгновенно перестроит структуру рабочего стола.</p>
+
+<p>Если вы хотите, чтобы второй экран был ниже или слева, замените параметр <code>--right-of</code> на <code>--left-of</code> или <code>--below</code>. Для дублирования экрана используйте флаг <code>--same-as</code>. Важно убедиться, что разрешение обоих мониторов поддерживается системой, иначе вы получите искаженное изображение.</p>
+
+<p>Для настройки частоты обновления можно добавить параметр <code>--rate</code> (например, <code>--rate 60</code>). Это особенно актуально для профессиональных рабочих станций, где синхронизация кадров влияет на комфорт работы.</p>
+
+<ul>
+<li>🔍 Всегда проверяйте список доступных режимов перед применением команды xrandr.</li>
+<li>⚡ Настройки через xrandr сбрасываются после перезагрузки системы, если их не сохранить.</li>
+<li>🖥️ Имена портов могут отличаться в зависимости от версии ядра и драйверов.</li>
+</ul>
+
+<div class="poll-widget" id="poll-70fb3e50"><div class="poll-widget-question">📊 Какой графический адаптер установлен в вашей системе?</div><div class="poll-widget-option" data-poll="70fb3e50" data-idx="0" onclick="pbPollVote(this)"><span class="poll-widget-label">Intel Integrated</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="70fb3e50" data-idx="1" onclick="pbPollVote(this)"><span class="poll-widget-label">NVIDIA Discrete</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="70fb3e50" data-idx="2" onclick="pbPollVote(this)"><span class="poll-widget-label">AMD Radeon</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="70fb3e50" data-idx="3" onclick="pbPollVote(this)"><span class="poll-widget-label">VMware Virtual Graphics</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div></div>
+
+<div class="attention-box attention-tip"><span class="attention-icon">💡</span><p>Если экран погас после неудачной команды xrandr, нажмите комбинацию клавиш Ctrl+Alt+F1 для переключения в консоль, а затем выполните xrandr --output HDMI-0 --auto для восстановления изображения в графическом режиме.</p></div>
+
+<h2 id="постоянная-конфигурация-через-файлы-конфигурации">Постоянная конфигурация через файлы конфигурации</h2>
+
+<p>Настройка через <code>xrandr</code> удобна, но не постоянна. Чтобы изменения применялись автоматически при загрузке <em>CentOS 7</em>, необходимо отредактировать конфигурационный файл Xorg. Создайте или отредактируйте файл <code>/etc/X11/xorg.conf</code>. Если файл не существует, его можно сгенерировать командой <pre><code>Xorg -configure</code></pre>.</p>
+
+<p>В разделе <code>Section "Screen"</code> нужно указать имя устройства и связанную конфигурацию Monitor. Убедитесь, что в секции <code>Monitor</code> указаны правильные <strong>Identifier</strong> и режимы <code>DisplaySize</code>, если они известны. Это предотвращает ошибки масштабирования.</p>
+
+<p>Для связывания двух экранов в единую виртуальную поверхность используется директива <code>Option "VirtualHeads"</code> или ручное задание геометрии в секции <code>Screen</code>. В современных драйверах NVIDIA это часто делается через утилиту <code>nvidia-xconfig</code> с флагом <code>--allow-empty-initial-configuration</code>.</p>
+
+<details class="faq-item"><summary>Что делать, если xorg.conf не создается автоматически?</summary><div class="faq-answer"><p>В некоторых случаях автоматическая генерация файла невозможна из-за отсутствия поддержки в драйвере. В таком случае создайте файл вручную, скопировав структуру из документации производителя видеокарты, и укажите только необходимые секции Device и Screen.</p></div></details>
+
+<p>Если вы используете драйвер <em>Intel</em>, конфигурация часто проще: достаточно добавить секцию <code>Section "Monitor"</code> для каждого экрана с указанием <code>Identifier</code> и <code>Option "Enable" "true"</code>. Драйвер сам определит подключение.</p>
+
+<blockquote>⚠️ Внимание: Ошибка в синтаксисе файла <code>xorg.conf</code> может привести к невозможности запуска графической оболочки. Всегда делайте резервную копию файла перед редактированием: <code>sudo cp /etc/X11/xorg.conf /etc/X11/xorg.conf.bak</code>.</blockquote>
+
+<div class="checklist-block"><h4>☑️ Проверка перед перезагрузкой графической подсистемы</h4><label class="check-item"><input type="checkbox"><span>Проверить синтаксис файла xorg.conf</span></label><label class="check-item"><input type="checkbox"><span>Убедиться в наличии прав root</span></label><label class="check-item"><input type="checkbox"><span>Создать резервную копию конфиг-файла</span></label><label class="check-item"><input type="checkbox"><span>Проверить наличие драйверов</span></label><div class="check-progress">Выполнено: <span class="check-count">0</span> / 4</div></div>
+
+<h2 id="специфика-настройки-видеокарт-nvidia">Специфика настройки видеокарт NVIDIA</h2>
+
+<p>Для владельцев карт <em>NVIDIA</em> процесс настройки имеет свои нюансы. Утилита <code>nvidia-settings</code> предоставляет графический интерфейс, но в серверной среде CentOS 7 часто используется консольный режим. Введите <code>nvidia-settings</code> в терминале, если у вас установлен графический интерфейс.</p>
+
+<p>В окне настроек перейдите во вкладку <strong>X Server Display Configuration</strong>. Здесь вы увидите схематичное изображение ваших мониторов. Перетащите значки мониторов, чтобы изменить их расположение относительно друг друга. Нажмите <strong>Apply</strong>, а затем <strong>Save to X Configuration File</strong>.</p>
+
+<p>Если утилита недоступна, можно использовать команду <pre><code>nvidia-xconfig --allow-empty-initial-configuration --virtual=3840x1080</code></pre>. Параметр <code>--virtual</code> задает общий размер виртуального экрана, который должен быть больше или равен сумме размеров подключенных дисплеев.</p>
+
+<p> Если после обновления ядра графический интерфейс не запускается, необходимо переустановить драйверы.</p>
+
+<table>
+<thead>
+<tr>
+<th>Компонент</th>
+<th>Значение</th>
+<th>Описание</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Driver</td>
+<td>nvidia</td>
+<td>Имя драйвера для NVIDIA карт</td>
+</tr>
+<tr>
+<td>Option</td>
+<td>AllowEmptyInitialConfiguration</td>
+<td>Разрешает запуск без подключенных мониторов</td>
+</tr>
+<tr>
+<td>Virtual</td>
+<td>3840x1080</td>
+<td>Максимальный размер виртуального экрана</td>
+</tr>
+<tr>
+<td>MetaModes</td>
+<td>DVI-0: 1920x1080, HDMI-0: 1920x1080</td>
+<td>Конкретные режимы для каждого дисплея</td>
+</tr>
+</tbody>
+</table>
+
+<div class="attention-box attention-tip"><span class="attention-icon">💡</span><p>Для карт NVIDIA критически важно указывать параметр AllowEmptyInitialConfiguration, иначе сервер Xorg может не запуститься, если мониторы не были обнаружены при загрузке.</p></div>
+
+<h2 id="альтернативные-методы-и-утилиты">Альтернативные методы и утилиты</h2>
+
+<p>Если работа с консолями и конфигами кажется слишком сложной, существуют графические утилиты, такие как <em>arandr</em>. Это легковесный графический интерфейс для <code>xrandr</code>, который позволяет настраивать экраны перетаскиванием мыши.</p>
+
+<p>Установите его командой <pre><code>sudo yum install arandr</code></pre>. После запуска вы увидите схему ваших дисплеев. Расставьте их мышкой, задайте разрешение и нажмите кнопку <strong>Apply</strong>. Утилита также позволяет сохранять текущую схему в скрипт, который можно добавить в автозагрузку.</p>
+
+<p>Для пользователей среды рабочего стола <strong>GNOME</strong> настройки могут быть доступны через стандартное меню "Настройки" -> "Мониторы". Однако в CentOS 7 эта функциональность может быть ограничена по сравнению с более свежими версиями Fedora или Ubuntu.</p>
+
+<p>В некоторых случаях может потребоваться создание скрипта автозапуска, который будет выполнять команды <code>xrandr</code> при входе пользователя в систему. Это делается через настройки сессии или файл <code>.xinitrc</code>.</p>
+
+<ul>
+<li>🛠️ arandr — отличный инструмент для быстрого прототипирования конфигурации.</li>
+<li>💾 Сохраняйте скрипты конфигурации в директории пользователя, а не в системных папках.</li>
+<li>🔄 Проверяйте совместимость утилит с версией Xorg, установленной в вашей системе.</li>
+</ul>
+
+<details class="faq-item"><summary>Почему arandr может не сохранить настройки?</summary><div class="faq-answer"><p>Если утилита не имеет прав на запись в конфигурационные файлы Xorg, она предложит сохранить скрипт в домашнюю директорию. В этом случае скрипт нужно вручную добавить в автозагрузку графической среды.</p></div></details>
+
+<h2 id="решение-распространенных-проблем">Решение распространенных проблем</h2>
+
+<p>Частой проблемой является некорректное определение разрешения, когда один из экранов отображается с черной рамкой. Это часто связано с тем, что EDID (расширенные данные об идентификаторе дисплея) считываются некорректно. Попробуйте принудительно задать разрешение через <code>xrandr</code>.</p>
+
+<p>Если второй монитор мигает или изображение "рассыпается", проверьте качество кабеля и переходников. В старых системах CentOS 7 использование HDMI-переходников может вызывать проблемы с синхронизацией сигналов.</p>
+
+<p>Иногда система видит оба монитора, но не позволяет перетаскивать курсор между ними. Это означает, что конфигурация не объединена в единое пространство. Проверьте секцию <strong>ServerLayout</strong> в файле <code>xorg.conf</code> или убедитесь, что в <code>xrandr</code> используется флаг <code>--auto</code> для обоих устройств.</p>
+
+<p>В случае использования виртуальных машин (VMware, VirtualBox) для настройки двух мониторов часто требуется установка гостевых дополнений и изменение настроек виртуальной машины на разрешение экрана по умолчанию.</p>
+
+<blockquote>⚠️ Внимание: Если после настройки курсор мыши "застревает" на границе экранов, проверьте, совпадают ли высоты разрешений мониторов. Различия в высоте часто приводят к невозможности перемещения курсора по вертикали.</blockquote>
+
+<h2 id="faq-частые-вопросы-пользователей">FAQ: Частые вопросы пользователей</h2>
+
+<details>
+<summary>Почему CentOS 7 не видит второй монитор сразу после подключения?</summary>
+<p>Система может не хотеть обновлять конфигурацию дисплеев на лету без переподключения. Попробуйте отключить и снова подключить кабель. Если это не помогает, перезапустите графическую оболочку или выполните команду <code>xrandr --query</code>.</p>
+</details>
+
+<details>
+<summary>Можно ли использовать разные разрешения для двух мониторов?</summary>
+<p>Да, это возможно. В <code>xrandr</code> используйте команду <code>--output HDMI-0 --mode 1920x1080 --output DVI-0 --mode 1280x1024</code>. Однако это может привести к разрыву границ окон при перетаскивании между экранами.</p>
+</details>
+
+<details>
+<summary>Как сбросить настройки мониторов к заводским в CentOS 7?</summary>
+<p>Самый простой способ — удалить или переименовать файл <code>/etc/X11/xorg.conf</code> и перезагрузить систему. Xorg автоматически сгенерирует базовую конфигурацию при следующем запуске.</p>
+</details>
+
+<details>
+<summary>Работает ли Wayland для настройки двух мониторов в CentOS 7?</summary>
+<p>По умолчанию CentOS 7 использует Xorg. Поддержка Wayland в этой версии ограничена и требует ручной настройки, поэтому для стабильной работы двух дисплеев рекомендуется оставаться на Xorg.</p>
+</details></div>
+                    <!--#include virtual="/ssi/article_after.html" -->
+
+                </article>
+                <aside class="article-sidebar"><!--#include virtual="/ssi/sidebar_top.html" --><nav class="sidebar-search"><div class="sidebar-search-box"><input type="text" id="globalSearchInput" placeholder="🔍 Поиск статей..." autocomplete="off"><div class="search-dropdown" id="globalSearchDropdown"></div></div></nav><!--#include virtual="/ssi/sidebar_before_toc.html" --><nav class="sidebar-toc" id="sidebarToc"><h3>Содержание</h3><ul><li><a href="#проверка-аппаратной-поддержки-и-драйверов">Проверка аппаратной поддержки и драйверов</a></li><li><a href="#использование-утилиты-xrandr-для-динамической-настройки">Использование утилиты xrandr для динамической настройки</a></li><li><a href="#постоянная-конфигурация-через-файлы-конфигурации">Постоянная конфигурация через файлы конфигурации</a></li><li><a href="#специфика-настройки-видеокарт-nvidia">Специфика настройки видеокарт NVIDIA</a></li><li><a href="#альтернативные-методы-и-утилиты">Альтернативные методы и утилиты</a></li><li><a href="#решение-распространенных-проблем">Решение распространенных проблем</a></li><li><a href="#faq-частые-вопросы-пользователей">FAQ: Частые вопросы пользователей</a></li></ul></nav><!--#include virtual="/ssi/sidebar_before_related.html" --><nav class="sidebar-related"><h3>Похожие статьи</h3><ul><li><a href="/articles/p/po/pochemu-ekran-monitora-stal-sinim-ottenkom.html" class="related-card">Почему экран монитора стал синим: причины и способы устранения</a></li><li><a href="/articles/k/ka/kak-rasshirit-ekran-na-dva-monitora-goryachie-klavishi.html" class="related-card">Как расширить экран на два монитора: горячие клавиши и настройки</a></li><li><a href="/articles/k/ka/kak-sdelat-normalnye-tsveta-na-monitore.html" class="related-card">Как настроить нормальные цвета на мониторе: пошаговая инструкция</a></li><li><a href="/articles/m/mo/monoblok-apple-kak-monitor.html" class="related-card">Моноблок Apple как монитор: можно ли использовать iMac?</a></li><li><a href="/articles/k/kt/kto-fotkaet-monitor.html" class="related-card">Кто фоткает монитор: причины, методы и как убрать отражения</a></li></ul></nav><!--#include virtual="/ssi/sidebar_after_related.html" --></aside>
+            </div>
+        </div>
+    </main>
+
+    <!--#include virtual="/ssi/before_related_bottom.html" -->
+    <section class="related-bottom">
+        <div class="container">
+            <h2 class="related-bottom-heading">📖 Читайте также</h2>
+            <div class="related-bottom-grid"><a href="/articles/p/po/pochemu-ekran-monitora-stal-sinim-ottenkom.html" class="related-bottom-card"><span class="related-bottom-title">Почему экран монитора стал синим: причины и способы устранения</span><span class="related-bottom-desc">Монитор синеет? Узнайте основные причины: от кабелей HDMI до программных фильтров. Пошаговая инструк</span></a><a href="/articles/k/ka/kak-rasshirit-ekran-na-dva-monitora-goryachie-klavishi.html" class="related-bottom-card"><span class="related-bottom-title">Как расширить экран на два монитора: горячие клавиши и настройки</span><span class="related-bottom-desc">Инструкция по настройке двойного монитора в Windows. Горячие клавиши для расширения, дублирования и </span></a><a href="/articles/k/ka/kak-sdelat-normalnye-tsveta-na-monitore.html" class="related-bottom-card"><span class="related-bottom-title">Как настроить нормальные цвета на мониторе: пошаговая инструкция</span><span class="related-bottom-desc">Искаженные оттенки, тусклая картинка или неестественные цвета на экране? Узнайте, как калибровать мо</span></a><a href="/articles/m/mo/monoblok-apple-kak-monitor.html" class="related-bottom-card"><span class="related-bottom-title">Моноблок Apple как монитор: можно ли использовать iMac?</span><span class="related-bottom-desc">Узнайте, как использовать Apple iMac в качестве внешнего дисплея. Разбор режима Target Display Mode,</span></a><a href="/articles/k/kt/kto-fotkaet-monitor.html" class="related-bottom-card"><span class="related-bottom-title">Кто фоткает монитор: причины, методы и как убрать отражения</span><span class="related-bottom-desc">Разбираем, почему на фото видны посторонние в отражении экрана. Узнайте, кто фоткает монитор в кадре</span></a><a href="/articles/v/vo/vo-chto-upakovat-monitor-esli-net-korobki.html" class="related-bottom-card"><span class="related-bottom-title">Как упаковать монитор без коробки: надежная защита при переезде</span><span class="related-bottom-desc">Пошаговая инструкция по упаковке монитора без заводской тары. Советы по выбору материалов, защите ма</span></a></div>
+        </div>
+    </section>
+    <!--#include virtual="/ssi/after_related_bottom.html" -->
+
+    <footer class="site-footer-premium">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-col">
+                    <div class="footer-brand">🖥️ Мониторум</div>
+                    <p class="footer-about">Полный справочник по настройке, ремонту и выбору компьютерных мониторов для любых задач.</p>
+                </div>
+                <div class="footer-col">
+                    <h4>Разделы</h4>
+                    <ul><li><a href="/category/nastrojka-ekrana/">⚙️ Настройка экрана</a></li>
+<li><a href="/category/podklyuchenie-ustrojstv/">🔌 Подключение устройств</a></li>
+<li><a href="/category/mnozhestvennye-ekrany/">🖥️🖥️ Множественные экраны</a></li>
+<li><a href="/category/zvuk-i-audio/">🔊 Звук и аудио</a></li>
+<li><a href="/category/remont-i-polomki/">🔧 Ремонт и поломки</a></li>
+<li><a href="/category/ukhod-i-chistka/">🧼 Уход и чистка</a></li></ul>
+                </div>
+                <div class="footer-col">
+                    <h4>Информация</h4>
+                    <ul>
+                        <li><a href="/">Главная</a></li>
+                        <li><a href="/about.html">О проекте</a></li>
+                        <li><a href="/categories.html">Все разделы</a></li>
+                        <li><a href="/contact.html">Контакты</a></li>
+                        <li><a href="/privacy.html">Конфиденциальность</a></li>
+                        <li><a href="/sitemap.xml">Карта сайта</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>© Мониторум. Все права защищены.</p>
+                <!--LiveInternet counter--><div style="margin-top:10px;"><a href="https://www.liveinternet.ru/click"
+                target="_blank"><img id="licnt06C4" width="88" height="15" style="border:0" 
+                title="LiveInternet: показано число посетителей за сегодня"
+                src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAEALAAAAAABAAEAAAIBTAA7"
+                alt=""/></a><script>(function(d,s){d.getElementById("licnt06C4").src=
+                "https://counter.yadro.ru/hit?t26.5;r"+escape(d.referrer)+
+                ((typeof(s)=="undefined")?"":";s"+s.width+"*"+s.height+"*"+
+                (s.colorDepth?s.colorDepth:s.pixelDepth))+";u"+escape(d.URL)+
+                ";h"+escape(d.title.substring(0,150))+";"+Math.random()})(document,screen)</script></div><!--/LiveInternet-->
+            </div>
+        </div>
+    </footer>
+    <div id="cookie-consent" class="cookie-popup">
+        <div class="cookie-inner">
+            <span>🍪 Мы используем файлы cookie для улучшения работы сайта.</span>
+            <button id="cookie-accept" class="cookie-btn">Принять</button>
+        </div>
+    </div>
+    <script src="/static/js/main.js"></script>
+    <script>
+    (function() {
+        const popup = document.getElementById('cookie-consent');
+        const btn = document.getElementById('cookie-accept');
+        if (popup && btn && !localStorage.getItem('cookie-accepted')) {
+            popup.classList.add('visible');
+            btn.onclick = () => {
+                localStorage.setItem('cookie-accepted', 'true');
+                popup.classList.remove('visible');
+            };
+        }
+    })();
+    </script>
+    <script>
+    function pbPollVote(el) {
+        var poll = el.closest('.poll-widget');
+        if (poll.classList.contains('voted')) return;
+        poll.classList.add('voted');
+        el.classList.add('selected');
+        var opts = poll.querySelectorAll('.poll-widget-option');
+        var n = opts.length;
+        var raw = [];
+        var sum = 0;
+        for (var i = 0; i < n; i++) {
+            var v = Math.random() * 50 + 5;
+            if (opts[i] === el) v += 30;
+            raw.push(v);
+            sum += v;
+        }
+        var pcts = raw.map(function(v) { return Math.round(v / sum * 100); });
+        var diff = 100 - pcts.reduce(function(a,b){ return a+b; }, 0);
+        pcts[Array.from(opts).indexOf(el)] += diff;
+        setTimeout(function() {
+            opts.forEach(function(opt, i) {
+                opt.querySelector('.poll-widget-bar').style.width = pcts[i] + '%';
+                opt.querySelector('.poll-widget-pct').textContent = pcts[i] + '%';
+            });
+        }, 50);
+    }
+    </script>
+    <!--#include virtual="/ssi/body_bottom.html" -->
+    <script src="/static/js/inject.js" defer></script>
+</body>
+</html>

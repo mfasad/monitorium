@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27><text y=%27.9em%27 font-size=%2790%27>🖥️</text></svg>">
+    <title>Что является монитором в synchronized блоке Java: правила синхронизации — Мониторум</title>
+    <meta name="description" content="Разбираем, какой объект выступает монитором в Java synchronized. Узнайте про монитор класса, экземпляра и блоки кода, избегайте ошибок блокировки.">
+    <link rel="canonical" href="https://monitorium.vercel.app/articles/c/ch/chto-yavlyaetsya-monitorom-pri-vypolnenii-synchronized-bloka.html">
+
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="Что является монитором в synchronized блоке Java: правила синхронизации">
+    <meta property="og:description" content="Разбираем, какой объект выступает монитором в Java synchronized. Узнайте про монитор класса, экземпляра и блоки кода, избегайте ошибок блокировки.">
+    <meta property="og:locale" content="ru_RU">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css?v=1780420684">
+    <style>
+    .site-footer-premium {
+        margin-top: 60px; padding: 40px 0 0; background: #1e293b; color: #94a3b8;
+    }
+    .footer-grid {
+        display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 40px;
+        padding-bottom: 32px; border-bottom: 1px solid #334155;
+    }
+    .footer-brand { font-size: 1.2rem; font-weight: 700; color: #f1f5f9; margin-bottom: 12px; }
+    .footer-about { font-size: 0.9rem; line-height: 1.6; margin-bottom: 8px; }
+    .footer-updated { font-size: 0.8rem; color: #64748b; }
+    .footer-col h4 { color: #f1f5f9; font-size: 0.95rem; margin-bottom: 16px; }
+    .footer-col ul { list-style: none; }
+    .footer-col li { margin-bottom: 8px; }
+    .footer-col a { color: #94a3b8; font-size: 0.9rem; transition: color 0.2s; }
+    .footer-col a:hover { color: #60a5fa; }
+    .footer-bottom { padding: 20px 0; text-align: center; font-size: 0.85rem; }
+    @media (max-width: 640px) {
+        .footer-grid { grid-template-columns: 1fr; gap: 24px; }
+    }
+    .cookie-popup {
+        position: fixed; bottom: 0; left: 0; right: 0; background: #1e293b; color: #fff;
+        padding: 16px; transition: transform 0.5s ease; z-index: 9999; border-top: 2px solid #2563eb;
+        transform: translateY(100%);
+    }
+    .cookie-popup.visible { transform: translateY(0); }
+    .cookie-inner { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; gap: 16px; font-size: 0.9rem; }
+    .cookie-btn { background: #2563eb; color: #fff; border: none; padding: 8px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+    .cookie-btn:hover { background: #1d4ed8; }
+    @media (max-width: 640px) {
+        .cookie-inner { flex-direction: column; text-align: center; }
+    }
+</style>
+    
+    <!--#include virtual="/ssi/head.html" -->
+</head>
+<body>
+        <!--#include virtual="/ssi/body_top.html" -->
+    <style>
+    .nav-dropdown { position: relative; display: inline-block; }
+    .dropdown-toggle {
+        background: none; border: none; cursor: pointer;
+        font: inherit; color: inherit; padding: 8px 12px;
+        border-radius: 8px; transition: background 0.2s;
+    }
+    .dropdown-toggle:hover { background: rgba(0,0,0,0.05); }
+    .dropdown-menu {
+        display: none; position: absolute; right: 0; top: 100%;
+        min-width: 240px; max-height: 70vh; overflow-y: auto;
+        background: var(--card-bg, #fff); border: 1px solid var(--border, #e5e7eb);
+        border-radius: 12px; box-shadow: 0 12px 40px rgba(0,0,0,0.12);
+        padding: 8px 0; z-index: 1000;
+    }
+    .nav-dropdown::after {
+        content: ''; position: absolute; left: 0; right: 0;
+        top: 100%; height: 12px;
+    }
+    .nav-dropdown:hover .dropdown-menu,
+    .nav-dropdown:focus-within .dropdown-menu { display: block; }
+    .dropdown-item {
+        display: block; padding: 10px 20px; color: var(--text, #1f2937);
+        text-decoration: none; font-size: 0.95rem; transition: background 0.15s;
+        white-space: nowrap;
+    }
+    .dropdown-item:hover { background: rgba(37,99,235,0.06); color: var(--primary, #2563eb); }
+    @media (max-width: 768px) {
+        .main-nav > .nav-link { display: none; }
+        .dropdown-toggle { display: none; }
+        .dropdown-menu {
+            display: block !important; position: static;
+            box-shadow: none; border: none; border-radius: 0;
+            min-width: auto; max-height: none; padding: 0;
+            background: transparent;
+        }
+        .dropdown-item {
+            padding: 8px 0; font-size: 1rem;
+        }
+    }
+    </style>
+    <header class="site-header">
+        <div class="container header-inner">
+            <a href="/" class="logo">
+                <span class="logo-icon">🖥️</span>
+                <span>Мониторум</span>
+            </a>
+            <button class="mobile-menu-btn" aria-label="Меню" id="menuBtn">☰</button>
+            <nav class="main-nav" id="mainNav">
+                <a href="/category/nastrojka-ekrana/" class="nav-link">⚙️ Настройка экрана</a>
+<a href="/category/podklyuchenie-ustrojstv/" class="nav-link">🔌 Подключение устройств</a>
+<a href="/category/mnozhestvennye-ekrany/" class="nav-link">🖥️🖥️ Множественные экраны</a>
+<a href="/category/zvuk-i-audio/" class="nav-link">🔊 Звук и аудио</a>
+<div class="nav-dropdown">
+            <button class="nav-link dropdown-toggle">📂 Все разделы ▾</button>
+            <div class="dropdown-menu"><a href="/category/nastrojka-ekrana/" class="dropdown-item">⚙️ Настройка экрана</a>
+<a href="/category/podklyuchenie-ustrojstv/" class="dropdown-item">🔌 Подключение устройств</a>
+<a href="/category/mnozhestvennye-ekrany/" class="dropdown-item">🖥️🖥️ Множественные экраны</a>
+<a href="/category/zvuk-i-audio/" class="dropdown-item">🔊 Звук и аудио</a>
+<a href="/category/remont-i-polomki/" class="dropdown-item">🔧 Ремонт и поломки</a>
+<a href="/category/ukhod-i-chistka/" class="dropdown-item">🧼 Уход и чистка</a>
+<a href="/category/vybor-i-kharakteristiki/" class="dropdown-item">📊 Выбор и характеристики</a>
+<a href="/category/drajvery-i-po/" class="dropdown-item">💿 Драйверы и ПО</a>
+<a href="/category/krepleniya-i-ustanovka/" class="dropdown-item">🔩 Крепления и установка</a>
+<a href="/category/utilizatsiya-i-prodazha/" class="dropdown-item">♻️ Утилизация и продажа</a>
+<a href="/category/spetsialnye-rezhimy/" class="dropdown-item">🎮 Специальные режимы</a>
+<a href="/category/drugoe/" class="dropdown-item">📁 Другое</a></div>
+        </div>
+            </nav>
+        </div>
+    </header>
+
+    <nav class="breadcrumbs" aria-label="Навигация">
+        <div class="container"><a href="/">Главная</a><span class="breadcrumb-sep">›</span><a href="/category/drugoe/">Другое</a><span class="breadcrumb-sep">›</span><span class="breadcrumb-current">Что является монитором в synchronized блоке Java: правила синхронизации</span></div>
+    </nav>
+
+    <main class="site-main">
+        <div class="container">
+            <div class="article-layout">
+                <article class="article-main">
+                    
+                    <h1>Что является монитором при выполнении synchronized блока в Java</h1>
+                    <nav class="mobile-toc"><details><summary>📋 Содержание</summary><ul><li><a href="#природа-и-назначение-синхронизированного-блока">Природа и назначение синхронизированного блока</a></li><li><a href="#монитор-статического-и-экземплярного-контекста">Монитор статического и экземплярного контекста</a></li><li><a href="#особенности-использования-строковых-и-примитивных-литералов">Особенности использования строковых и примитивных литералов</a></li><li><a href="#алгоритм-захвата-и-освобождения-ресурсов">Алгоритм захвата и освобождения ресурсов</a></li><li><a href="#типичные-ошибки-и-анализ-производительности">Типичные ошибки и анализ производительности</a></li><li><a href="#альтернативные-механизмы-синхронизации">Альтернативные механизмы синхронизации</a></li><li><a href="#практические-рекомендации-по-выбору-монитора">Практические рекомендации по выбору монитора</a></li><li><a href="#заключение-и-итоговые-мысли">Заключение и итоговые мысли</a></li></ul></details></nav>
+                    <!--#include virtual="/ssi/article_before.html" -->
+                    <div class="article-body"><p>При попытке запуска многопоточного приложения вы можете столкнуться с исключением <code>java.lang.IllegalMonitorStateException</code>, если пытаетесь вызвать метод <code>wait()</code> или <code>notify()</code> на объекте, который не удерживает текущий поток в качестве <strong>монитора</strong>. Эта ошибка возникает мгновенно, как только поток пробует взаимодействовать с объектом, не захватив его блокировку заранее, что свидетельствует о фундаментальном непонимании того, какой именно объект используется для синхронизации в данный момент времени.</p>
+
+<p>В языке программирования Java концепция <strong>монитора</strong> неразрывно связана с механизмом блокировки, и именно он определяет, какие потоки могут одновременно выполнять критическую секцию кода. Понимание того, <em>что именно</em> выступает в роли этого замка, является критически важным для предотвращения состояний гонки (race conditions) и взаимных блокировок (deadlocks). Ошибочное предположение о том, что монитором является сам код или метод, часто приводит к тому, что потоки работают с общими данными без какой-либо защиты, вызывая недетерминированные сбои.</p>
+
+<h2 id="природа-и-назначение-синхронизированного-блока">Природа и назначение синхронизированного блока</h2>
+<p>Когда вы используете конструкцию <code>synchronized</code> в коде Java, компилятор преобразует её в байт-код, содержащий инструкции <code>monitorenter</code> и <code>monitorexit</code>. Эти инструкции обращаются к внутренней структуре данных JVM, называемой <strong>монитором</strong>, которая привязана к каждому объекту в куче (heap). Важно понимать, что монитор — это не отдельный объект, который вы создаете, а скрытая метаданные, сопровождающие каждый экземпляр класса.</p>
+
+<p>Синхронизированный блок работает по принципу захвата и освобождения. Поток должен успешно захватить монитор перед входом в блок. Если монитор уже занят другим потоком, текущий поток переходит в состояние блокировки (BLOCKED) и ждет, пока предыдущий владелец не освободит ресурс. Этот механизм обеспечивает атомарность выполнения кода внутри блока и видимость изменений памяти между потоками, что является основой <strong>безопасности потоков</strong>.</p>
+
+<p>Не стоит путать <strong>синхронизированный метод</strong> и <strong>синхронизированный блок</strong>. В методе монитор берется неявно из контекста вызова, тогда как в блоке вы явно указываете объект, на котором нужно заблокироваться. Это дает большую гибкость, позволяя синхронизировать только часть метода, где требуется доступ к общим данным, оставляя остальной код выполняющимся параллельно без накладных расходов на блокировку.</p>
+
+<h2 id="монитор-статического-и-экземплярного-контекста">Монитор статического и экземплярного контекста</h2>
+<p>Если вы пишете <code>synchronized(this)</code> внутри нестатического метода или блока, монитором становится сам текущий экземпляр класса, на котором происходит вызов. Это означает, что все потоки, пытающиеся войти в синхронизированные блоки, использующие <code>this</code>, будут блокировать друг друга, если они обращаются к одному и тому же объекту. Однако, если у вас есть два разных экземпляра класса, блокировка одного не повлияет на выполнение кода в другом, так как у каждого объекта свой <strong>уникальный монитор</strong>.</p>
+<p>Ситуация кардинально меняется при работе с <code>static</code> методами или блоками. В случае, если вы используете <code>synchronized(MyClass.class)</code>, монитором выступает объект класса <em>java.lang.Class</em>, представляющий сам класс <code>MyClass</code>. Этот объект существует в единственном экземпляре на всю виртуальную машину Java, поэтому блокировка здесь является глобальной для всех экземпляров данного класса. Это мощный инструмент, но он может стать причиной серьезных проблем с производительностью, если злоупотреблять им.</p>
+
+<p>Важно различать эти два сценария: блокировка на экземпляре защищает состояние конкретного объекта, а блокировка на классе защищает статические данные или процессы инициализации, доступные всем. Если вы попытаетесь синхронизировать статический метод, используя <code>this</code>, компилятор выдаст ошибку, так как в статическом контексте нет ссылки <code>this</code> на экземпляр. В этом случае необходимо явно указывать объект класса как <strong>ключ блокировки</strong>.</p>
+
+<h2 id="особенности-использования-строковых-и-примитивных-литералов">Особенности использования строковых и примитивных литералов</h2>
+<p>Распространенной ошибкой новичков является использование строковых литералов в качестве мониторов, например, <code>synchronized("lock")</code>. В Java строковые литералы интернируются, то есть хранятся в пуле строк. Это значит, что две строки с одинаковым содержанием могут указывать на один и тот же объект в памяти. Если вы используете <code>"lock"</code>, ваш код может случайно заблокировать поток, который выполняет совершенно другую логику, но использует ту же строку, что приведет к непредсказуемым задержкам.</p>
+
+<p>Примитивные типы данных, такие как <code>int</code> или <code>boolean</code>, вообще не могут быть мониторами, так как они не являются объектами. Попытка использовать их в скобках <code>synchronized</code> приведет к ошибке компиляции. Для синхронизации необходимо использовать объекты-обертки, например, <code>Integer</code> или специальные объекты-маркеры, созданные специально для этой цели, чтобы избежать коллизий с интернированными строками.</p>
+
+<p>Лучшей практикой является создание приватного конечного поля для блокировки, которое не используется в других целях. Это гарантирует, что только ваш код будет владеть этим монитором, и никто случайно не заблокирует его, используя тот же объект. Такой подход делает поведение программы предсказуемым и устраняет скрытые зависимости между несвязанными частями кода.</p>
+
+<blockquote>⚠️ Внимание: Никогда не используйте строковые литералы (например, <code>"LOCK"</code>) в качестве мониторов, если вы не контролируете их использование в других частях приложения. Риск случайной блокировки слишком велик.</blockquote>
+
+<div class="poll-widget" id="poll-bc4c1a24"><div class="poll-widget-question">📊 Какой объект вы чаще всего используете для синхронизации?</div><div class="poll-widget-option" data-poll="bc4c1a24" data-idx="0" onclick="pbPollVote(this)"><span class="poll-widget-label">Экземпляр класса (this)</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="bc4c1a24" data-idx="1" onclick="pbPollVote(this)"><span class="poll-widget-label">Класс (Class.class)</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="bc4c1a24" data-idx="2" onclick="pbPollVote(this)"><span class="poll-widget-label">Приватный конечный объект (private final Object)</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="bc4c1a24" data-idx="3" onclick="pbPollVote(this)"><span class="poll-widget-label">Другой объект</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div></div>
+
+<h2 id="алгоритм-захвата-и-освобождения-ресурсов">Алгоритм захвата и освобождения ресурсов</h2>
+<p>Процесс работы с монитором строго регламентирован и происходит автоматически при входе и выходе из блока. Как только поток выполняет инструкцию <code>monitorenter</code>, он проверяет, свободен ли монитор. Если да, счетчик владения увеличивается, и поток входит в блок. Если монитор занят другим потоком, текущий поток ждет. Это ожидание не расходует процессорное время, переводя поток в состояние ожидания.</p>
+
+<p>При нормальном выходе из блока или при возникновении исключения JVM автоматически выполняет инструкцию <code>monitorexit</code>. Счетчик владения уменьшается. Если счетчик достигает нуля, монитор считается свободным, и один из ожидающих потоков получает право на вход. </p>
+
+<p>Существует также понятие переблокировки (reentrancy). Если поток уже владеет монитором, он может войти в другой синхронизированный блок, использующий тот же монитор, без необходимости ждать. Счетчик владения просто увеличивается. Однако, при выходе из каждого блока счетчик должен уменьшаться до нуля, чтобы монитор был полностью освобожден. Это свойство позволяет создавать сложные иерархии методов, не теряя доступ к данным.</p>
+
+<div class="checklist-block"><h4>☑️ Инструкция по безопасной синхронизации</h4><label class="check-item"><input type="checkbox"><span>Создайте приватный final объект для блокировки</span></label><label class="check-item"><input type="checkbox"><span>Используйте synchronized блок только для критических секций</span></label><label class="check-item"><input type="checkbox"><span>Избегайте вызова внешних методов внутри синхронизированного блока</span></label><label class="check-item"><input type="checkbox"><span>Проверьте наличие переблокировок в коде</span></label><div class="check-progress">Выполнено: <span class="check-count">0</span> / 4</div></div>
+
+<h2 id="типичные-ошибки-и-анализ-производительности">Типичные ошибки и анализ производительности</h2>
+<p>Одной из самых сложных проблем является взаимная блокировка (deadlock), когда два потока ждут друг друга, удерживая разные мониторы. Например, поток А держит монитор объекта X и ждет Y, а поток Б держит Y и ждет X. В такой ситуации ни один из потоков не может продолжить выполнение, и приложение зависает. Это классическая проблема при неправильном порядке захвата мониторов.</p>
+
+<p>Другой распространенной проблемой является снижение производительности из-за избыточной синхронизации. Если вы синхронизируете слишком большой блок кода, включающий операции ввода-вывода или вычисления, которые не требуют защиты, вы создаете искусственные узкие места. Потоки будут простаивать в очереди, ожидая освобождения монитора, вместо того чтобы работать параллельно. Это особенно критично в высоконагруженных системах.</p>
+
+<p>Для диагностики таких проблем можно использовать инструменты профилирования и анализатора дампов памяти. Они позволяют увидеть, какой поток владеет каким монитором и в каком состоянии находятся ожидающие потоки. Понимание того, <strong>что именно является монитором</strong> в вашем коде, является первым шагом к устранению подобных проблем. Без этой информации анализ дампов будет бесполезен.</p>
+
+<table>
+<thead>
+<tr>
+<th>Тип синхронизации</th>
+<th>Объект блокировки (Монитор)</th>
+<th>Область действия</th>
+<th>Риск блокировки</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>synchronized(this)</code></td>
+<td>Текущий экземпляр класса</td>
+<td>Только для данного объекта</td>
+<td>Низкий (локально)</td>
+</tr>
+<tr>
+<td><code>synchronized(Class.class)</code></td>
+<td>Объект класса в JVM</td>
+<td>Все экземпляры класса</td>
+<td>Высокий (глобальный)</td>
+</tr>
+<tr>
+<td><code>synchronized(lockObj)</code></td>
+<td>Специальный объект-маркер</td>
+<td>Ограничена областью видимости</td>
+<td>Оптимальный (контролируемый)</td>
+</tr>
+<tr>
+<td><code>synchronized("string")</code></td>
+<td>Строка из пула интернирования</td>
+<td>Все строки с таким значением</td>
+<td>Критический (непредсказуемый)</td>
+</tr>
+</tbody>
+</table>
+
+<blockquote>⚠️ Внимание: Использование строковых литералов в качестве мониторов может привести к случайной блокировке потоков, которые даже не имеют отношения к вашей логике, из-за интернирования строк в JVM.</blockquote>
+
+<details class="faq-item"><summary>Что такое счетчик владения монитором?</summary><div class="faq-answer"><p>В JVM каждый монитор имеет счетчик владения. При входе поток увеличивает его, при выходе — уменьшает. Если поток входит повторно в тот же монитор, счетчик увеличивается, а не блокирует поток. Это mechanism позволяет потоку вызывать методы, которые также требуют синхронизации на том же объекте.</p></div></details>
+
+<h2 id="альтернативные-механизмы-синхронизации">Альтернативные механизмы синхронизации</h2>
+<p>Несмотря на мощь встроенного механизма <code>synchronized</code>, в современных версиях Java часто используются классы из пакета <code>java.util.concurrent.locks</code>, такие как <code>ReentrantLock</code>. Эти классы предоставляют более гибкие возможности: возможность попытаться захватить блокировку с таймаутом, возможность прерывания ожидания и возможность условных переменных (Condition). Они также используют мониторы, но абстрагируют их от прямого синтаксиса языка.</p>
+
+<p>Использование <code>ReentrantLock</code> позволяет реализовать более сложные протоколы доступа к данным, например, чтение-запись с помощью <code>ReentrantReadWriteLock</code>. В этом случае блокировка разделяется на блокировку для чтения и блокировку для записи, что позволяет множеству потоков читать данные одновременно, но только одному писать. Это значительно повышает пропускную способность в сценариях с частым чтением и редким записью.</p>
+
+<p>Однако, переход на эти механизмы требует более тщательного управления ресурсами. В отличие от <code>synchronized</code>, который освобождает монитор автоматически при выходе из блока (даже при исключении), блокировки <code>Lock</code> должны освобождаться явно в блоке <code>finally</code>. Забыть это сделать — значит гарантировать утечку блокировки и остановку приложения. Поэтому выбор инструмента зависит от сложности задачи.</p>
+
+<blockquote>⚠️ Внимание: При использовании явных блокировок (Lock) всегда освобождайте их в блоке finally, чтобы гарантировать освобождение ресурса даже в случае возникновения исключения.</blockquote>
+
+<div class="attention-box attention-tip"><span class="attention-icon">💡</span><p>Главный вывод: Монитором всегда является объект, на котором вызывается synchronized, будь то this, класс или специальный объект-маркер. Выбор правильного монитора определяетGranularity блокировки и производительность системы.</p></div>
+
+<div class="attention-box attention-tip"><span class="attention-icon">💡</span><p>Для большинства задач достаточно использовать synchronized(this) или synchronized на приватном финальном объекте. Избегайте усложнения кода, пока не столкнетесь с реальными проблемами производительности.</p></div>
+
+<h2 id="практические-рекомендации-по-выбору-монитора">Практические рекомендации по выбору монитора</h2>
+<p>При проектировании многопоточных приложений всегда задавайте себе вопрос: "Что именно я защищаю?". Если вы защищаете состояние конкретного объекта, используйте <code>this</code> или приватный объект внутри него. Если вы защищаете статический ресурс, используйте объект класса. Никогда не синхронизируйтесь на публичных объектах, которые могут быть доступны извне, так как внешний код может заблокировать их, нарушив работу вашего приложения.</p>
+
+<p>Попробуйте минимизировать область действия синхронизированного блока. Выносите любые операции, не требующие атомарности, за пределы блока. Это включает в себя вызовы внешних API, операции с файлами или сетью, а также сложные вычисления. Чем меньше времени поток проводит с захваченным монитором, тем выше общая производительность системы.</p>
+
+<p>Не забывайте о том, что порядок захвата мониторов должен быть строго определен, чтобы избежать взаимных блокировок. Если в вашем коде нужно захватить два монитора, всегда делайте это в одном и том же порядке. Это простое правило предотвращает один из самых сложных в отладке типов ошибок.</p>
+
+<h2 id="заключение-и-итоговые-мысли">Заключение и итоговые мысли</h2>
+<p>Понимание того, что является монитором при выполнении <code>synchronized</code> блока, является фундаментом для написания корректного многопоточного кода на Java. Ошибки в выборе объекта блокировки могут привести к трудноотлавливаемым багам, зависаниям и снижению производительности. Правильный выбор монитора обеспечивает баланс между безопасностью данных и скоростью работы приложения.</p>
+
+<p>Используйте встроенные механизмы синхронизации с осторожностью и пониманием их работы. В большинстве случаев стандартный <code>synchronized</code> достаточно эффективен и прост в использовании. Однако, если ваши требования становятся сложнее, рассмотрите использование классов из пакета <code>java.util.concurrent</code>, которые дают больше контроля над процессом синхронизации.</p>
+
+<p>Помните, что синхронизация — это не панацея. Она нужна только там, где есть общий изменяемый ресурс. Если данные не разделяются между потоками или являются неизменяемыми (immutable), синхронизация не требуется вовсе. Отказ от лишних блокировок — это часто лучший способ ускорить работу программы.</p>
+
+<details>
+<summary>Какой объект является монитором в синхронизированном методе?</summary>
+<p>В синхронизированном экземплярном методе монитором является текущий объект (<code>this</code>). В синхронизированном статическом методе монитором является объект класса (<code>Class</code>). Это означает, что блокировка распространяется на весь объект или весь класс соответственно.</p>
+</details>
+
+<details>
+<summary>Можно ли использовать null в качестве монитора?</summary>
+<p>Нет, использование <code>null</code> в конструкции <code>synchronized(null)</code> вызовет исключение <code>java.lang.NullPointerException</code> в момент выполнения. Для синхронизации всегда необходим валидный объект.</p>
+</details>
+
+<details>
+<summary>Что происходит, если два потока пытаются захватить один и тот же монитор?</summary>
+<p>Первый поток, который успешно захватит монитор, войдет в синхронизированный блок. Второй поток перейдет в состояние BLOCKED и будет ждать, пока первый поток не освободит монитор (выйдет из блока). Как только монитор освободится, второй поток получит на него право.</p>
+</details>
+
+<details>
+<summary>Можно ли создать свой собственный монитор?</summary>
+<p>Да, вы можете создать специальный объект-маркер, например, <code>private final Object lock = new Object();</code>, и использовать его в качестве монитора: <code>synchronized(lock) {.. }</code>. Это часто является лучшей практикой, так как контролирует доступ только к вашему коду.</p>
+</details>
+
+<details>
+<summary>Влияет ли синхронизация на производительность?</summary>
+<p>Да, синхронизация вносит накладные расходы. Поток может тратить время на ожидание, а операции захвата и освобождения монитора требуют времени. Однако, без синхронизации возможны ошибки данных (race conditions). Важно синхронизировать только критические секции кода, чтобы минимизировать влияние на производительность.</p>
+</details></div>
+                    <!--#include virtual="/ssi/article_after.html" -->
+
+                </article>
+                <aside class="article-sidebar"><!--#include virtual="/ssi/sidebar_top.html" --><nav class="sidebar-search"><div class="sidebar-search-box"><input type="text" id="globalSearchInput" placeholder="🔍 Поиск статей..." autocomplete="off"><div class="search-dropdown" id="globalSearchDropdown"></div></div></nav><!--#include virtual="/ssi/sidebar_before_toc.html" --><nav class="sidebar-toc" id="sidebarToc"><h3>Содержание</h3><ul><li><a href="#природа-и-назначение-синхронизированного-блока">Природа и назначение синхронизированного блока</a></li><li><a href="#монитор-статического-и-экземплярного-контекста">Монитор статического и экземплярного контекста</a></li><li><a href="#особенности-использования-строковых-и-примитивных-литералов">Особенности использования строковых и примитивных литералов</a></li><li><a href="#алгоритм-захвата-и-освобождения-ресурсов">Алгоритм захвата и освобождения ресурсов</a></li><li><a href="#типичные-ошибки-и-анализ-производительности">Типичные ошибки и анализ производительности</a></li><li><a href="#альтернативные-механизмы-синхронизации">Альтернативные механизмы синхронизации</a></li><li><a href="#практические-рекомендации-по-выбору-монитора">Практические рекомендации по выбору монитора</a></li><li><a href="#заключение-и-итоговые-мысли">Заключение и итоговые мысли</a></li></ul></nav><!--#include virtual="/ssi/sidebar_before_related.html" --><nav class="sidebar-related"><h3>Похожие статьи</h3><ul><li><a href="/articles/c/ch/chto-takoe-ushnye-monitory-u-pevtsa.html" class="related-card">Ушные мониторы для певцов: что это, как работают и зачем нужны</a></li><li><a href="/articles/k/ka/kak-delayut-monitory.html" class="related-card">Как делают мониторы: от матрицы до сборки корпуса</a></li><li><a href="/articles/k/ka/kakoj-fon-monitora-luchshe-dlya-glaz.html" class="related-card">Какой фон монитора лучше для глаз: цвета, яркость и режимы</a></li><li><a href="/articles/2/2-/2-monitora-kak-sdelat-2-raznykh.html" class="related-card">Как сделать 2 разных монитора в Windows: пошаговая настройка</a></li><li><a href="/articles/k/ka/kak-pravilno-monitorit-tseny-postavshchikov.html" class="related-card">Как правильно мониторить цены поставщиков: стратегия и инструменты</a></li></ul></nav><!--#include virtual="/ssi/sidebar_after_related.html" --></aside>
+            </div>
+        </div>
+    </main>
+
+    <!--#include virtual="/ssi/before_related_bottom.html" -->
+    <section class="related-bottom">
+        <div class="container">
+            <h2 class="related-bottom-heading">📖 Читайте также</h2>
+            <div class="related-bottom-grid"><a href="/articles/c/ch/chto-takoe-ushnye-monitory-u-pevtsa.html" class="related-bottom-card"><span class="related-bottom-title">Ушные мониторы для певцов: что это, как работают и зачем нужны</span><span class="related-bottom-desc">Подробный разбор устройства ушных мониторов (IEM) для вокалистов. Узнайте о типах, настройке звука, </span></a><a href="/articles/k/ka/kak-delayut-monitory.html" class="related-bottom-card"><span class="related-bottom-title">Как делают мониторы: от матрицы до сборки корпуса</span><span class="related-bottom-desc">Полный обзор производственного процесса: как создают экраны, собирают панели, настраивают цвета и ко</span></a><a href="/articles/k/ka/kakoj-fon-monitora-luchshe-dlya-glaz.html" class="related-bottom-card"><span class="related-bottom-title">Какой фон монитора лучше для глаз: цвета, яркость и режимы</span><span class="related-bottom-desc">Выбираете идеальный фон рабочего стола? Узнайте, какие цвета снижают усталость, как настроить гамму </span></a><a href="/articles/2/2-/2-monitora-kak-sdelat-2-raznykh.html" class="related-bottom-card"><span class="related-bottom-title">Как сделать 2 разных монитора в Windows: пошаговая настройка</span><span class="related-bottom-desc">Подробная инструкция, как настроить два монитора с разными разрешениями, масштабами и содержимым. Ре</span></a><a href="/articles/k/ka/kak-pravilno-monitorit-tseny-postavshchikov.html" class="related-bottom-card"><span class="related-bottom-title">Как правильно мониторить цены поставщиков: стратегия и инструменты</span><span class="related-bottom-desc">Экспертный гайд по мониторингу цен поставщиков. Методы автоматизации, анализ динамики, чек-листы и и</span></a><a href="/articles/c/ch/chto-takoe-monitor-v-informatike-opredelenie.html" class="related-bottom-card"><span class="related-bottom-title">Что такое монитор в информатике: определение, виды и функции</span><span class="related-bottom-desc">Подробное определение монитора в информатике. Разбор ключевых характеристик, типов матриц, принципов</span></a></div>
+        </div>
+    </section>
+    <!--#include virtual="/ssi/after_related_bottom.html" -->
+
+    <footer class="site-footer-premium">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-col">
+                    <div class="footer-brand">🖥️ Мониторум</div>
+                    <p class="footer-about">Полный справочник по настройке, ремонту и выбору компьютерных мониторов для любых задач.</p>
+                </div>
+                <div class="footer-col">
+                    <h4>Разделы</h4>
+                    <ul><li><a href="/category/nastrojka-ekrana/">⚙️ Настройка экрана</a></li>
+<li><a href="/category/podklyuchenie-ustrojstv/">🔌 Подключение устройств</a></li>
+<li><a href="/category/mnozhestvennye-ekrany/">🖥️🖥️ Множественные экраны</a></li>
+<li><a href="/category/zvuk-i-audio/">🔊 Звук и аудио</a></li>
+<li><a href="/category/remont-i-polomki/">🔧 Ремонт и поломки</a></li>
+<li><a href="/category/ukhod-i-chistka/">🧼 Уход и чистка</a></li></ul>
+                </div>
+                <div class="footer-col">
+                    <h4>Информация</h4>
+                    <ul>
+                        <li><a href="/">Главная</a></li>
+                        <li><a href="/about.html">О проекте</a></li>
+                        <li><a href="/categories.html">Все разделы</a></li>
+                        <li><a href="/contact.html">Контакты</a></li>
+                        <li><a href="/privacy.html">Конфиденциальность</a></li>
+                        <li><a href="/sitemap.xml">Карта сайта</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>© Мониторум. Все права защищены.</p>
+                <!--LiveInternet counter--><div style="margin-top:10px;"><a href="https://www.liveinternet.ru/click"
+                target="_blank"><img id="licnt06C4" width="88" height="15" style="border:0" 
+                title="LiveInternet: показано число посетителей за сегодня"
+                src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAEALAAAAAABAAEAAAIBTAA7"
+                alt=""/></a><script>(function(d,s){d.getElementById("licnt06C4").src=
+                "https://counter.yadro.ru/hit?t26.5;r"+escape(d.referrer)+
+                ((typeof(s)=="undefined")?"":";s"+s.width+"*"+s.height+"*"+
+                (s.colorDepth?s.colorDepth:s.pixelDepth))+";u"+escape(d.URL)+
+                ";h"+escape(d.title.substring(0,150))+";"+Math.random()})(document,screen)</script></div><!--/LiveInternet-->
+            </div>
+        </div>
+    </footer>
+    <div id="cookie-consent" class="cookie-popup">
+        <div class="cookie-inner">
+            <span>🍪 Мы используем файлы cookie для улучшения работы сайта.</span>
+            <button id="cookie-accept" class="cookie-btn">Принять</button>
+        </div>
+    </div>
+    <script src="/static/js/main.js"></script>
+    <script>
+    (function() {
+        const popup = document.getElementById('cookie-consent');
+        const btn = document.getElementById('cookie-accept');
+        if (popup && btn && !localStorage.getItem('cookie-accepted')) {
+            popup.classList.add('visible');
+            btn.onclick = () => {
+                localStorage.setItem('cookie-accepted', 'true');
+                popup.classList.remove('visible');
+            };
+        }
+    })();
+    </script>
+    <script>
+    function pbPollVote(el) {
+        var poll = el.closest('.poll-widget');
+        if (poll.classList.contains('voted')) return;
+        poll.classList.add('voted');
+        el.classList.add('selected');
+        var opts = poll.querySelectorAll('.poll-widget-option');
+        var n = opts.length;
+        var raw = [];
+        var sum = 0;
+        for (var i = 0; i < n; i++) {
+            var v = Math.random() * 50 + 5;
+            if (opts[i] === el) v += 30;
+            raw.push(v);
+            sum += v;
+        }
+        var pcts = raw.map(function(v) { return Math.round(v / sum * 100); });
+        var diff = 100 - pcts.reduce(function(a,b){ return a+b; }, 0);
+        pcts[Array.from(opts).indexOf(el)] += diff;
+        setTimeout(function() {
+            opts.forEach(function(opt, i) {
+                opt.querySelector('.poll-widget-bar').style.width = pcts[i] + '%';
+                opt.querySelector('.poll-widget-pct').textContent = pcts[i] + '%';
+            });
+        }, 50);
+    }
+    </script>
+    <!--#include virtual="/ssi/body_bottom.html" -->
+    <script src="/static/js/inject.js" defer></script>
+</body>
+</html>

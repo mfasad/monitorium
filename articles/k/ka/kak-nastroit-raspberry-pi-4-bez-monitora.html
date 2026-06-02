@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27><text y=%27.9em%27 font-size=%2790%27>🖥️</text></svg>">
+    <title>Настройка Raspberry Pi 4 без монитора: SSH и Headless режим — Мониторум</title>
+    <meta name="description" content="Пошаговая инструкция по запуску Raspberry Pi 4 без монитора. Настройка SSH, Wi-Fi, статического IP и устранение частых ошибок подключения.">
+    <link rel="canonical" href="https://monitorium.vercel.app/articles/k/ka/kak-nastroit-raspberry-pi-4-bez-monitora.html">
+
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="Настройка Raspberry Pi 4 без монитора: SSH и Headless режим">
+    <meta property="og:description" content="Пошаговая инструкция по запуску Raspberry Pi 4 без монитора. Настройка SSH, Wi-Fi, статического IP и устранение частых ошибок подключения.">
+    <meta property="og:locale" content="ru_RU">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css?v=1780420684">
+    <style>
+    .site-footer-premium {
+        margin-top: 60px; padding: 40px 0 0; background: #1e293b; color: #94a3b8;
+    }
+    .footer-grid {
+        display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 40px;
+        padding-bottom: 32px; border-bottom: 1px solid #334155;
+    }
+    .footer-brand { font-size: 1.2rem; font-weight: 700; color: #f1f5f9; margin-bottom: 12px; }
+    .footer-about { font-size: 0.9rem; line-height: 1.6; margin-bottom: 8px; }
+    .footer-updated { font-size: 0.8rem; color: #64748b; }
+    .footer-col h4 { color: #f1f5f9; font-size: 0.95rem; margin-bottom: 16px; }
+    .footer-col ul { list-style: none; }
+    .footer-col li { margin-bottom: 8px; }
+    .footer-col a { color: #94a3b8; font-size: 0.9rem; transition: color 0.2s; }
+    .footer-col a:hover { color: #60a5fa; }
+    .footer-bottom { padding: 20px 0; text-align: center; font-size: 0.85rem; }
+    @media (max-width: 640px) {
+        .footer-grid { grid-template-columns: 1fr; gap: 24px; }
+    }
+    .cookie-popup {
+        position: fixed; bottom: 0; left: 0; right: 0; background: #1e293b; color: #fff;
+        padding: 16px; transition: transform 0.5s ease; z-index: 9999; border-top: 2px solid #2563eb;
+        transform: translateY(100%);
+    }
+    .cookie-popup.visible { transform: translateY(0); }
+    .cookie-inner { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; gap: 16px; font-size: 0.9rem; }
+    .cookie-btn { background: #2563eb; color: #fff; border: none; padding: 8px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+    .cookie-btn:hover { background: #1d4ed8; }
+    @media (max-width: 640px) {
+        .cookie-inner { flex-direction: column; text-align: center; }
+    }
+</style>
+    
+    <!--#include virtual="/ssi/head.html" -->
+</head>
+<body>
+        <!--#include virtual="/ssi/body_top.html" -->
+    <style>
+    .nav-dropdown { position: relative; display: inline-block; }
+    .dropdown-toggle {
+        background: none; border: none; cursor: pointer;
+        font: inherit; color: inherit; padding: 8px 12px;
+        border-radius: 8px; transition: background 0.2s;
+    }
+    .dropdown-toggle:hover { background: rgba(0,0,0,0.05); }
+    .dropdown-menu {
+        display: none; position: absolute; right: 0; top: 100%;
+        min-width: 240px; max-height: 70vh; overflow-y: auto;
+        background: var(--card-bg, #fff); border: 1px solid var(--border, #e5e7eb);
+        border-radius: 12px; box-shadow: 0 12px 40px rgba(0,0,0,0.12);
+        padding: 8px 0; z-index: 1000;
+    }
+    .nav-dropdown::after {
+        content: ''; position: absolute; left: 0; right: 0;
+        top: 100%; height: 12px;
+    }
+    .nav-dropdown:hover .dropdown-menu,
+    .nav-dropdown:focus-within .dropdown-menu { display: block; }
+    .dropdown-item {
+        display: block; padding: 10px 20px; color: var(--text, #1f2937);
+        text-decoration: none; font-size: 0.95rem; transition: background 0.15s;
+        white-space: nowrap;
+    }
+    .dropdown-item:hover { background: rgba(37,99,235,0.06); color: var(--primary, #2563eb); }
+    @media (max-width: 768px) {
+        .main-nav > .nav-link { display: none; }
+        .dropdown-toggle { display: none; }
+        .dropdown-menu {
+            display: block !important; position: static;
+            box-shadow: none; border: none; border-radius: 0;
+            min-width: auto; max-height: none; padding: 0;
+            background: transparent;
+        }
+        .dropdown-item {
+            padding: 8px 0; font-size: 1rem;
+        }
+    }
+    </style>
+    <header class="site-header">
+        <div class="container header-inner">
+            <a href="/" class="logo">
+                <span class="logo-icon">🖥️</span>
+                <span>Мониторум</span>
+            </a>
+            <button class="mobile-menu-btn" aria-label="Меню" id="menuBtn">☰</button>
+            <nav class="main-nav" id="mainNav">
+                <a href="/category/nastrojka-ekrana/" class="nav-link">⚙️ Настройка экрана</a>
+<a href="/category/podklyuchenie-ustrojstv/" class="nav-link">🔌 Подключение устройств</a>
+<a href="/category/mnozhestvennye-ekrany/" class="nav-link">🖥️🖥️ Множественные экраны</a>
+<a href="/category/zvuk-i-audio/" class="nav-link">🔊 Звук и аудио</a>
+<div class="nav-dropdown">
+            <button class="nav-link dropdown-toggle">📂 Все разделы ▾</button>
+            <div class="dropdown-menu"><a href="/category/nastrojka-ekrana/" class="dropdown-item">⚙️ Настройка экрана</a>
+<a href="/category/podklyuchenie-ustrojstv/" class="dropdown-item">🔌 Подключение устройств</a>
+<a href="/category/mnozhestvennye-ekrany/" class="dropdown-item">🖥️🖥️ Множественные экраны</a>
+<a href="/category/zvuk-i-audio/" class="dropdown-item">🔊 Звук и аудио</a>
+<a href="/category/remont-i-polomki/" class="dropdown-item">🔧 Ремонт и поломки</a>
+<a href="/category/ukhod-i-chistka/" class="dropdown-item">🧼 Уход и чистка</a>
+<a href="/category/vybor-i-kharakteristiki/" class="dropdown-item">📊 Выбор и характеристики</a>
+<a href="/category/drajvery-i-po/" class="dropdown-item">💿 Драйверы и ПО</a>
+<a href="/category/krepleniya-i-ustanovka/" class="dropdown-item">🔩 Крепления и установка</a>
+<a href="/category/utilizatsiya-i-prodazha/" class="dropdown-item">♻️ Утилизация и продажа</a>
+<a href="/category/spetsialnye-rezhimy/" class="dropdown-item">🎮 Специальные режимы</a>
+<a href="/category/drugoe/" class="dropdown-item">📁 Другое</a></div>
+        </div>
+            </nav>
+        </div>
+    </header>
+
+    <nav class="breadcrumbs" aria-label="Навигация">
+        <div class="container"><a href="/">Главная</a><span class="breadcrumb-sep">›</span><a href="/category/drajvery-i-po/">Драйверы и ПО</a><span class="breadcrumb-sep">›</span><span class="breadcrumb-current">Настройка Raspberry Pi 4 без монитора: SSH и Headless режим</span></div>
+    </nav>
+
+    <main class="site-main">
+        <div class="container">
+            <div class="article-layout">
+                <article class="article-main">
+                    
+                    <h1>Полный гайд по настройке Raspberry Pi 4 в режиме Headless</h1>
+                    <nav class="mobile-toc"><details><summary>📋 Содержание</summary><ul><li><a href="#подготовка-операционной-системы-и-карты-памяти">Подготовка операционной системы и карты памяти</a></li><li><a href="#настройка-сетевого-подключения-и-статического-ip">Настройка сетевого подключения и статического IP</a></li><li><a href="#установка-и-настройка-ssh-клиента">Установка и настройка SSH-клиента</a></li><li><a href="#работа-с-графикой-и-удаленный-рабочий-стол">Работа с графикой и удаленный рабочий стол</a></li><li><a href="#устранение-частых-проблем-и-отладка">Устранение частых проблем и отладка</a></li><li><a href="#оптимизация-производительности-и-питания">Оптимизация производительности и питания</a></li></ul></details></nav>
+                    <!--#include virtual="/ssi/article_before.html" -->
+                    <div class="article-body"><p>Многие энтузиасты и профессионалы выбирают <em>Raspberry Pi 4</em> для создания компактных серверов, медиацентров или умных устройств, где монитор просто не нужен и даже мешает. Этот подход, известный как <strong>Headless</strong>, позволяет управлять платой удаленно, экономя место и ресурсы. Однако начальная конфигурация без видеовыхода требует подготовки карты памяти и корректного сетевого взаимодействия еще до первого включения.</p>
+
+<p>Процесс настройки кардинально отличается от классической установки операционной системы с подключенной периферией. Вам предстоит заранее внести конфигурационные файлы в файловую систему, чтобы устройство при загрузке автоматически подключилось к сети и разрешило удаленный доступ. Ошибки на этапе прошивки могут привести к тому, что плата просто не запустится или останется недоступной для подключения.</p>
+
+<p>Сегодня мы разберем детально, как подготовить <code>SD-карта</code>, настроить сетевые параметры и обеспечить надежное подключение по <strong>SSH</strong>. Вы узнаете, почему важно использовать статический IP-адрес и как обойти проблемы с драйверами Wi-Fi, если вы не используете проводное соединение. Это базовая инструкция для любого сценария использования, от домашнего IoT до промышленного контроля.</p>
+
+<h2 id="подготовка-операционной-системы-и-карты-памяти">Подготовка операционной системы и карты памяти</h2>
+
+<p>Первым и самым критичным этапом является запись образа операционной системы на microSD. Для <em>Raspberry Pi 4</em> стандартом является <strong>Raspberry Pi OS</strong>, который можно скачать с официального сайта. Если вы используете <em>Raspberry Pi Imager</em>, процесс упрощается, так как этот инструмент автоматически предлагает внести необходимые изменения в конфигурацию перед записью.</p>
+
+<p>При использовании Imager выберите подходящую версию ОС, затем нажмите на иконку гаечного ключа (или используйте сочетание клавиш <code>Ctrl+Shift+X</code>), чтобы открыть расширенные настройки. Здесь необходимо задать имя пользователя и пароль, включить <strong>SSH</strong> и настроить подключение к беспроводной сети. Без этих действий система загрузится, но вы не сможете попасть на нее удаленно.</p>
+
+<p>Если вы предпочитаете классический метод с <code>balenaEtcher</code> или аналогами, вам придется вручную редактировать файлы на карте памяти. После записи образа вставьте карту в компьютер. Откройте раздел <code>boot</code> и создайте пустой файл с именем <code>ssh</code> без расширения. Это ключевой триггер для системы, разрешающий удаленный доступ по умолчанию.</p>
+
+<blockquote>
+<p>⚠️ Внимание: В новых версиях Raspberry Pi OS по умолчанию отключен протокол SSH для безопасности. Если вы создадите файл <code>ssh</code>, но не настроите пользователя, система может не загрузиться корректно. Всегда проверяйте наличие файла <code>userconf.txt</code> с хешем пароля при ручном создании пользователя.</p>
+</blockquote>
+
+<h2 id="настройка-сетевого-подключения-и-статического-ip">Настройка сетевого подключения и статического IP</h2>
+
+<p>Чтобы управлять устройством из другой комнаты или даже из интернета, ему нужен постоянный адрес в сети. Динамическая выдача IP-адресов через DHCP может привести к тому, что после перезагрузки адрес изменится, и вы потеряете связь с <em>Raspberry Pi 4</em>. Решение — жесткая привязка по MAC-адресу в настройках роутера или задание статического IP в конфигурации самого устройства.</p>
+
+<p>Для ручного задания IP необходимо создать или отредактировать файл <code>dhcpcd.conf</code> в корне раздела <code>boot</code>. Добавьте в него строки конфигурации, указывающие интерфейс, адрес, шлюз и DNS. Этот файл будет прочитан системой при запуске и применит настройки до того, как подключится к графику.</p>
+
+<p>Пример конфигурации для адаптера Ethernet выглядит следующим образом:</p>
+<pre><code>interface eth0
+<p>static ip_address=192.168.1.50/24</p>
+<p>static routers=192.168.1.1</p>
+<p>static domain_name_servers=192.168.1.1 8.8.8.8</code></pre></p>
+
+<p>Если вы используете Wi-Fi, настройка выполняется через файл <code>wpa_supplicant.conf</code>. В него нужно записать SSID вашей сети и пароль шифрования. Важно соблюдать формат файла, так как даже одна лишняя запятая или неверный символ сделают подключение невозможным.</p>
+
+<div class="checklist-block"><h4>☑️ Подготовка карты памяти</h4><label class="check-item"><input type="checkbox"><span>Выбрать образ ОС Raspberry Pi OS</span></label><label class="check-item"><input type="checkbox"><span>Записать образ на microSD</span></label><label class="check-item"><input type="checkbox"><span>Создать пустой файл ssh в корне раздела boot</span></label><label class="check-item"><input type="checkbox"><span>Настроить wpa_supplicant.conf для Wi-Fi</span></label><label class="check-item"><input type="checkbox"><span>Проверить настройки статического IP</span></label><div class="check-progress">Выполнено: <span class="check-count">0</span> / 5</div></div>
+
+<p>Некоторые роутеры имеют сложную логику работы с DHCP, что может вызвать конфликты при назначении адресов. В таком случае лучше полагаться на статическую настройку внутри самой системы, а не в настройках роутера.</p>
+
+<details class="faq-item"><summary>Как узнать MAC-адрес устройства без монитора?
+<p>Если вы уже подключились к плате ранее, вы можете найти MAC-адрес в файле <code>/etc/network/interfaces</code> или через команду <code>ip link</code>. Если вы только настраиваете систему, MAC-адрес обычно напечатан на наклейке на корпусе Raspberry Pi 4 или на самой плате, рядом с портами USB.--></p>
+
+<blockquote>
+<p>⚠️ Внимание</summary><div class="faq-answer"><p> При настройке Wi-Fi через файл <code>wpa_supplicant.conf</code> убедитесь, что кодировка файла сохранена как UTF-8 без BOM. Иначе система не сможет корректно прочитать пароль, и подключение не установится.</p>
+</blockquote>
+
+
+
+<h2 id="установка-и-настройка-ssh-клиента">Установка и настройка SSH-клиента</h2>
+
+<p>После того как карта памяти вставлена в плату и она подключена к сети, следующим шагом является установка SSH-клиента на ваш компьютер. Эта технология позволяет запускать терминальные команды удаленно, управляя системой так, как будто вы сидите за ней физически. Для <em>Raspberry Pi 4</em> это основной метод администрирования.</p>
+
+<p>В операционной системе Windows необходимо установить программу PuTTY или использовать встроенное приложение «Терминал». Если у вас macOS или Linux, терминал уже предустановлен. Вам нужно знать IP-адрес устройства, чтобы инициировать соединение. Введите команду <code>ssh имя_пользователя@ip_адрес</code> в строке терминала.</p>
+
+<p>При первом подключении система запросит подтверждение подлинности ключа. Введите <code>yes</code>, чтобы продолжить. После этого потребуется ввести пароль, который вы задавали на этапе настройки карты памяти. Пароль при вводе не отображается на экране — это стандартная мера безопасности, просто введите его и нажмите Enter.</p>
+
+<p>Успешное подключение подтверждается появлением приглашения командной строки с именем пользователя и хостом устройства. Теперь вы можете выполнять любые команды, обновлять пакеты, устанавливать программное обеспечение и настраивать сервисы. <strong>SSH-соединение</strong> шифрует данные, что делает его безопасным даже для открытых сетей.</p>
+
+<blockquote>
+<p>⚠️ Внимание: Не используйте простейшие пароли типа <code>raspberry</code> или <code>123456</code> для SSH. Взломщики используют скрипты для автоматического подбора паролей, и ваше устройство могут скомпрометировать в течение минут после выхода в интернет.</p>
+</blockquote>
+
+<div class="attention-box attention-tip"><span class="attention-icon">💡</span><p>Альтернативой стандартному SSH является использование VNC-сервера, который позволяет передавать графический интерфейс рабочего стола, но это требует значительно больше ресурсов и пропускной способности сети.</p></div>
+
+<h2 id="работа-с-графикой-и-удаленный-рабочий-стол">Работа с графикой и удаленный рабочий стол</h2>
+
+<p>Иногда командной строки недостаточно, и требуется визуальный интерфейс. Для этого в <em>Raspberry Pi OS</em> встроен сервер <strong>VNC</strong> (Virtual Network Computing). Он позволяет транслировать рабочий стол на ваш компьютер, превращая удаленное управление в работу с полноценным графическим интерфейсом.</p>
+
+<p>Чтобы включить VNC, выполните команду <code>sudo raspi-config</code>. В открывшемся меню выберите раздел «Interface Options», затем «VNC» и подтвердите включение службы. После этого установите клиент VNC на свой ПК (например, RealVNC Viewer) и введите IP-адрес устройства для подключения.</p>
+
+<p>Графический режим потребляет больше ресурсов процессора, чем консоль, поэтому на слабых проектах он может работать медленно. Если вы создаете сервер, лучше ограничиться консольным режимом. Однако для медиацентров или образовательных проектов VNC незаменим.</p>
+
+<p>Убедитесь, что ваши права доступа настроены корректно. В некоторых версиях ОС VNC отключен по умолчанию и требует активации через утилиту настройки. Также проверьте, не блокирует ли ваш фаервол входящие подключения на порт <code>5900</code>.</p>
+
+<h2 id="устранение-частых-проблем-и-отладка">Устранение частых проблем и отладка</h2>
+
+<p>Даже при тщательной настройке могут возникнуть проблемы с подключением. Если устройство не отвечает на ping, проверьте физическое подключение кабеля или наличие сигнала Wi-Fi. Убедитесь, что раздел <code>boot</code> виден в файловой системе компьютера, так как это индикатор того, что карта памяти исправна.</p>
+
+<p>Частая ошибка — неверно указанный адрес в файле <code>dhcpcd.conf</code>. Если адрес находится в другой подсети, чем ваш роутер, соединение не установится. Используйте команду <code>ip addr</code> (после подключения через консоль) для проверки текущих настроек сети.</p>
+
+<p>Если вы используете Wi-Fi, проверьте региональные настройки. Иногда система не может подключиться к сети из-за того, что выбрана неправильная страна, а канал Wi-Fi запрещен в этом регионе. Для исправления отключите SSH, зайдите в конфиг и измените параметр <code>country</code> в файле <code>wpa_supplicant.conf</code> на <code>RU</code> (для России).</p>
+
+<p>В случае, если устройство все еще недоступно, попробуйте подключить его напрямую к компьютеру через Ethernet-кабель. Современные платы имеют функцию Auto-MDI-X, которая позволяет соединяться без переходников. Назначьте статический IP на сетевой карте компьютера в диапазоне <code>192.168.1.x</code> и попробуйте пинговать устройство.</p>
+
+<table>
+<thead>
+<tr>
+<th>Проблема</th>
+<th>Вероятная причина</th>
+<th>Решение</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Нет доступа по SSH</td>
+<td>Не создан файл <code>ssh</code> или отключен сервис</td>
+<td>Создайте пустой файл <code>ssh</code> в корне boot раздела</td>
+</tr>
+<tr>
+<td>Не подключается к Wi-Fi</td>
+<td>Ошибка в <code>wpa_supplicant.conf</code> или неверный пароль</td>
+<td>Проверьте кодировку файла и точность пароля</td>
+</tr>
+<tr>
+<td>Плата не загружается</td>
+<td>Недостаточное питание или битая SD-карта</td>
+<td>Замените блок питания (минимум 5.1V/3A) и перепишите образ</td>
+</tr>
+<tr>
+<td>Медленная работа</td>
+<td>Использование SD-карты низкого класса</td>
+<td>Используйте карту класса A1 или A2, либо загрузку с SSD</td>
+</tr>
+</tbody>
+</table>
+
+<h2 id="оптимизация-производительности-и-питания">Оптимизация производительности и питания</h2>
+
+<p>Рассмотрим еще один важный аспект — энергопотребление. <em>Raspberry Pi 4</em> требует качественного источника питания. Плохой кабель или слабый блок питания могут приводить к нестабильной работе Wi-Fi и периодическим сбоям при высокой нагрузке. Используйте официальный блок питания или сертифицированные аналоги с поддержкой <strong>USB-C PD</strong>.</p>
+
+<p>Если вы планируете использовать устройство как сервер 24/7, стоит отключить ненужные службы, чтобы снизить нагрузку на процессор и дисковод. Включите режим энергосбережения, если он поддерживается, и отключите <code>Bluetooth</code>, если он не используется, через файл конфигурации <code>config.txt</code>.</p>
+
+<p>Для долговечности карты памяти крайне важно использовать файловые системы с поддержкой <code>journaling</code> и настроить <code>overlay</code> для системы, чтобы минимизировать количество записей на флеш-память. Это особенно актуально для устройств с ограниченным сроком службы накопителя.</p>
+
+<div class="attention-box attention-tip"><span class="attention-icon">💡</span><p>Перед финальной сборкой корпуса убедитесь, что у вас есть доступ к MicroSD-слоту и кнопке сброса. В некоторых корпусах доступ к кнопке питания закрыт, что может затруднить перепрошивку при критических ошибках.</p></div>
+
+<p>Настройка без монитора — это навык, который открывает двери во множество проектов. От умного дома до кластеров вычислений, <em>Raspberry Pi 4</em> становится универсальным инструментом. Главное — внимательно следовать инструкциям на этапе подготовки карты памяти, так как это единственный шанс вмешаться в процесс до загрузки системы.</p>
+
+<details>
+<summary>Как узнать IP-адрес Raspberry Pi, если я не знаю его заранее?</summary>
+<p>Вы можете использовать утилиты сканирования сети, такие как <code>nmap</code> или <code>Advanced IP Scanner</code>, чтобы найти все устройства в вашей подсети. Также многие роутеры имеют веб-интерфейс, где отображается список всех подключенных клиентов и их IP-адреса.</p>
+</details>
+
+<details>
+<summary>Можно ли настроить Raspberry Pi 4 без Wi-Fi и Ethernet?</summary>
+<p>Да, можно настроить точку доступа (Hotspot) на самой плате, к которой можно подключиться с мобильного телефона. Однако для первоначальной настройки это неудобно, так как требует сложной конфигурации через консоль. Проще использовать проводное подключение на первом этапе.</p>
+</details>
+
+<details>
+<summary>Что делать, если я забыл пароль от SSH?</summary>
+<p>Вам придется извлечь карту памяти и подключить её к компьютеру. Откройте раздел <code>boot</code> и добавьте файл <code>ssh</code> (если его нет). Затем создайте или отредактируйте файл <code>cmdline.txt</code>, добавив в конец строки параметр <code>init=/bin/bash</code>. После загрузки вы сможете сбросить пароль, используя команду <code>passwd</code>, и удалить параметр из файла.</p>
+</details>
+
+<details>
+<summary>Нужен ли монитор для обновления системы?</summary>
+<p>Нет, все обновления можно выполнять через SSH по команде <code>sudo apt update</code> и <code>sudo apt full-upgrade</code>. Это стандартная практика для удаленных серверов, где монитор физически отсутствует.</p>
+</details>
+
+<details>
+<summary>Как подключить Raspberry Pi 4 к 5 ГГц Wi-Fi?</summary>
+<p>В файле <code>wpa_supplicant.conf</code> убедитесь, что в параметре <code>country</code> указана правильная страна (например, RU), так как не все регионы поддерживают каналы 5 ГГц. Также проверьте, что ваш роутер вещает в диапазоне 5 ГГц, а не только 2.4 ГГц.</p>
+</details></div>
+                    <!--#include virtual="/ssi/article_after.html" -->
+
+                </article>
+                <aside class="article-sidebar"><!--#include virtual="/ssi/sidebar_top.html" --><nav class="sidebar-search"><div class="sidebar-search-box"><input type="text" id="globalSearchInput" placeholder="🔍 Поиск статей..." autocomplete="off"><div class="search-dropdown" id="globalSearchDropdown"></div></div></nav><!--#include virtual="/ssi/sidebar_before_toc.html" --><nav class="sidebar-toc" id="sidebarToc"><h3>Содержание</h3><ul><li><a href="#подготовка-операционной-системы-и-карты-памяти">Подготовка операционной системы и карты памяти</a></li><li><a href="#настройка-сетевого-подключения-и-статического-ip">Настройка сетевого подключения и статического IP</a></li><li><a href="#установка-и-настройка-ssh-клиента">Установка и настройка SSH-клиента</a></li><li><a href="#работа-с-графикой-и-удаленный-рабочий-стол">Работа с графикой и удаленный рабочий стол</a></li><li><a href="#устранение-частых-проблем-и-отладка">Устранение частых проблем и отладка</a></li><li><a href="#оптимизация-производительности-и-питания">Оптимизация производительности и питания</a></li></ul></nav><!--#include virtual="/ssi/sidebar_before_related.html" --><nav class="sidebar-related"><h3>Похожие статьи</h3><ul><li><a href="/articles/k/ka/kak-otkryt-sistemnyj-monitor-v-windows-10-cherez-klaviaturu.html" class="related-card">Как открыть системный монитор в Windows 10 через клавиатуру</a></li><li><a href="/articles/a/ai/aida64-kak-proverit-monitor-na-bitye-pikseli.html" class="related-card">Проверка монитора на битые пиксели через AIDA64: Полная инструкция</a></li><li><a href="/articles/k/ka/kak-uznat-nazvanie-monitora-windows-7.html" class="related-card">Как узнать модель монитора на Windows 7 — 5 проверенных способов</a></li><li><a href="/articles/k/ku/kuda-zakinut-drajvera-dlya-monitora.html" class="related-card">Куда закинуть драйвер для монитора: полная инструкция по установке</a></li><li><a href="/articles/k/ka/kak-sdelat-skrin-na-ekrane-monitora.html" class="related-card">Как сделать скрин на экране монитора: 5 способов для Windows и Mac</a></li></ul></nav><!--#include virtual="/ssi/sidebar_after_related.html" --></aside>
+            </div>
+        </div>
+    </main>
+
+    <!--#include virtual="/ssi/before_related_bottom.html" -->
+    <section class="related-bottom">
+        <div class="container">
+            <h2 class="related-bottom-heading">📖 Читайте также</h2>
+            <div class="related-bottom-grid"><a href="/articles/k/ka/kak-otkryt-sistemnyj-monitor-v-windows-10-cherez-klaviaturu.html" class="related-bottom-card"><span class="related-bottom-title">Как открыть системный монитор в Windows 10 через клавиатуру</span><span class="related-bottom-desc">Пошаговая инструкция: быстрые горячие клавиши для запуска Диспетчера задач и Монитора ресурсов. Узна</span></a><a href="/articles/a/ai/aida64-kak-proverit-monitor-na-bitye-pikseli.html" class="related-bottom-card"><span class="related-bottom-title">Проверка монитора на битые пиксели через AIDA64: Полная инструкция</span><span class="related-bottom-desc">Как найти дефекты матрицы с помощью AIDA64. Пошаговая настройка тестовых полей, анализ цветов и срав</span></a><a href="/articles/k/ka/kak-uznat-nazvanie-monitora-windows-7.html" class="related-bottom-card"><span class="related-bottom-title">Как узнать модель монитора на Windows 7 — 5 проверенных способов</span><span class="related-bottom-desc">Пошаговая инструкция, как определить название и модель монитора в Windows 7 через параметры системы,</span></a><a href="/articles/k/ku/kuda-zakinut-drajvera-dlya-monitora.html" class="related-bottom-card"><span class="related-bottom-title">Куда закинуть драйвер для монитора: полная инструкция по установке</span><span class="related-bottom-desc">Узнайте, как правильно установить драйвер монитора. Где скачать, куда закинуть файл и как проверить </span></a><a href="/articles/k/ka/kak-sdelat-skrin-na-ekrane-monitora.html" class="related-bottom-card"><span class="related-bottom-title">Как сделать скрин на экране монитора: 5 способов для Windows и Mac</span><span class="related-bottom-desc">Полное руководство по созданию скриншотов экрана монитора. Инструкция для Windows 10/11 и macOS. Исп</span></a><a href="/articles/k/ka/kak-uznat-monitoryat-li-moj-kompyuter.html" class="related-bottom-card"><span class="related-bottom-title">Как понять, что за компьютером следят: 7 признаков взлома</span><span class="related-bottom-desc">Выясните, мониторят ли ваш ПК. Узнайте признаки слежки в реальном времени, способы проверки процессо</span></a></div>
+        </div>
+    </section>
+    <!--#include virtual="/ssi/after_related_bottom.html" -->
+
+    <footer class="site-footer-premium">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-col">
+                    <div class="footer-brand">🖥️ Мониторум</div>
+                    <p class="footer-about">Полный справочник по настройке, ремонту и выбору компьютерных мониторов для любых задач.</p>
+                </div>
+                <div class="footer-col">
+                    <h4>Разделы</h4>
+                    <ul><li><a href="/category/nastrojka-ekrana/">⚙️ Настройка экрана</a></li>
+<li><a href="/category/podklyuchenie-ustrojstv/">🔌 Подключение устройств</a></li>
+<li><a href="/category/mnozhestvennye-ekrany/">🖥️🖥️ Множественные экраны</a></li>
+<li><a href="/category/zvuk-i-audio/">🔊 Звук и аудио</a></li>
+<li><a href="/category/remont-i-polomki/">🔧 Ремонт и поломки</a></li>
+<li><a href="/category/ukhod-i-chistka/">🧼 Уход и чистка</a></li></ul>
+                </div>
+                <div class="footer-col">
+                    <h4>Информация</h4>
+                    <ul>
+                        <li><a href="/">Главная</a></li>
+                        <li><a href="/about.html">О проекте</a></li>
+                        <li><a href="/categories.html">Все разделы</a></li>
+                        <li><a href="/contact.html">Контакты</a></li>
+                        <li><a href="/privacy.html">Конфиденциальность</a></li>
+                        <li><a href="/sitemap.xml">Карта сайта</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>© Мониторум. Все права защищены.</p>
+                <!--LiveInternet counter--><div style="margin-top:10px;"><a href="https://www.liveinternet.ru/click"
+                target="_blank"><img id="licnt06C4" width="88" height="15" style="border:0" 
+                title="LiveInternet: показано число посетителей за сегодня"
+                src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAEALAAAAAABAAEAAAIBTAA7"
+                alt=""/></a><script>(function(d,s){d.getElementById("licnt06C4").src=
+                "https://counter.yadro.ru/hit?t26.5;r"+escape(d.referrer)+
+                ((typeof(s)=="undefined")?"":";s"+s.width+"*"+s.height+"*"+
+                (s.colorDepth?s.colorDepth:s.pixelDepth))+";u"+escape(d.URL)+
+                ";h"+escape(d.title.substring(0,150))+";"+Math.random()})(document,screen)</script></div><!--/LiveInternet-->
+            </div>
+        </div>
+    </footer>
+    <div id="cookie-consent" class="cookie-popup">
+        <div class="cookie-inner">
+            <span>🍪 Мы используем файлы cookie для улучшения работы сайта.</span>
+            <button id="cookie-accept" class="cookie-btn">Принять</button>
+        </div>
+    </div>
+    <script src="/static/js/main.js"></script>
+    <script>
+    (function() {
+        const popup = document.getElementById('cookie-consent');
+        const btn = document.getElementById('cookie-accept');
+        if (popup && btn && !localStorage.getItem('cookie-accepted')) {
+            popup.classList.add('visible');
+            btn.onclick = () => {
+                localStorage.setItem('cookie-accepted', 'true');
+                popup.classList.remove('visible');
+            };
+        }
+    })();
+    </script>
+    <script>
+    function pbPollVote(el) {
+        var poll = el.closest('.poll-widget');
+        if (poll.classList.contains('voted')) return;
+        poll.classList.add('voted');
+        el.classList.add('selected');
+        var opts = poll.querySelectorAll('.poll-widget-option');
+        var n = opts.length;
+        var raw = [];
+        var sum = 0;
+        for (var i = 0; i < n; i++) {
+            var v = Math.random() * 50 + 5;
+            if (opts[i] === el) v += 30;
+            raw.push(v);
+            sum += v;
+        }
+        var pcts = raw.map(function(v) { return Math.round(v / sum * 100); });
+        var diff = 100 - pcts.reduce(function(a,b){ return a+b; }, 0);
+        pcts[Array.from(opts).indexOf(el)] += diff;
+        setTimeout(function() {
+            opts.forEach(function(opt, i) {
+                opt.querySelector('.poll-widget-bar').style.width = pcts[i] + '%';
+                opt.querySelector('.poll-widget-pct').textContent = pcts[i] + '%';
+            });
+        }, 50);
+    }
+    </script>
+    <!--#include virtual="/ssi/body_bottom.html" -->
+    <script src="/static/js/inject.js" defer></script>
+</body>
+</html>

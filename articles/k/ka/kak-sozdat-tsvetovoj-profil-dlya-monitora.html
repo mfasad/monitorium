@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27><text y=%27.9em%27 font-size=%2790%27>🖥️</text></svg>">
+    <title>Как создать цветовой профиль для монитора: полное руководство — Мониторум</title>
+    <meta name="description" content="Пошаговая инструкция по калибровке монитора. Узнайте, как создать ICC-профиль программно и аппаратно для точной цветопередачи.">
+    <link rel="canonical" href="https://monitorium.vercel.app/articles/k/ka/kak-sozdat-tsvetovoj-profil-dlya-monitora.html">
+
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="Как создать цветовой профиль для монитора: полное руководство">
+    <meta property="og:description" content="Пошаговая инструкция по калибровке монитора. Узнайте, как создать ICC-профиль программно и аппаратно для точной цветопередачи.">
+    <meta property="og:locale" content="ru_RU">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css?v=1780420684">
+    <style>
+    .site-footer-premium {
+        margin-top: 60px; padding: 40px 0 0; background: #1e293b; color: #94a3b8;
+    }
+    .footer-grid {
+        display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 40px;
+        padding-bottom: 32px; border-bottom: 1px solid #334155;
+    }
+    .footer-brand { font-size: 1.2rem; font-weight: 700; color: #f1f5f9; margin-bottom: 12px; }
+    .footer-about { font-size: 0.9rem; line-height: 1.6; margin-bottom: 8px; }
+    .footer-updated { font-size: 0.8rem; color: #64748b; }
+    .footer-col h4 { color: #f1f5f9; font-size: 0.95rem; margin-bottom: 16px; }
+    .footer-col ul { list-style: none; }
+    .footer-col li { margin-bottom: 8px; }
+    .footer-col a { color: #94a3b8; font-size: 0.9rem; transition: color 0.2s; }
+    .footer-col a:hover { color: #60a5fa; }
+    .footer-bottom { padding: 20px 0; text-align: center; font-size: 0.85rem; }
+    @media (max-width: 640px) {
+        .footer-grid { grid-template-columns: 1fr; gap: 24px; }
+    }
+    .cookie-popup {
+        position: fixed; bottom: 0; left: 0; right: 0; background: #1e293b; color: #fff;
+        padding: 16px; transition: transform 0.5s ease; z-index: 9999; border-top: 2px solid #2563eb;
+        transform: translateY(100%);
+    }
+    .cookie-popup.visible { transform: translateY(0); }
+    .cookie-inner { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; gap: 16px; font-size: 0.9rem; }
+    .cookie-btn { background: #2563eb; color: #fff; border: none; padding: 8px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+    .cookie-btn:hover { background: #1d4ed8; }
+    @media (max-width: 640px) {
+        .cookie-inner { flex-direction: column; text-align: center; }
+    }
+</style>
+    
+    <!--#include virtual="/ssi/head.html" -->
+</head>
+<body>
+        <!--#include virtual="/ssi/body_top.html" -->
+    <style>
+    .nav-dropdown { position: relative; display: inline-block; }
+    .dropdown-toggle {
+        background: none; border: none; cursor: pointer;
+        font: inherit; color: inherit; padding: 8px 12px;
+        border-radius: 8px; transition: background 0.2s;
+    }
+    .dropdown-toggle:hover { background: rgba(0,0,0,0.05); }
+    .dropdown-menu {
+        display: none; position: absolute; right: 0; top: 100%;
+        min-width: 240px; max-height: 70vh; overflow-y: auto;
+        background: var(--card-bg, #fff); border: 1px solid var(--border, #e5e7eb);
+        border-radius: 12px; box-shadow: 0 12px 40px rgba(0,0,0,0.12);
+        padding: 8px 0; z-index: 1000;
+    }
+    .nav-dropdown::after {
+        content: ''; position: absolute; left: 0; right: 0;
+        top: 100%; height: 12px;
+    }
+    .nav-dropdown:hover .dropdown-menu,
+    .nav-dropdown:focus-within .dropdown-menu { display: block; }
+    .dropdown-item {
+        display: block; padding: 10px 20px; color: var(--text, #1f2937);
+        text-decoration: none; font-size: 0.95rem; transition: background 0.15s;
+        white-space: nowrap;
+    }
+    .dropdown-item:hover { background: rgba(37,99,235,0.06); color: var(--primary, #2563eb); }
+    @media (max-width: 768px) {
+        .main-nav > .nav-link { display: none; }
+        .dropdown-toggle { display: none; }
+        .dropdown-menu {
+            display: block !important; position: static;
+            box-shadow: none; border: none; border-radius: 0;
+            min-width: auto; max-height: none; padding: 0;
+            background: transparent;
+        }
+        .dropdown-item {
+            padding: 8px 0; font-size: 1rem;
+        }
+    }
+    </style>
+    <header class="site-header">
+        <div class="container header-inner">
+            <a href="/" class="logo">
+                <span class="logo-icon">🖥️</span>
+                <span>Мониторум</span>
+            </a>
+            <button class="mobile-menu-btn" aria-label="Меню" id="menuBtn">☰</button>
+            <nav class="main-nav" id="mainNav">
+                <a href="/category/nastrojka-ekrana/" class="nav-link">⚙️ Настройка экрана</a>
+<a href="/category/podklyuchenie-ustrojstv/" class="nav-link">🔌 Подключение устройств</a>
+<a href="/category/mnozhestvennye-ekrany/" class="nav-link">🖥️🖥️ Множественные экраны</a>
+<a href="/category/zvuk-i-audio/" class="nav-link">🔊 Звук и аудио</a>
+<div class="nav-dropdown">
+            <button class="nav-link dropdown-toggle">📂 Все разделы ▾</button>
+            <div class="dropdown-menu"><a href="/category/nastrojka-ekrana/" class="dropdown-item">⚙️ Настройка экрана</a>
+<a href="/category/podklyuchenie-ustrojstv/" class="dropdown-item">🔌 Подключение устройств</a>
+<a href="/category/mnozhestvennye-ekrany/" class="dropdown-item">🖥️🖥️ Множественные экраны</a>
+<a href="/category/zvuk-i-audio/" class="dropdown-item">🔊 Звук и аудио</a>
+<a href="/category/remont-i-polomki/" class="dropdown-item">🔧 Ремонт и поломки</a>
+<a href="/category/ukhod-i-chistka/" class="dropdown-item">🧼 Уход и чистка</a>
+<a href="/category/vybor-i-kharakteristiki/" class="dropdown-item">📊 Выбор и характеристики</a>
+<a href="/category/drajvery-i-po/" class="dropdown-item">💿 Драйверы и ПО</a>
+<a href="/category/krepleniya-i-ustanovka/" class="dropdown-item">🔩 Крепления и установка</a>
+<a href="/category/utilizatsiya-i-prodazha/" class="dropdown-item">♻️ Утилизация и продажа</a>
+<a href="/category/spetsialnye-rezhimy/" class="dropdown-item">🎮 Специальные режимы</a>
+<a href="/category/drugoe/" class="dropdown-item">📁 Другое</a></div>
+        </div>
+            </nav>
+        </div>
+    </header>
+
+    <nav class="breadcrumbs" aria-label="Навигация">
+        <div class="container"><a href="/">Главная</a><span class="breadcrumb-sep">›</span><a href="/category/nastrojka-ekrana/">Настройка экрана</a><span class="breadcrumb-sep">›</span><span class="breadcrumb-current">Как создать цветовой профиль для монитора: полное руководство</span></div>
+    </nav>
+
+    <main class="site-main">
+        <div class="container">
+            <div class="article-layout">
+                <article class="article-main">
+                    
+                    <h1>Как создать цветовой профиль для монитора: пошаговая инструкция</h1>
+                    <nav class="mobile-toc"><details><summary>📋 Содержание</summary><ul><li><a href="#почему-стандартные-настройки-монитора-недостаточно-точны">Почему стандартные настройки монитора недостаточно точны</a></li><li><a href="#выбор-метода-калибровки-программный-или-аппаратный">Выбор метода калибровки: программный или аппаратный</a></li><li><a href="#подготовка-оборудования-и-рабочей-среды">Подготовка оборудования и рабочей среды</a></li><li><a href="#пошаговая-инструкция-создание-профиля-средствами-windows">Пошаговая инструкция: создание профиля средствами Windows</a></li><li><a href="#продвинутая-настройка-через-lut-и-видеокарты">Продвинутая настройка через LUT и видеокарты</a></li><li><a href="#сравнение-аппаратных-и-программных-решений">Сравнение аппаратных и программных решений</a></li><li><a href="#faq-частые-вопросы-пользователей">FAQ: Частые вопросы пользователей</a></li></ul></details></nav>
+                    <!--#include virtual="/ssi/article_before.html" -->
+                    <div class="article-body"><p>Точная цветопередача — это фундамент качественной работы в графике, видеомонтаже и даже в повседневном использовании ПК. Без корректного <strong>цветового профиля</strong> изображение на экране будет искаженным: оттенки кожи будут казаться нездоровыми, а темные сцены в фильмах превратятся в черные пятна. Многие пользователи годами работают с неверными настройками, даже не подозревая о проблеме.</p>
+<p>Создание профиля — это процесс настройки <em>цветового пространства</em> устройства под стандартные условия. Это позволяет операционной системе правильно интерпретировать данные изображения и передавать их матрице монитора именно так, как задумал дизайнер или фотограф. Игнорирование этой процедуры приводит к тому, что напечатанная фотография или итоговый ролик будут выглядеть совершенно иначе, чем на вашем мониторе.</p>
+
+<h2 id="почему-стандартные-настройки-монитора-недостаточно-точны">Почему стандартные настройки монитора недостаточно точны</h2>
+<p>Заводские настройки экранов часто оптимизируются под визуальную привлекательность, а не под точность. Производители могут завышать насыщенность <strong>красного</strong> и <strong>синего</strong> каналов, чтобы картинки в меню выглядели сочнее. Это создает эффект «вырвиглаз», который быстро утомляет глаза и вводит в заблуждение при работе с цветом.</p>
+<p>Кроме того, каждая матрица имеет индивидуальные отклонения. Даже два одинаковых монитора одной модели будут показывать цвета по-разному из-за разброса характеристик люминофора или жидких кристаллов. <strong>Цветовая температура</strong> может сдвигаться в сторону желтизны или синевы, что критично для профессионалов. Без индивидуальной калибровки вы работаете вслепую.</p>
+<p>Атмосфера в комнате также влияет на восприятие цвета. Если вы работаете в темноте, экран кажется ярче и холоднее, чем есть на самом деле. <em>LUT</em> (Look-Up Table) вашего монитора не учитывает внешнее освещение без правильной настройки. Именно поэтому создание профиля должно учитывать не только железо, но и условия эксплуатации.</p>
+<blockquote>⚠️ Внимание: Устаревшие модели мониторов могут иметь ограниченную гамму цветов. Если ваш экран поддерживает только <code>sRGB</code>, не пытайтесь работать в широком <code>Adobe RGB</code> без соответствующего оборудования, так как цвета будут обрезаны и выглядеть некорректно.</blockquote>
+
+<h2 id="выбор-метода-калибровки-программный-или-аппаратный">Выбор метода калибровки: программный или аппаратный</h2>
+<p>Существует два основных пути создания профиля: программная настройка «на глаз» и аппаратная калибровка с помощью колориметра. Программный метод доступен каждому, так как не требует покупки дополнительного оборудования. Он основан на визуальном согласовании цветов с эталонными изображениями, которые отображаются на экране.</p>
+<p>Аппаратный метод подразумевает использование специализированных устройств, таких как <em>X-Rite i1Display</em> или <em>Datacolor Spyder</em>. Эти приборы измеряют реальное свечение пикселей и создают математически точный профиль. Это <mark>единственный способ</mark> гарантировать профессиональную точность, необходимую для печати и цветокоррекции видео.</p>
+<p>Для домашнего использования и любительской обработки фото часто хватает встроенных программных средств. Однако, если вы стремитесь к идеалу, покупка колориметра — это инвестиция, которая окупится качеством результата. Программные утилиты не могут измерить физические параметры матрицы, они лишь подгоняют графики под ваши ощущения.</p>
+<blockquote>⚠️ Внимание: Программная калибровка без оборудования сильно зависит от качества вашего зрения и освещенности в комнате. Не доверяйте результату на 100%, если вы работаете в полумраке или при ярком солнечном свете.</blockquote>
+
+<div class="poll-widget" id="poll-963c5b32"><div class="poll-widget-question">📊 Как вы обычно настраиваете цвета на мониторе?</div><div class="poll-widget-option" data-poll="963c5b32" data-idx="0" onclick="pbPollVote(this)"><span class="poll-widget-label">Кнопками на мониторе</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="963c5b32" data-idx="1" onclick="pbPollVote(this)"><span class="poll-widget-label">Встроенными средствами Windows</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="963c5b32" data-idx="2" onclick="pbPollVote(this)"><span class="poll-widget-label">Купил колориметр</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="963c5b32" data-idx="3" onclick="pbPollVote(this)"><span class="poll-widget-label">Никогда не настраивал</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div></div>
+
+<h2 id="подготовка-оборудования-и-рабочей-среды">Подготовка оборудования и рабочей среды</h2>
+<p>Перед началом любых манипуляций необходимо привести монитор в рабочее состояние. Матрице требуется время на разогрев для стабилизации цветового баланса. Оставьте включенным устройство минимум на 30-40 минут перед началом процесса. Это обеспечит стабильную температуру компонентов.</p>
+<p>Установите <strong>яркость</strong> на уровень, соответствующий освещению в помещении. Для офисной работы стандартом считается 120-140 кд/м². Слишком высокая яркость в темной комнате вызывает быструю утомляемость глаз, а низкая в светлом помещении делает картинку блеклой. Сбалансируйте свет так, чтобы он не падал прямо на экран.</p>
+<p>Убедитесь, что на мониторе нет пыли и отпечатков пальцев. Любые загрязнения могут искажать восприятие цвета во время визуальной настройки. Также отключите все программные фильтры синего света, такие как <code>Night Light</code> или <code>Eye Saver Mode</code>. Они искусственно меняют цветовую температуру и помешают созданию корректного профиля.</p>
+
+<div class="checklist-block"><h4>☑️ Подготовка к калибровке</h4><label class="check-item"><input type="checkbox"><span>Разогреть монитор 30 минут</span></label><label class="check-item"><input type="checkbox"><span>Настроить яркость под освещение</span></label><label class="check-item"><input type="checkbox"><span>Убрать пыль с экрана</span></label><label class="check-item"><input type="checkbox"><span>Отключить фильтры синего света</span></label><label class="check-item"><input type="checkbox"><span>Отцентрировать стул перед экраном</span></label><div class="check-progress">Выполнено: <span class="check-count">0</span> / 5</div></div>
+
+<h2 id="пошаговая-инструкция-создание-профиля-средствами-windows">Пошаговая инструкция: создание профиля средствами Windows</h2>
+<p>В операционной системе Windows 10 и 11 есть встроенный инструмент для создания цветового профиля. Он называется «Калибровка цветов монитора». Чтобы запустить его, нажмите <code>Win + R</code>, введите команду <code>dccw</code> и нажмите Enter. Откроется мастер настройки, который проведет вас через все этапы.</p>
+<p>Сначала система предложит проверить гамму. Вам нужно будет сравнивать круги на экране с эталонными изображениями. Задача — подкрутить ползунки так, чтобы точки в центре кругов стали едва различимы. Это настраивает <strong>кривые тональной коррекции</strong> и влияет на контрастность теней и светов.</p>
+<p>Далее следует настройка яркости и контраста. Используйте кнопки меню самого монитора, а не ползунки в системе. Ориентируйтесь на эталоны, где вы должны видеть детали на черном фоне, но не сливать их с серым. Играйте с параметрами <code>Brightness</code> и <code>Contrast</code> до достижения баланса.</p>
+<p>Финальный этап — настройка цветовой температуры. Вам предложат выбрать между «Холодной», «Средней» и «Теплой» температурой. Стандартным для работы считается <code>6500K</code> (D65). Выберите тот вариант, где белый цвет кажется действительно нейтральным, без желтых или голубых оттенков.</p>
+
+<div class="attention-box attention-tip"><span class="attention-icon">💡</span><p>Перед началом настройки сохраните скриншот текущего состояния экрана. Это поможет вам позже оценить разницу и понять, насколько улучшилась картинка после калибровки.</p></div>
+
+<pre><code>cmd /c "control color"</code></pre>
+
+<h2 id="продвинутая-настройка-через-lut-и-видеокарты">Продвинутая настройка через LUT и видеокарты</h2>
+<p>Для более тонкой настройки можно использовать утилиты от производителей видеокарт. Панель управления <em>NVIDIA</em> или <em>AMD Radeon Software</em> позволяют управлять цифровым видеовходом. Здесь можно корректировать <strong>оттенки</strong> и <strong>насыщенность</strong> независимо для каждого канала RGB. Это дает больше контроля, чем стандартный мастер Windows.</p>
+<p>В панели NVIDIA найдите раздел «Регулировка параметров цвета рабочего стола». Переключитесь на использование настроек NVIDIA и поэкспериментируйте с ползунком <code>Цифровой вибрирующий цвет</code>. Чрезмерное увеличение этого параметра может насытить картинку, но приведет к потере деталей в ярких участках (клиппинг).</p>
+<p>Также стоит проверить частоту обновления экрана. Низкая частота, например <code>60 Гц</code>, может создавать мерцание, которое незаметно глазу, но утомляет зрение при длительной работе. Убедитесь, что в настройках монитора установлена максимальная поддерживаемая частота, а в системе выбран режим <code>144 Гц</code> или выше, если позволяет матрица.</p>
+
+<details class="faq-item"><summary>Как сбросить настройки видеокарты?</summary><div class="faq-answer"><p>Если вы недовольны результатом, в панели управления NVIDIA можно нажать кнопку «По умолчанию» справа внизу. Это мгновенно вернет все параметры цвета к заводским настройкам драйвера.</p></div></details>
+
+<h2 id="сравнение-аппаратных-и-программных-решений">Сравнение аппаратных и программных решений</h2>
+<p>Давайте посмотрим на ключевые различия между методами в таблице. Это поможет вам принять окончательное решение о необходимости покупки оборудования.</p>
+<table>
+<thead>
+<tr>
+<th>Параметр</th>
+<th>Программная калибровка</th>
+<th>Аппаратная калибровка</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Точность</td>
+<td>Средняя (зависит от глаза)</td>
+<td>Высокая (измерение прибором)</td>
+</tr>
+<tr>
+<td>Стоимость</td>
+<td>Бесплатно</td>
+<td>От 5 000 до 30 000 руб.</td>
+</tr>
+<tr>
+<td>Учет внешних условий</td>
+<td>Нет</td>
+<td>Частично (через датчик)</td>
+</tr>
+<tr>
+<td>Сложность</td>
+<td>Низкая</td>
+<td>Средняя (требует обучения)</td>
+</tr>
+</tbody>
+</table>
+
+<p>Аппаратные устройства создают сложные <em>ICC-профили</em>, которые учитывают нелинейность матрицы. Они могут компенсировать дефекты подсветки, которые программа просто не увидит. Если вы печатаете фото на профессиональном принтере, только аппаратный метод даст предсказуемый результат.</p>
+<p>Однако для обычного пользователя, который смотрит фильмы и играет в игры, программа Windows часто дает достаточно заметный прирост качества. Главное — выполнить процедуру в правильной комнате и не торопиться. Визуальная оценка требует спокойствия и сосредоточенности.</p>
+<blockquote>⚠️ Внимание: Служба «Центр цветопередачи Windows» может сбрасывать настройки при обновлении системы. Рекомендуется проверить профиль после крупных обновлений ОС.</blockquote>
+
+<div class="attention-box attention-tip"><span class="attention-icon">💡</span><p>Аппаратная калибровка — это стандарт индустрии для профессионалов, но для большинства задач достаточно качественного визуального выравнивания через встроенные инструменты.</p></div>
+
+<h2 id="faq-частые-вопросы-пользователей">FAQ: Частые вопросы пользователей</h2>
+<details>
+<summary>Как часто нужно создавать новый цветовой профиль?</summary>
+<p>Матрицы мониторов деградируют со временем. Рекомендуется проводить калибровку раз в 3-6 месяцев. Если вы используете монитор для профессиональной печати, обновляйте профиль ежемесячно, так как люминофор и подсветка меняют характеристики быстрее.</p>
+</details>
+<details>
+<summary>Что такое Delta E и зачем она нужна?</summary>
+<p>Delta E (ΔE) — это метрика, показывающая степень различия между эталонным цветом и тем, что вы видите на экране. Значение ниже 1.0 незаметно для глаза, ниже 2.0 приемлемо для работы. Чем ниже этот показатель, тем точнее профиль.</p>
+</details>
+<details>
+<summary>Можно ли создать профиль, если у меня нет колориметра?</summary>
+<p>Да, можно использовать программные методы, такие как встроенная утилита Windows или сторонние программы вроде <em>Calibrately</em>. Результат будет менее точным, но лучше, чем отсутствие настройки вообще.</p>
+</details>
+<details>
+<summary>Влияет ли драйвер видеокарты на цветовую передачу?</summary>
+<p>Да, драйверы имеют свои настройки цвета, которые могут перекрывать настройки монитора. Всегда проверяйте, не включены ли режимы «Кино», «Игра» или «Рыбалка» в панели управления видеокарты, так как они искажают реальную картинку.</p>
+</details></div>
+                    <!--#include virtual="/ssi/article_after.html" -->
+
+                </article>
+                <aside class="article-sidebar"><!--#include virtual="/ssi/sidebar_top.html" --><nav class="sidebar-search"><div class="sidebar-search-box"><input type="text" id="globalSearchInput" placeholder="🔍 Поиск статей..." autocomplete="off"><div class="search-dropdown" id="globalSearchDropdown"></div></div></nav><!--#include virtual="/ssi/sidebar_before_toc.html" --><nav class="sidebar-toc" id="sidebarToc"><h3>Содержание</h3><ul><li><a href="#почему-стандартные-настройки-монитора-недостаточно-точны">Почему стандартные настройки монитора недостаточно точны</a></li><li><a href="#выбор-метода-калибровки-программный-или-аппаратный">Выбор метода калибровки: программный или аппаратный</a></li><li><a href="#подготовка-оборудования-и-рабочей-среды">Подготовка оборудования и рабочей среды</a></li><li><a href="#пошаговая-инструкция-создание-профиля-средствами-windows">Пошаговая инструкция: создание профиля средствами Windows</a></li><li><a href="#продвинутая-настройка-через-lut-и-видеокарты">Продвинутая настройка через LUT и видеокарты</a></li><li><a href="#сравнение-аппаратных-и-программных-решений">Сравнение аппаратных и программных решений</a></li><li><a href="#faq-частые-вопросы-пользователей">FAQ: Частые вопросы пользователей</a></li></ul></nav><!--#include virtual="/ssi/sidebar_before_related.html" --><nav class="sidebar-related"><h3>Похожие статьи</h3><ul><li><a href="/articles/k/ka/kak-izmenit-parametry-monitora-noutbuka.html" class="related-card">Как изменить параметры монитора ноутбука: разрешение, герцовка и цвет</a></li><li><a href="/articles/k/ka/kak-vosstanovit-razmer-ekrana-na-monitore.html" class="related-card">Как восстановить размер экрана монитора: полное руководство</a></li><li><a href="/articles/k/ka/kak-perevernut-monitor-na-noutbuke.html" class="related-card">Как перевернуть монитор ноутбука: 4 способа вращения экрана</a></li><li><a href="/articles/k/ka/kak-pravilno-postavit-monitor-dlya-igry-v-ks-go.html" class="related-card">Идеальная настройка монитора для CS 2: эргономика, взгляды и FPS</a></li><li><a href="/articles/k/ka/kak-povernut-izobrazhenie-na-monitore-na-90-gradusov-sochetanie-klavish.html" class="related-card">Как повернуть экран на 90 градусов: горячие клавиши и настройки</a></li></ul></nav><!--#include virtual="/ssi/sidebar_after_related.html" --></aside>
+            </div>
+        </div>
+    </main>
+
+    <!--#include virtual="/ssi/before_related_bottom.html" -->
+    <section class="related-bottom">
+        <div class="container">
+            <h2 class="related-bottom-heading">📖 Читайте также</h2>
+            <div class="related-bottom-grid"><a href="/articles/k/ka/kak-izmenit-parametry-monitora-noutbuka.html" class="related-bottom-card"><span class="related-bottom-title">Как изменить параметры монитора ноутбука: разрешение, герцовка и цвет</span><span class="related-bottom-desc">Полная инструкция по настройке экрана ноутбука: смена разрешения, частоты обновления, масштабировани</span></a><a href="/articles/k/ka/kak-vosstanovit-razmer-ekrana-na-monitore.html" class="related-bottom-card"><span class="related-bottom-title">Как восстановить размер экрана монитора: полное руководство</span><span class="related-bottom-desc">Пошаговая инструкция по возврату корректного отображения экрана. Исправление масштабирования, настро</span></a><a href="/articles/k/ka/kak-perevernut-monitor-na-noutbuke.html" class="related-bottom-card"><span class="related-bottom-title">Как перевернуть монитор ноутбука: 4 способа вращения экрана</span><span class="related-bottom-desc">Инструкция по повороту экрана на ноутбуке: горячие клавиши, настройки Windows, драйверы Intel и AMD.</span></a><a href="/articles/k/ka/kak-pravilno-postavit-monitor-dlya-igry-v-ks-go.html" class="related-bottom-card"><span class="related-bottom-title">Идеальная настройка монитора для CS 2: эргономика, взгляды и FPS</span><span class="related-bottom-desc">Полное руководство по расположению монитора для Counter-Strike 2. Углы обзора, высота, дистанция и н</span></a><a href="/articles/k/ka/kak-povernut-izobrazhenie-na-monitore-na-90-gradusov-sochetanie-klavish.html" class="related-bottom-card"><span class="related-bottom-title">Как повернуть экран на 90 градусов: горячие клавиши и настройки</span><span class="related-bottom-desc">Полная инструкция: сочетание клавиш для поворота монитора, настройки в драйверах NVIDIA, AMD и Intel</span></a><a href="/articles/k/ka/kak-sdelat-bolshe-gerts-na-monitore-60-gts.html" class="related-bottom-card"><span class="related-bottom-title">Как разогнать монитор 60 Гц: методы, риски и настройки</span><span class="related-bottom-desc">Узнайте, как увеличить герцовку монитора 60 Гц. Проверьте возможность разгона через настройки видеок</span></a></div>
+        </div>
+    </section>
+    <!--#include virtual="/ssi/after_related_bottom.html" -->
+
+    <footer class="site-footer-premium">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-col">
+                    <div class="footer-brand">🖥️ Мониторум</div>
+                    <p class="footer-about">Полный справочник по настройке, ремонту и выбору компьютерных мониторов для любых задач.</p>
+                </div>
+                <div class="footer-col">
+                    <h4>Разделы</h4>
+                    <ul><li><a href="/category/nastrojka-ekrana/">⚙️ Настройка экрана</a></li>
+<li><a href="/category/podklyuchenie-ustrojstv/">🔌 Подключение устройств</a></li>
+<li><a href="/category/mnozhestvennye-ekrany/">🖥️🖥️ Множественные экраны</a></li>
+<li><a href="/category/zvuk-i-audio/">🔊 Звук и аудио</a></li>
+<li><a href="/category/remont-i-polomki/">🔧 Ремонт и поломки</a></li>
+<li><a href="/category/ukhod-i-chistka/">🧼 Уход и чистка</a></li></ul>
+                </div>
+                <div class="footer-col">
+                    <h4>Информация</h4>
+                    <ul>
+                        <li><a href="/">Главная</a></li>
+                        <li><a href="/about.html">О проекте</a></li>
+                        <li><a href="/categories.html">Все разделы</a></li>
+                        <li><a href="/contact.html">Контакты</a></li>
+                        <li><a href="/privacy.html">Конфиденциальность</a></li>
+                        <li><a href="/sitemap.xml">Карта сайта</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>© Мониторум. Все права защищены.</p>
+                <!--LiveInternet counter--><div style="margin-top:10px;"><a href="https://www.liveinternet.ru/click"
+                target="_blank"><img id="licnt06C4" width="88" height="15" style="border:0" 
+                title="LiveInternet: показано число посетителей за сегодня"
+                src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAEALAAAAAABAAEAAAIBTAA7"
+                alt=""/></a><script>(function(d,s){d.getElementById("licnt06C4").src=
+                "https://counter.yadro.ru/hit?t26.5;r"+escape(d.referrer)+
+                ((typeof(s)=="undefined")?"":";s"+s.width+"*"+s.height+"*"+
+                (s.colorDepth?s.colorDepth:s.pixelDepth))+";u"+escape(d.URL)+
+                ";h"+escape(d.title.substring(0,150))+";"+Math.random()})(document,screen)</script></div><!--/LiveInternet-->
+            </div>
+        </div>
+    </footer>
+    <div id="cookie-consent" class="cookie-popup">
+        <div class="cookie-inner">
+            <span>🍪 Мы используем файлы cookie для улучшения работы сайта.</span>
+            <button id="cookie-accept" class="cookie-btn">Принять</button>
+        </div>
+    </div>
+    <script src="/static/js/main.js"></script>
+    <script>
+    (function() {
+        const popup = document.getElementById('cookie-consent');
+        const btn = document.getElementById('cookie-accept');
+        if (popup && btn && !localStorage.getItem('cookie-accepted')) {
+            popup.classList.add('visible');
+            btn.onclick = () => {
+                localStorage.setItem('cookie-accepted', 'true');
+                popup.classList.remove('visible');
+            };
+        }
+    })();
+    </script>
+    <script>
+    function pbPollVote(el) {
+        var poll = el.closest('.poll-widget');
+        if (poll.classList.contains('voted')) return;
+        poll.classList.add('voted');
+        el.classList.add('selected');
+        var opts = poll.querySelectorAll('.poll-widget-option');
+        var n = opts.length;
+        var raw = [];
+        var sum = 0;
+        for (var i = 0; i < n; i++) {
+            var v = Math.random() * 50 + 5;
+            if (opts[i] === el) v += 30;
+            raw.push(v);
+            sum += v;
+        }
+        var pcts = raw.map(function(v) { return Math.round(v / sum * 100); });
+        var diff = 100 - pcts.reduce(function(a,b){ return a+b; }, 0);
+        pcts[Array.from(opts).indexOf(el)] += diff;
+        setTimeout(function() {
+            opts.forEach(function(opt, i) {
+                opt.querySelector('.poll-widget-bar').style.width = pcts[i] + '%';
+                opt.querySelector('.poll-widget-pct').textContent = pcts[i] + '%';
+            });
+        }, 50);
+    }
+    </script>
+    <!--#include virtual="/ssi/body_bottom.html" -->
+    <script src="/static/js/inject.js" defer></script>
+</body>
+</html>

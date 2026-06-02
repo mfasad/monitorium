@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27><text y=%27.9em%27 font-size=%2790%27>🖥️</text></svg>">
+    <title>Как запустить игру в разрешении выше монитора: гайд по рендерингу — Мониторум</title>
+    <meta name="description" content="Пошаговая инструкция по повышению разрешения в играх выше нативного экрана. Разбор технологий масштабирования, рисков и настроек драйверов NVIDIA и AMD.">
+    <link rel="canonical" href="https://monitorium.vercel.app/articles/k/ka/kak-postavit-razreshenie-v-igre-vyshe-chem-u-monitora.html">
+
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="Как запустить игру в разрешении выше монитора: гайд по рендерингу">
+    <meta property="og:description" content="Пошаговая инструкция по повышению разрешения в играх выше нативного экрана. Разбор технологий масштабирования, рисков и настроек драйверов NVIDIA и AMD.">
+    <meta property="og:locale" content="ru_RU">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css?v=1780420684">
+    <style>
+    .site-footer-premium {
+        margin-top: 60px; padding: 40px 0 0; background: #1e293b; color: #94a3b8;
+    }
+    .footer-grid {
+        display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 40px;
+        padding-bottom: 32px; border-bottom: 1px solid #334155;
+    }
+    .footer-brand { font-size: 1.2rem; font-weight: 700; color: #f1f5f9; margin-bottom: 12px; }
+    .footer-about { font-size: 0.9rem; line-height: 1.6; margin-bottom: 8px; }
+    .footer-updated { font-size: 0.8rem; color: #64748b; }
+    .footer-col h4 { color: #f1f5f9; font-size: 0.95rem; margin-bottom: 16px; }
+    .footer-col ul { list-style: none; }
+    .footer-col li { margin-bottom: 8px; }
+    .footer-col a { color: #94a3b8; font-size: 0.9rem; transition: color 0.2s; }
+    .footer-col a:hover { color: #60a5fa; }
+    .footer-bottom { padding: 20px 0; text-align: center; font-size: 0.85rem; }
+    @media (max-width: 640px) {
+        .footer-grid { grid-template-columns: 1fr; gap: 24px; }
+    }
+    .cookie-popup {
+        position: fixed; bottom: 0; left: 0; right: 0; background: #1e293b; color: #fff;
+        padding: 16px; transition: transform 0.5s ease; z-index: 9999; border-top: 2px solid #2563eb;
+        transform: translateY(100%);
+    }
+    .cookie-popup.visible { transform: translateY(0); }
+    .cookie-inner { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; gap: 16px; font-size: 0.9rem; }
+    .cookie-btn { background: #2563eb; color: #fff; border: none; padding: 8px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+    .cookie-btn:hover { background: #1d4ed8; }
+    @media (max-width: 640px) {
+        .cookie-inner { flex-direction: column; text-align: center; }
+    }
+</style>
+    
+    <!--#include virtual="/ssi/head.html" -->
+</head>
+<body>
+        <!--#include virtual="/ssi/body_top.html" -->
+    <style>
+    .nav-dropdown { position: relative; display: inline-block; }
+    .dropdown-toggle {
+        background: none; border: none; cursor: pointer;
+        font: inherit; color: inherit; padding: 8px 12px;
+        border-radius: 8px; transition: background 0.2s;
+    }
+    .dropdown-toggle:hover { background: rgba(0,0,0,0.05); }
+    .dropdown-menu {
+        display: none; position: absolute; right: 0; top: 100%;
+        min-width: 240px; max-height: 70vh; overflow-y: auto;
+        background: var(--card-bg, #fff); border: 1px solid var(--border, #e5e7eb);
+        border-radius: 12px; box-shadow: 0 12px 40px rgba(0,0,0,0.12);
+        padding: 8px 0; z-index: 1000;
+    }
+    .nav-dropdown::after {
+        content: ''; position: absolute; left: 0; right: 0;
+        top: 100%; height: 12px;
+    }
+    .nav-dropdown:hover .dropdown-menu,
+    .nav-dropdown:focus-within .dropdown-menu { display: block; }
+    .dropdown-item {
+        display: block; padding: 10px 20px; color: var(--text, #1f2937);
+        text-decoration: none; font-size: 0.95rem; transition: background 0.15s;
+        white-space: nowrap;
+    }
+    .dropdown-item:hover { background: rgba(37,99,235,0.06); color: var(--primary, #2563eb); }
+    @media (max-width: 768px) {
+        .main-nav > .nav-link { display: none; }
+        .dropdown-toggle { display: none; }
+        .dropdown-menu {
+            display: block !important; position: static;
+            box-shadow: none; border: none; border-radius: 0;
+            min-width: auto; max-height: none; padding: 0;
+            background: transparent;
+        }
+        .dropdown-item {
+            padding: 8px 0; font-size: 1rem;
+        }
+    }
+    </style>
+    <header class="site-header">
+        <div class="container header-inner">
+            <a href="/" class="logo">
+                <span class="logo-icon">🖥️</span>
+                <span>Мониторум</span>
+            </a>
+            <button class="mobile-menu-btn" aria-label="Меню" id="menuBtn">☰</button>
+            <nav class="main-nav" id="mainNav">
+                <a href="/category/nastrojka-ekrana/" class="nav-link">⚙️ Настройка экрана</a>
+<a href="/category/podklyuchenie-ustrojstv/" class="nav-link">🔌 Подключение устройств</a>
+<a href="/category/mnozhestvennye-ekrany/" class="nav-link">🖥️🖥️ Множественные экраны</a>
+<a href="/category/zvuk-i-audio/" class="nav-link">🔊 Звук и аудио</a>
+<div class="nav-dropdown">
+            <button class="nav-link dropdown-toggle">📂 Все разделы ▾</button>
+            <div class="dropdown-menu"><a href="/category/nastrojka-ekrana/" class="dropdown-item">⚙️ Настройка экрана</a>
+<a href="/category/podklyuchenie-ustrojstv/" class="dropdown-item">🔌 Подключение устройств</a>
+<a href="/category/mnozhestvennye-ekrany/" class="dropdown-item">🖥️🖥️ Множественные экраны</a>
+<a href="/category/zvuk-i-audio/" class="dropdown-item">🔊 Звук и аудио</a>
+<a href="/category/remont-i-polomki/" class="dropdown-item">🔧 Ремонт и поломки</a>
+<a href="/category/ukhod-i-chistka/" class="dropdown-item">🧼 Уход и чистка</a>
+<a href="/category/vybor-i-kharakteristiki/" class="dropdown-item">📊 Выбор и характеристики</a>
+<a href="/category/drajvery-i-po/" class="dropdown-item">💿 Драйверы и ПО</a>
+<a href="/category/krepleniya-i-ustanovka/" class="dropdown-item">🔩 Крепления и установка</a>
+<a href="/category/utilizatsiya-i-prodazha/" class="dropdown-item">♻️ Утилизация и продажа</a>
+<a href="/category/spetsialnye-rezhimy/" class="dropdown-item">🎮 Специальные режимы</a>
+<a href="/category/drugoe/" class="dropdown-item">📁 Другое</a></div>
+        </div>
+            </nav>
+        </div>
+    </header>
+
+    <nav class="breadcrumbs" aria-label="Навигация">
+        <div class="container"><a href="/">Главная</a><span class="breadcrumb-sep">›</span><a href="/category/nastrojka-ekrana/">Настройка экрана</a><span class="breadcrumb-sep">›</span><span class="breadcrumb-current">Как запустить игру в разрешении выше монитора: гайд по рендерингу</span></div>
+    </nav>
+
+    <main class="site-main">
+        <div class="container">
+            <div class="article-layout">
+                <article class="article-main">
+                    
+                    <h1>Полный гайд: запуск игр в разрешении выше нативного монитора</h1>
+                    <nav class="mobile-toc"><details><summary>📋 Содержание</summary><ul><li><a href="#принцип-работы-интерполированного-рендеринга">Принцип работы интерполированного рендеринга</a></li><li><a href="#настройка-через-панель-управления-nvidia">Настройка через панель управления NVIDIA</a></li><li><a href="#конфигурация-в-драйверах-amd-radeon">Конфигурация в драйверах AMD Radeon</a></li><li><a href="#создание-пользовательских-профилей-разрешения">Создание пользовательских профилей разрешения</a></li><li><a href="#влияние-на-производительность-и-fps">Влияние на производительность и FPS</a></li><li><a href="#таблица-соотношения-разрешений-и-нагрузки">Таблица соотношения разрешений и нагрузки</a></li><li><a href="#специфика-масштабирования-в-современных-играх">Специфика масштабирования в современных играх</a></li><li><a href="#решение-частых-проблем-и-ошибок">Решение частых проблем и ошибок</a></li></ul></details></nav>
+                    <!--#include virtual="/ssi/article_before.html" -->
+                    <div class="article-body"><p>Многие геймеры сталкиваются с ситуацией, когда игра выдает низкую четкость или «мыло» при стандартных настройках, даже на мощной видеокарте. Решением может стать запуск приложения в разрешении, превышающем физические возможности вашего <em>монитора</em>. Этот процесс называется <strong>интерполированным рендерингом</strong> или <strong>интеллектуальным масштабированием</strong>, и он позволяет значительно улучшить детализацию изображения.</p>
+
+<p>Суть метода заключается в том, что видеокарта отрисовывает кадр в более высоком разрешении, чем есть у дисплея, а затем сжимает его до размеров экрана. Такая техника часто дает эффект, сопоставимый с <strong>сглаживанием</strong> (anti-aliasing), делая контуры объектов более плавными, а текстуры — кристально четкими. Однако перед тем как начать, необходимо понимать технические ограничения и настройки драйверов.</p>
+
+<p>Важно отметить, что не все игры и видеокарты поддерживают эту функцию автоматически. Иногда требуется вмешательство в настройки графического драйвера или использование сторонних утилит. В этой статье мы разберем, как безопасно и эффективно поднять разрешение рендеринга, какие режимы масштабирования использовать и к каким последствиям это может привести для производительности системы.</p>
+
+<h2 id="принцип-работы-интерполированного-рендеринга">Принцип работы интерполированного рендеринга</h2>
+
+<p>Когда вы выбираете в игре разрешение <code>3840×2160</code> на мониторе с матрицей <code>1920×1080</code>, видеокарта рассчитывает каждый пиксель с избыточной точностью. Полученный «сверхдетализированный» кадр затем передается на экран, где происходит процесс даунскейлинга (downscaling). В отличие от простого растягивания картинки, даунскейлинг усредняет несколько виртуальных пикселей в один физический, что убирает «лесенки» на границах объектов.</p>
+
+<p>Этот процесс требует значительной вычислительной мощности. Если ваша <strong>видеокарта</strong> не справится с отрисовкой кадра в высоком разрешении, частота кадров (FPS) может упасть до неприемлемых значений. Поэтому важно сбалансировать настройки графики: возможно, придется снизить уровень теней или дальности прорисовки, чтобы компенсировать нагрузку от повышенного разрешения.</p>
+
+<p>Стоит учитывать, что результат зависит от алгоритма масштабирования, который использует видеокарта. Некоторые драйверы применяют билинейную фильтрацию, которая может дать легкую размытость, тогда как более продвинутые алгоритмы (например, <strong>аналитическое сглаживание</strong>) сохраняют четкость лучше. Настройка этого параметра часто скрыта в расширенных меню управления графикой.</p>
+
+<h2 id="настройка-через-панель-управления-nvidia">Настройка через панель управления NVIDIA</h2>
+
+<p>Для пользователей видеокарт <em>NVIDIA</em> основной инструмент настройки находится в панели управления. Вам нужно войти в меню <code>Управление параметрами 3D</code> и найти пункт, отвечающий за масштабирование. Обычно по умолчанию стоит режим «Соотношение сторон» или «Полный экран», но для нашего случая важен именно <code>Масштабирование на GPU</code>.</p>
+
+<p>Активация этой функции позволяет видеокарте самостоятельно обрабатывать изображение, что критично при использовании нестандартных разрешений. Если этот параметр отключен, сжатие происходит на уровне дисплея, и вы не получите желаемого эффекта четкости. Убедитесь, что в настройках выбрано «Играть в разрешении, отличном от нативного».</p>
+
+<p>Для принудительного добавления разрешения в список выберите «Изменение разрешения» и нажмите «Настройка» → «Создать пользовательское разрешение». Здесь можно ввести любые значения, например <code>2560×1440</code> для Full HD экрана, но система может потребовать подтверждения безопасности.</p>
+
+<blockquote>⚠️ Внимание: При создании пользовательских разрешений высок риск потери изображения при перезагрузке, если введенные параметры не поддерживаются матрицей дисплея. Всегда имейте под рукой возможность сброса настроек драйвера.</blockquote>
+
+<div class="poll-widget" id="poll-5a16090d"><div class="poll-widget-question">📊 Используете ли вы масштабирование рендеринга?</div><div class="poll-widget-option" data-poll="5a16090d" data-idx="0" onclick="pbPollVote(this)"><span class="poll-widget-label">Да, часто</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="5a16090d" data-idx="1" onclick="pbPollVote(this)"><span class="poll-widget-label">Иногда</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="5a16090d" data-idx="2" onclick="pbPollVote(this)"><span class="poll-widget-label">Никогда, только нативное</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="5a16090d" data-idx="3" onclick="pbPollVote(this)"><span class="poll-widget-label">Не знаю, что это</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div></div>
+
+<h2 id="конфигурация-в-драйверах-amd-radeon">Конфигурация в драйверах AMD Radeon</h2>
+
+<p>В экосистеме <em>AMD</em> аналогичная функция называется <strong>Virtual Super Resolution (VSR)</strong>. Она интегрирована в программу AMD Software: Adrenalin Edition. Для активации перейдите в раздел «Дисплей» (Display) и найдите переключатель VSR. После включения список поддерживаемых разрешений в играх автоматически пополнится вариантами выше нативного.</p>
+
+<p>Важно различать VSR и технологию FSR (FidelityFX Super Resolution). Первое создает физически более высокое разрешение для рендеринга, а второе — это алгоритм масштабирования с использованием нейросетей. Для наших целей именно VSR обеспечивает классический рендеринг в высоком разрешении без использования AI-апскейлинга.</p>
+
+<p>Настройка качества масштабирования в AMD также доступна в том же меню. Рекомендуется выбрать режим «GPU» для обработки изображения, так как это снимает нагрузку с процессора и обеспечивает более качественный результат на <strong>матрице</strong> дисплея. Не забудьте сохранить профиль настроек, чтобы они применялись глобально.</p>
+
+<h2 id="создание-пользовательских-профилей-разрешения">Создание пользовательских профилей разрешения</h2>
+
+<p>Если стандартные опции драйверов не дают нужного разрешения, можно воспользоваться сторонним инструментом <em>Custom Resolution Utility (CRU)</em>. Эта утилита позволяет редактировать таблицы EDID, хранящиеся в мониторе. Однако использовать её нужно крайне осторожно, так как ошибка может привести к тому, что монитор перестанет реагировать на сигнал.</p>
+
+<p>В интерфейсе CRU добавьте новое разрешение в секцию «Detailed resolutions». Вводите значения вручную, например, установите ширину и высоту, превышающую физические границы экрана. После применения настроек компьютер перезагрузит видеодрайвер, и экран может на время погаснуть.</p>
+
+<p>После перезагрузки проверьте, появилось ли новое разрешение в списке игры. Если изображение не появляется, необходимо запустить утилиту <code>restart64.exe</code> (или 32-битную версию) из папки с CRU, чтобы сбросить настройки без полной перезагрузки системы.</p>
+
+<blockquote>⚠️ Внимание: Использование CRU может привести к «черному экрану» при включении ПК. В таком случае необходим вход в безопасный режим Windows для удаления драйвера или сброса EDID.</blockquote>
+
+<div class="checklist-block"><h4>☑️ Проверка перед запуском</h4><label class="check-item"><input type="checkbox"><span>Убедиться в запасе мощности GPU</span></label><label class="check-item"><input type="checkbox"><span>Подготовить план отката настроек</span></label><label class="check-item"><input type="checkbox"><span>Закрыть фоновые приложения</span></label><label class="check-item"><input type="checkbox"><span>Подтвердить работу кабеля</span></label><div class="check-progress">Выполнено: <span class="check-count">0</span> / 4</div></div>
+
+<h2 id="влияние-на-производительность-и-fps">Влияние на производительность и FPS</h2>
+
+<p>Повышение разрешения рендеринга — это прямой путь к снижению количества кадров в секунду. Увеличение разрешения вдвое (например, с 1080p до 4K) увеличивает количество пикселей в четыре раза. Это означает, что нагрузка на <strong>видеопамять</strong> и графический процессор возрастает пропорционально.</p>
+
+<p>Для оценки влияния рекомендуется использовать встроенные бенчмарки в играх или программы мониторинга, такие как MSI Afterburner. Следите за загрузкой GPU: если она достигает 99-100%, значит, видеокарта работает на пределе, и дальнейшее повышение разрешения будет лишь снижать плавность движения.</p>
+
+<p>В некоторых случаях можно найти баланс: например, использовать разрешение на 50-70% выше нативного. Это дает ощутимый прирост четкости, но не убивает FPS полностью. Такой подход особенно актуален для старых игр с плохим сглаживанием или для эмуляторов.</p>
+
+<p>Существует зависимость между типом игры и выигрышем от высокого разрешения. В динамичных шутерах падение FPS критично, а в медленных стратегиях или RPG четкость текстур важнее. Поэтому выбор разрешения должен быть индивидуальным для каждой игры.</p>
+
+<details class="faq-item"><summary>Как проверить стабильность FPS?</summary><div class="faq-answer"><p>Запустите стресс-тест FurMark или встроенный бенчмарк игры с новым разрешением и понаблюдайте за кривой FPS в течение 10 минут. Если просадки (статтеры) отсутствуют, настройки стабильны. </p></div></details>
+
+<h2 id="таблица-соотношения-разрешений-и-нагрузки">Таблица соотношения разрешений и нагрузки</h2>
+
+<p>Чтобы наглядно оценить, насколько вырастет нагрузка на систему, ознакомьтесь с данными в таблице ниже. Она показывает примерный прирост количества пикселей по сравнению с Full HD.</p>
+
+<table>
+<thead>
+<tr>
+<th>Разрешение рендеринга</th>
+<th>Отношение к 1080p</th>
+<th>Примерный прирост нагрузки</th>
+<th>Рекомендуемая карта</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2560×1080 (UW Full HD)</td>
+<td>1.18x</td>
+<td>Незначительный</td>
+<td>Любая современная</td>
+</tr>
+<tr>
+<td>2560×1440 (2K)</td>
+<td>1.78x</td>
+<td>Средний</td>
+<td>GTX 1660 / RX 580</td>
+</tr>
+<tr>
+<td>3440×1440 (UW 2K)</td>
+<td>2.15x</td>
+<td>Высокий</td>
+<td>RTX 3060 / RX 6700</td>
+</tr>
+<tr>
+<td>3840×2160 (4K)</td>
+<td>4.00x</td>
+<td>Критический</td>
+<td>RTX 3080 / RX 6800</td>
+</tr>
+</tbody>
+</table>
+
+<div class="attention-box attention-tip"><span class="attention-icon">💡</span><p>Если игра не запускается в выбранном разрешении, попробуйте запустить её в оконном режиме, а затем переключиться в полный экран. Иногда это помогает драйверу корректно применить настройки. </p></div>
+
+<h2 id="специфика-масштабирования-в-современных-играх">Специфика масштабирования в современных играх</h2>
+
+<p>Многие современные движки (Unreal Engine 5, Unity) имеют встроенные настройки <strong>Dynamic Resolution Scaling</strong> (динамическое разрешение). В таких играх ручное выставление высокого разрешения может конфликтовать с автоматикой. Проверьте настройки графики: если стоит галочка «Адаптивное разрешение», отключите её, чтобы принудительно задать фиксированное значение.</p>
+
+<p>Некоторые игры игнорируют системные настройки и используют только разрешенный список драйверов. Если вы не видите нужного разрешения в игре, возможно, разработчики заблокировали его для стабильности. В таких случаях помогает запуск в режиме совместимости или использование командной строки запуска (Launch Options).</p>
+
+<p>Также стоит обратить внимание на качество текстур. В режиме высокого разрешения будут видны недостатки текстур низкого качества (1x или 2x), которые в нативном разрешении маскировались. Убедитесь, что в игре выбраны текстуры максимального качества, иначе вы получите четкую «мыльную» картинку.</p>
+
+<div class="attention-box attention-tip"><span class="attention-icon">💡</span><p>Использование интерполированного рендеринга дает визуальный выигрыш в четкости, но требует от 30% до 400% дополнительной вычислительной мощности видеокарты в зависимости от выбранного разрешения. </p></div>
+
+<h2 id="решение-частых-проблем-и-ошибок">Решение частых проблем и ошибок</h2>
+
+<p>Иногда после настройки возникают проблемы, такие как мерцание экрана, некорректная работа кнопок в меню или черный экран. Чаще всего это связано с тем, что выбранный <strong>частота обновления</strong> (Гц) не поддерживается дисплеем для данного разрешения. Попробуйте снизить частоту обновления до 60 Гц при высоких разрешениях.</p>
+
+<p>Если игра вылетает сразу после старта, проверьте объем <em>видеопамяти</em>. Рендеринг в 4K требует огромного буфера для текстур и геометрии. Если памяти не хватает, система может аварийно завершить процесс. Решением станет снижение детализации текстур или закрытие других тяжелых программ.</p>
+
+<p>В редких случаях помогает сброс настроек драйвера к заводским. Это вернет все параметры в исходное состояние, удалив пользовательские разрешения. Используйте эту опцию как крайнюю меру, если другие методы не помогают.</p>
+
+<blockquote>⚠️ Внимание: Драйверы видеокарт регулярно обновляются, и регламенты настройки могут меняться. Всегда сверяйтесь с официальными гайдами NVIDIA или AMD перед внесением глобальных изменений в конфигурацию.</blockquote>
+
+
+
+<details>
+<summary>Как узнать, поддерживает ли моя видеокарта интерполированное разрешение?</summary>
+<p>Большинство видеокарт NVIDIA серии GTX 900 и выше, а также AMD Radeon серии RX 400 и новее поддерживают эту функцию. В панели управления драйвером ищите пункты «Масштабирование» или «VSR».</p>
+</details>
+
+<details>
+<summary>Влияет ли это на потребление энергии?</summary>
+<p>Да, значительно. При рендеринге в высоком разрешении видеокарта работает на полную мощность, что увеличивает энергопотребление и тепловыделение. Убедитесь, что система охлаждения справляется с нагрузкой.</p>
+</details>
+
+<details>
+<summary>Можно ли использовать это для работы в Windows?</summary>
+<p>Технически можно, но это не рекомендуется. Интерфейс Windows может стать слишком мелким для восприятия, а текст будет трудно читаемым из-за особенностей масштабирования шрифтов.</p>
+</details>
+
+<details>
+<summary>Нужно ли менять кабель для работы с высоким разрешением?</summary>
+<p>Да. Для передачи сигнала в разрешениях выше 1080p часто требуется кабель стандарта HDMI 2.0 или DisplayPort 1.4. Старые кабели могут не пропустить достаточную полосу пропускания.</p>
+</details></div>
+                    <!--#include virtual="/ssi/article_after.html" -->
+
+                </article>
+                <aside class="article-sidebar"><!--#include virtual="/ssi/sidebar_top.html" --><nav class="sidebar-search"><div class="sidebar-search-box"><input type="text" id="globalSearchInput" placeholder="🔍 Поиск статей..." autocomplete="off"><div class="search-dropdown" id="globalSearchDropdown"></div></div></nav><!--#include virtual="/ssi/sidebar_before_toc.html" --><nav class="sidebar-toc" id="sidebarToc"><h3>Содержание</h3><ul><li><a href="#принцип-работы-интерполированного-рендеринга">Принцип работы интерполированного рендеринга</a></li><li><a href="#настройка-через-панель-управления-nvidia">Настройка через панель управления NVIDIA</a></li><li><a href="#конфигурация-в-драйверах-amd-radeon">Конфигурация в драйверах AMD Radeon</a></li><li><a href="#создание-пользовательских-профилей-разрешения">Создание пользовательских профилей разрешения</a></li><li><a href="#влияние-на-производительность-и-fps">Влияние на производительность и FPS</a></li><li><a href="#таблица-соотношения-разрешений-и-нагрузки">Таблица соотношения разрешений и нагрузки</a></li><li><a href="#специфика-масштабирования-в-современных-играх">Специфика масштабирования в современных играх</a></li><li><a href="#решение-частых-проблем-и-ошибок">Решение частых проблем и ошибок</a></li></ul></nav><!--#include virtual="/ssi/sidebar_before_related.html" --><nav class="sidebar-related"><h3>Похожие статьи</h3><ul><li><a href="/articles/k/ka/kak-mozhno-izmenit-zastavku-i-vremya-ee-poyavleniya-na-ekrane-monitora.html" class="related-card">Как изменить заставку и время её появления на мониторе</a></li><li><a href="/articles/k/ka/kak-izmenit-yarkost-monitora-acer.html" class="related-card">Как изменить яркость монитора Acer: 5 проверенных способов</a></li><li><a href="/articles/k/ka/kak-rastyanut-ekran-igry-na-ves-monitor-windows-10.html" class="related-card">Как растянуть экран игры на весь монитор Windows 10: Полное руководство</a></li><li><a href="/articles/k/ka/kak-pravilno-sidet-za-monitorom-27-dyujmov.html" class="related-card">Как правильно сидеть за монитором 27 дюймов: эргономика и здоровье</a></li><li><a href="/articles/m/mo/monitor-ldzhi-kak-otklyuchit-energosberegayushchij-rezhim.html" class="related-card">Как отключить энергосберегающий режим на мониторе LG: полное руководство</a></li></ul></nav><!--#include virtual="/ssi/sidebar_after_related.html" --></aside>
+            </div>
+        </div>
+    </main>
+
+    <!--#include virtual="/ssi/before_related_bottom.html" -->
+    <section class="related-bottom">
+        <div class="container">
+            <h2 class="related-bottom-heading">📖 Читайте также</h2>
+            <div class="related-bottom-grid"><a href="/articles/k/ka/kak-mozhno-izmenit-zastavku-i-vremya-ee-poyavleniya-na-ekrane-monitora.html" class="related-bottom-card"><span class="related-bottom-title">Как изменить заставку и время её появления на мониторе</span><span class="related-bottom-desc">Полная инструкция: настройка заставки Windows, Linux и macOS. Узнайте, как изменить время ожидания и</span></a><a href="/articles/k/ka/kak-izmenit-yarkost-monitora-acer.html" class="related-bottom-card"><span class="related-bottom-title">Как изменить яркость монитора Acer: 5 проверенных способов</span><span class="related-bottom-desc">Инструкция по настройке яркости на мониторах Acer. Используйте кнопки OSD, горячие клавиши, ПО или н</span></a><a href="/articles/k/ka/kak-rastyanut-ekran-igry-na-ves-monitor-windows-10.html" class="related-bottom-card"><span class="related-bottom-title">Как растянуть экран игры на весь монитор Windows 10: Полное руководство</span><span class="related-bottom-desc">Устраните черные полосы в играх. Инструкция по настройке масштабирования GPU и параметров Windows 10</span></a><a href="/articles/k/ka/kak-pravilno-sidet-za-monitorom-27-dyujmov.html" class="related-bottom-card"><span class="related-bottom-title">Как правильно сидеть за монитором 27 дюймов: эргономика и здоровье</span><span class="related-bottom-desc">Полное руководство по настройке рабочего места под 27-дюймовый экран. Расчет расстояния, высоты, угл</span></a><a href="/articles/m/mo/monitor-ldzhi-kak-otklyuchit-energosberegayushchij-rezhim.html" class="related-bottom-card"><span class="related-bottom-title">Как отключить энергосберегающий режим на мониторе LG: полное руководство</span><span class="related-bottom-desc">Пошаговая инструкция по отключению экономии энергии на мониторах LG. Решаем проблему чёрного экрана </span></a><a href="/articles/k/ka/kak-pomenyat-yarkost-na-monitore-los.html" class="related-bottom-card"><span class="related-bottom-title">Как настроить яркость монитора: 5 способов, горячие клавиши и калибровка</span><span class="related-bottom-desc">Полное руководство по изменению яркости экрана: через OSD меню, Windows 10/11, драйверы NVIDIA/AMD и</span></a></div>
+        </div>
+    </section>
+    <!--#include virtual="/ssi/after_related_bottom.html" -->
+
+    <footer class="site-footer-premium">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-col">
+                    <div class="footer-brand">🖥️ Мониторум</div>
+                    <p class="footer-about">Полный справочник по настройке, ремонту и выбору компьютерных мониторов для любых задач.</p>
+                </div>
+                <div class="footer-col">
+                    <h4>Разделы</h4>
+                    <ul><li><a href="/category/nastrojka-ekrana/">⚙️ Настройка экрана</a></li>
+<li><a href="/category/podklyuchenie-ustrojstv/">🔌 Подключение устройств</a></li>
+<li><a href="/category/mnozhestvennye-ekrany/">🖥️🖥️ Множественные экраны</a></li>
+<li><a href="/category/zvuk-i-audio/">🔊 Звук и аудио</a></li>
+<li><a href="/category/remont-i-polomki/">🔧 Ремонт и поломки</a></li>
+<li><a href="/category/ukhod-i-chistka/">🧼 Уход и чистка</a></li></ul>
+                </div>
+                <div class="footer-col">
+                    <h4>Информация</h4>
+                    <ul>
+                        <li><a href="/">Главная</a></li>
+                        <li><a href="/about.html">О проекте</a></li>
+                        <li><a href="/categories.html">Все разделы</a></li>
+                        <li><a href="/contact.html">Контакты</a></li>
+                        <li><a href="/privacy.html">Конфиденциальность</a></li>
+                        <li><a href="/sitemap.xml">Карта сайта</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>© Мониторум. Все права защищены.</p>
+                <!--LiveInternet counter--><div style="margin-top:10px;"><a href="https://www.liveinternet.ru/click"
+                target="_blank"><img id="licnt06C4" width="88" height="15" style="border:0" 
+                title="LiveInternet: показано число посетителей за сегодня"
+                src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAEALAAAAAABAAEAAAIBTAA7"
+                alt=""/></a><script>(function(d,s){d.getElementById("licnt06C4").src=
+                "https://counter.yadro.ru/hit?t26.5;r"+escape(d.referrer)+
+                ((typeof(s)=="undefined")?"":";s"+s.width+"*"+s.height+"*"+
+                (s.colorDepth?s.colorDepth:s.pixelDepth))+";u"+escape(d.URL)+
+                ";h"+escape(d.title.substring(0,150))+";"+Math.random()})(document,screen)</script></div><!--/LiveInternet-->
+            </div>
+        </div>
+    </footer>
+    <div id="cookie-consent" class="cookie-popup">
+        <div class="cookie-inner">
+            <span>🍪 Мы используем файлы cookie для улучшения работы сайта.</span>
+            <button id="cookie-accept" class="cookie-btn">Принять</button>
+        </div>
+    </div>
+    <script src="/static/js/main.js"></script>
+    <script>
+    (function() {
+        const popup = document.getElementById('cookie-consent');
+        const btn = document.getElementById('cookie-accept');
+        if (popup && btn && !localStorage.getItem('cookie-accepted')) {
+            popup.classList.add('visible');
+            btn.onclick = () => {
+                localStorage.setItem('cookie-accepted', 'true');
+                popup.classList.remove('visible');
+            };
+        }
+    })();
+    </script>
+    <script>
+    function pbPollVote(el) {
+        var poll = el.closest('.poll-widget');
+        if (poll.classList.contains('voted')) return;
+        poll.classList.add('voted');
+        el.classList.add('selected');
+        var opts = poll.querySelectorAll('.poll-widget-option');
+        var n = opts.length;
+        var raw = [];
+        var sum = 0;
+        for (var i = 0; i < n; i++) {
+            var v = Math.random() * 50 + 5;
+            if (opts[i] === el) v += 30;
+            raw.push(v);
+            sum += v;
+        }
+        var pcts = raw.map(function(v) { return Math.round(v / sum * 100); });
+        var diff = 100 - pcts.reduce(function(a,b){ return a+b; }, 0);
+        pcts[Array.from(opts).indexOf(el)] += diff;
+        setTimeout(function() {
+            opts.forEach(function(opt, i) {
+                opt.querySelector('.poll-widget-bar').style.width = pcts[i] + '%';
+                opt.querySelector('.poll-widget-pct').textContent = pcts[i] + '%';
+            });
+        }, 50);
+    }
+    </script>
+    <!--#include virtual="/ssi/body_bottom.html" -->
+    <script src="/static/js/inject.js" defer></script>
+</body>
+</html>

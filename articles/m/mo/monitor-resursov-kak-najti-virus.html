@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27><text y=%27.9em%27 font-size=%2790%27>🖥️</text></svg>">
+    <title>Как найти вирус через Монитор ресурсов: полная гайд — Мониторум</title>
+    <meta name="description" content="Пошаговая инструкция: как использовать Монитор ресурсов Windows для обнаружения скрытых вирусов, анализа сети и процессов. Учимся читать графики и находить угрозы.">
+    <link rel="canonical" href="https://monitorium.vercel.app/articles/m/mo/monitor-resursov-kak-najti-virus.html">
+
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="Как найти вирус через Монитор ресурсов: полная гайд">
+    <meta property="og:description" content="Пошаговая инструкция: как использовать Монитор ресурсов Windows для обнаружения скрытых вирусов, анализа сети и процессов. Учимся читать графики и находить угрозы.">
+    <meta property="og:locale" content="ru_RU">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css?v=1780420684">
+    <style>
+    .site-footer-premium {
+        margin-top: 60px; padding: 40px 0 0; background: #1e293b; color: #94a3b8;
+    }
+    .footer-grid {
+        display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 40px;
+        padding-bottom: 32px; border-bottom: 1px solid #334155;
+    }
+    .footer-brand { font-size: 1.2rem; font-weight: 700; color: #f1f5f9; margin-bottom: 12px; }
+    .footer-about { font-size: 0.9rem; line-height: 1.6; margin-bottom: 8px; }
+    .footer-updated { font-size: 0.8rem; color: #64748b; }
+    .footer-col h4 { color: #f1f5f9; font-size: 0.95rem; margin-bottom: 16px; }
+    .footer-col ul { list-style: none; }
+    .footer-col li { margin-bottom: 8px; }
+    .footer-col a { color: #94a3b8; font-size: 0.9rem; transition: color 0.2s; }
+    .footer-col a:hover { color: #60a5fa; }
+    .footer-bottom { padding: 20px 0; text-align: center; font-size: 0.85rem; }
+    @media (max-width: 640px) {
+        .footer-grid { grid-template-columns: 1fr; gap: 24px; }
+    }
+    .cookie-popup {
+        position: fixed; bottom: 0; left: 0; right: 0; background: #1e293b; color: #fff;
+        padding: 16px; transition: transform 0.5s ease; z-index: 9999; border-top: 2px solid #2563eb;
+        transform: translateY(100%);
+    }
+    .cookie-popup.visible { transform: translateY(0); }
+    .cookie-inner { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; gap: 16px; font-size: 0.9rem; }
+    .cookie-btn { background: #2563eb; color: #fff; border: none; padding: 8px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+    .cookie-btn:hover { background: #1d4ed8; }
+    @media (max-width: 640px) {
+        .cookie-inner { flex-direction: column; text-align: center; }
+    }
+</style>
+    
+    <!--#include virtual="/ssi/head.html" -->
+</head>
+<body>
+        <!--#include virtual="/ssi/body_top.html" -->
+    <style>
+    .nav-dropdown { position: relative; display: inline-block; }
+    .dropdown-toggle {
+        background: none; border: none; cursor: pointer;
+        font: inherit; color: inherit; padding: 8px 12px;
+        border-radius: 8px; transition: background 0.2s;
+    }
+    .dropdown-toggle:hover { background: rgba(0,0,0,0.05); }
+    .dropdown-menu {
+        display: none; position: absolute; right: 0; top: 100%;
+        min-width: 240px; max-height: 70vh; overflow-y: auto;
+        background: var(--card-bg, #fff); border: 1px solid var(--border, #e5e7eb);
+        border-radius: 12px; box-shadow: 0 12px 40px rgba(0,0,0,0.12);
+        padding: 8px 0; z-index: 1000;
+    }
+    .nav-dropdown::after {
+        content: ''; position: absolute; left: 0; right: 0;
+        top: 100%; height: 12px;
+    }
+    .nav-dropdown:hover .dropdown-menu,
+    .nav-dropdown:focus-within .dropdown-menu { display: block; }
+    .dropdown-item {
+        display: block; padding: 10px 20px; color: var(--text, #1f2937);
+        text-decoration: none; font-size: 0.95rem; transition: background 0.15s;
+        white-space: nowrap;
+    }
+    .dropdown-item:hover { background: rgba(37,99,235,0.06); color: var(--primary, #2563eb); }
+    @media (max-width: 768px) {
+        .main-nav > .nav-link { display: none; }
+        .dropdown-toggle { display: none; }
+        .dropdown-menu {
+            display: block !important; position: static;
+            box-shadow: none; border: none; border-radius: 0;
+            min-width: auto; max-height: none; padding: 0;
+            background: transparent;
+        }
+        .dropdown-item {
+            padding: 8px 0; font-size: 1rem;
+        }
+    }
+    </style>
+    <header class="site-header">
+        <div class="container header-inner">
+            <a href="/" class="logo">
+                <span class="logo-icon">🖥️</span>
+                <span>Мониторум</span>
+            </a>
+            <button class="mobile-menu-btn" aria-label="Меню" id="menuBtn">☰</button>
+            <nav class="main-nav" id="mainNav">
+                <a href="/category/nastrojka-ekrana/" class="nav-link">⚙️ Настройка экрана</a>
+<a href="/category/podklyuchenie-ustrojstv/" class="nav-link">🔌 Подключение устройств</a>
+<a href="/category/mnozhestvennye-ekrany/" class="nav-link">🖥️🖥️ Множественные экраны</a>
+<a href="/category/zvuk-i-audio/" class="nav-link">🔊 Звук и аудио</a>
+<div class="nav-dropdown">
+            <button class="nav-link dropdown-toggle">📂 Все разделы ▾</button>
+            <div class="dropdown-menu"><a href="/category/nastrojka-ekrana/" class="dropdown-item">⚙️ Настройка экрана</a>
+<a href="/category/podklyuchenie-ustrojstv/" class="dropdown-item">🔌 Подключение устройств</a>
+<a href="/category/mnozhestvennye-ekrany/" class="dropdown-item">🖥️🖥️ Множественные экраны</a>
+<a href="/category/zvuk-i-audio/" class="dropdown-item">🔊 Звук и аудио</a>
+<a href="/category/remont-i-polomki/" class="dropdown-item">🔧 Ремонт и поломки</a>
+<a href="/category/ukhod-i-chistka/" class="dropdown-item">🧼 Уход и чистка</a>
+<a href="/category/vybor-i-kharakteristiki/" class="dropdown-item">📊 Выбор и характеристики</a>
+<a href="/category/drajvery-i-po/" class="dropdown-item">💿 Драйверы и ПО</a>
+<a href="/category/krepleniya-i-ustanovka/" class="dropdown-item">🔩 Крепления и установка</a>
+<a href="/category/utilizatsiya-i-prodazha/" class="dropdown-item">♻️ Утилизация и продажа</a>
+<a href="/category/spetsialnye-rezhimy/" class="dropdown-item">🎮 Специальные режимы</a>
+<a href="/category/drugoe/" class="dropdown-item">📁 Другое</a></div>
+        </div>
+            </nav>
+        </div>
+    </header>
+
+    <nav class="breadcrumbs" aria-label="Навигация">
+        <div class="container"><a href="/">Главная</a><span class="breadcrumb-sep">›</span><a href="/category/drugoe/">Другое</a><span class="breadcrumb-sep">›</span><span class="breadcrumb-current">Как найти вирус через Монитор ресурсов: полная гайд</span></div>
+    </nav>
+
+    <main class="site-main">
+        <div class="container">
+            <div class="article-layout">
+                <article class="article-main">
+                    
+                    <h1>Монитор ресурсов: эффективный поиск и удаление вирусов</h1>
+                    <nav class="mobile-toc"><details><summary>📋 Содержание</summary><ul><li><a href="#запуск-утилиты-и-первичный-анализ-системы">Запуск утилиты и первичный анализ системы</a></li><li><a href="#анализ-сетевой-активности-главный-индикатор-угрозы">Анализ сетевой активности: главный индикатор угрозы</a></li><li><a href="#выявление-угрозы-через-нагрузку-на-диск">Выявление угрозы через нагрузку на диск</a></li><li><a href="#анализ-процессов-и-их-цифровых-подписей">Анализ процессов и их цифровых подписей</a></li><li><a href="#сравнительный-анализ-диспетчер-задач-против-монитора-ресурсов">Сравнительный анализ: Диспетчер задач против Монитора ресурсов</a></li><li><a href="#действия-после-обнаружения-вируса">Действия после обнаружения вируса</a></li><li><a href="#профилактика-и-настройка-системы">Профилактика и настройка системы</a></li></ul></details></nav>
+                    <!--#include virtual="/ssi/article_before.html" -->
+                    <div class="article-body"><p>Многие пользователи полагаются исключительно на антивирусные сканеры, но злонамеренное ПО часто умеет маскироваться от стандартных защитных решений. В таких ситуациях незаменимым инструментом становится встроенный в Windows <strong>Монитор ресурсов</strong>, который предоставляет детальную картину процессов в реальном времени. Этот утилита позволяет увидеть то, что скрыто от глаз обычного пользователя: скрытые сетевые соединения, подозрительные записи в реестре и аномальную нагрузку на диск.</p>
+
+<p>Использование <em>Resource Monitor</em> требует понимания работы операционной системы, но даже базовые знания помогут выявить активность вредоносных программ. Вы сможете отследить, какой именно процесс пытается отправить данные на сторонний сервер или бесконечно считывает информацию с жесткого диска. <mark>Скрытые майнеры и ботнеты часто проявляют себя именно через внезапный рост использования сети или диска в моменты бездействия пользователя.</mark></p>
+
+<h2 id="запуск-утилиты-и-первичный-анализ-системы">Запуск утилиты и первичный анализ системы</h2>
+<p>Первым шагом к обнаружению угроз является вызов самого инструмента через стандартные средства Windows. Вам не нужно скачивать стороннее программное обеспечение, что снижает риск подхватить новый вирус при поиске "лекарства". Откройте меню "Пуск", введите в поиск <code>resmon</code> и нажмите Enter, либо воспользуйтесь комбинацией клавиш <code>Win + R</code> и введите ту же команду в поле "Выполнить".</p>
+
+<p>После запуска перед вами откроется окно с четырьмя основными вкладками: <strong>CPU</strong>, <strong>Память</strong>, <strong>Диск</strong> и <strong>Сеть</strong>. Каждая из них отвечает за мониторинг определенного компонента компьютера. Для поиска вирусов наиболее информативными будут разделы "Сеть" и "Диск", так как вредоносный код почти всегда пытается либо передать данные наружу, либо зашифровать файлы.</p>
+
+<p>Обратите внимание на общую картину нагрузки. Если в простое системы один из процессов потребляет 100% ресурсов, это повод для немедленного investigation. <strong>Аномальное поведение</strong> часто сопровождается появлением процессов с пустыми именами или именами, похожими на системные, но с ошибками в написании.</p>
+
+<div class="poll-widget" id="poll-351ebab5"><div class="poll-widget-question">📊 Какой инструмент вы используете для поиска вирусов?</div><div class="poll-widget-option" data-poll="351ebab5" data-idx="0" onclick="pbPollVote(this)"><span class="poll-widget-label">Встроенный Диспетчер задач</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="351ebab5" data-idx="1" onclick="pbPollVote(this)"><span class="poll-widget-label">Сторонний антивирус</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="351ebab5" data-idx="2" onclick="pbPollVote(this)"><span class="poll-widget-label">Монитор ресурсов (resmon)</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="351ebab5" data-idx="3" onclick="pbPollVote(this)"><span class="poll-widget-label">Не использую ничего</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div></div>
+
+<h2 id="анализ-сетевой-активности-главный-индикатор-угрозы">Анализ сетевой активности: главный индикатор угрозы</h2>
+<p>Большинство современных вирусов, троянов и программ-вымогателей работают в связке с удаленным сервером. Чтобы функционировать, им нужно установить соединение, что делает раздел "Сеть" в Мониторе ресурсов критически важным. Перейдите на вкладку <code>Сеть</code> и обратите внимание на раздел "Сетевая активность". Здесь вы увидите список процессов, которые в данный момент используют интернет.</p>
+
+<p>Ищите процессы, которые не должны иметь доступа к сети: текстовые редакторы, калькуляторы или системные службы, не занимающиеся обновлением. Если вы видите <em>svchost.exe</em>, который потребляет весь трафик, но не является процессом обновления Windows — это тревожный сигнал. Вредоносное ПО часто подменяет легитимные имена процессов, пытаясь остаться незамеченным.</p>
+
+<p>В разделе "Соединения" можно увидеть конкретные IP-адреса, с которыми связывается ваш компьютер. Подозрительные адреса часто имеют неструктурированный вид или принадлежат известным ботнет-сетям. Если вы видите соединение с неизвестным IP-адресом, который не связан с вашими текущими задачами, немедленно остановите процесс, нажав правой кнопкой мыши и выбрав "Завершить процесс".</p>
+
+<blockquote>⚠️ Внимание! Будьте осторожны при завершении системных процессов. Не прекращайте работу процессов с именами <code>System</code>, <code>csrss.exe</code> или <code>smss.exe</code>, так как это может привести к критической ошибке и перезагрузке системы.</blockquote>
+
+<div class="attention-box attention-tip"><span class="attention-icon">💡</span><p>Сетевая активность — главный маркер присутствия ботнета или шпионского ПО; ищите незнакомые процессы, передающие данные в фоновом режиме.</p></div>
+
+<h2 id="выявление-угрозы-через-нагрузку-на-диск">Выявление угрозы через нагрузку на диск</h2>
+<p>Одной из самых распространенных задач вирусов является шифрование пользовательских файлов или майнинг криптовалюты, что вызывает экстремальную нагрузку на накопитель. Перейдите на вкладку <code>Диск</code> и посмотрите на столбец "Общая очередь" и "Скорость чтения/записи". Если ваш диск загружен на 100% без видимых действий пользователя, проблема может быть в скрытом майнере.</p>
+
+<p>Вредоносное ПО часто создает множество временных файлов или сканирует всю структуру папок для поиска ценной информации. В разделе "Процессы с дисковой активностью" отсортируйте список по столбцу "Общий ввод-вывод" (Total I/O). Процессы с высоким показателем ввода-вывода, которые не являются антивирусом или браузером, требуют детального изучения.</p>
+
+<p>Часто вирус создает файл с подозрительным именем в папке <code>AppData</code> или <code>Temp</code>, который постоянно записывает данные. Найдите этот процесс, перейдите на вкладку "Ассоциированные модули" (внизу окна), чтобы увидеть, к каким файлам он обращается. Если вы видите путь к временной папке с набором случайных символов — это классический признак заражения.</p>
+
+<div class="checklist-block"><h4>☑️ Алгоритм проверки диска</h4><label class="check-item"><input type="checkbox"><span>Открыть вкладку Диск</span></label><label class="check-item"><input type="checkbox"><span>Отсортировать по "Общий ввод-вывод"</span></label><label class="check-item"><input type="checkbox"><span>Найти процесс с 100% загрузкой</span></label><label class="check-item"><input type="checkbox"><span>Проверить путь к файлу в модулях</span></label><div class="check-progress">Выполнено: <span class="check-count">0</span> / 4</div></div>
+
+<h2 id="анализ-процессов-и-их-цифровых-подписей">Анализ процессов и их цифровых подписей</h2>
+<p>Вкладка "CPU" предоставляет информацию о том, какие программы используют процессор и память. Здесь важно уметь отличать системные службы от вредоносных. Нажмите правой кнопкой мыши на имя процесса и выберите "Анализ цепочки вызовов" или "Открыть расположение файла". Проверьте, где находится исполняемый файл.</p>
+
+<p>Легитимные системные файлы обычно находятся в папке <code>C:\Windows\System32</code> или <code>C:\Windows\SysWOW64</code>. Если процесс с именем, похожим на системный (например, <em>svchost.exe</em>), находится в папке пользователя или в корне диска, с вероятностью 99% это вирус. Также обратите внимание на отсутствие цифровой подписи разработчика.</p>
+
+<p>Используйте функцию "Дерево процесса", чтобы увидеть, какой родительский процесс запустил подозрительную программу. Вирусы часто запускаются через планировщик заданий или автозагрузку, маскируясь под обновление драйверов. Если вы видите цепочку: <code>explorer.exe</code> -> <code>cmd.exe</code> -> <code>powershell.exe</code> -> <code>random_name.exe</code>, это почти наверняка атака.</p>
+
+<details class="faq-item"><summary>Как узнать владельца процесса?В окне Монитора ресурсов можно кликнуть правой кнопкой мыши на процесс и выбрать "Открыть расположение файла". Затем, в свойствах файла, на вкладке "Цифровые подписи" можно проверить, кем подписан исполняемый файл. Отсутствие подписи или подпись от неизвестного лица — верный признак угрозы.-->
+
+<h2 id="сравнительный-анализ-диспетчер-задач-против-монитора-ресурсов">Сравнительный анализ</summary><div class="faq-answer"><p> Диспетчер задач против Монитора ресурсов</h2>
+<p>Многие пользователи ограничиваются <strong>Диспетчером задач</strong>, но его возможности для глубокого анализа ограничены. Диспетчер задач показывает только основные показатели: загрузку ЦП, памяти и сети в процентах. Он не показывает, к каким именно файлам обращается программа или с какими IP-адресами она общается.</p>
+
+<p>Монитор ресурсов дает гораздо более глубокое погружение. Он позволяет видеть "железо" на уровне микропроцессора и сетевых пакетов. Например, в Диспетчере задач вы увидите, что проигрыватель видео нагружает сеть, но в Мониторе ресурсов вы увидите конкретный IP-адрес и порт, через который идет передача.</p>
+
+<p>Кроме того, Монитор ресурсов позволяет фильтровать процессы по имени или пути, что упрощает поиск скрытых угроз. Если вирус пытается скрыться под именем "System Update", в Диспетчере задач его легко пропустить, а в Мониторе ресурсов можно отфильтровать все процессы, не находящиеся в <code>System32</code>, и быстро выявить фальсификацию.</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Параметр</th>
+      <th>Диспетчер задач</th>
+      <th>Монитор ресурсов</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Детализация процессов</td>
+      <td>Базовая (имя, % нагрузки)</td>
+      <td>Глубокая (путь, модули, связи)</td>
+    </tr>
+    <tr>
+      <td>Сетевые соединения</td>
+      <td>Общий трафик</td>
+      <td>Конкретные IP и порты</td>
+    </tr>
+    <tr>
+      <td>Доступ к файлам</td>
+      <td>Не показывает</td>
+      <td>Показывает в реальном времени</td>
+    </tr>
+    <tr>
+      <td>Фильтрация</td>
+      <td>Ограниченная</td>
+      <td>Продвинутая (по путям, именам)</td>
+    </tr>
+  </tbody>
+</table>
+
+<blockquote>⚠️ Внимание! Интерфейс и названия вкладок могут незначительно отличаться в зависимости от версии Windows (10 или 11). Всегда ориентируйтесь на функционал, а не только на визуальное расположение элементов.</blockquote>
+
+<h2 id="действия-после-обнаружения-вируса">Действия после обнаружения вируса</h2>
+<p>После того как вы идентифицировали вредоносный процесс через <strong>Монитор ресурсов</strong>, необходимо предпринять немедленные меры по его удалению. Не пытайтесь просто удалить файл через проводник, так как вирус может быть заблокирован системой или снова запуститься. Сначала завершите процесс через Монитор ресурсов, нажав правой кнопкой мыши и выбрав "Завершить процесс".</p>
+
+<p>Затем перейдите в папку, где находится файл (ее путь вы узнали в предыдущем анализе), и удалите исполняемый файл и связанные с ним библиотеки .dll. Не забудьте очистить автозагрузку: откройте <code>regedit</code> и проверьте разделы <code>HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run</code> на наличие подозрительных записей.</p>
+
+<p>Рекомендуется после ручной очистки провести полное сканирование системы с помощью специализированного антивирусного ПО или утилит типа Malwarebytes. Это гарантирует, что вы удалили не только основной процесс, но и его скрытые компоненты, реестровые ключи и планы задач, которые могли остаться.</p>
+
+
+
+<h2 id="профилактика-и-настройка-системы">Профилактика и настройка системы</h2>
+<p>Чтобы предотвратить повторное заражение, важно настроить систему так, чтобы скрыть уязвимости. Отключите выполнение скриптов из непроверенных источников и настройте автоматическое обновление Windows. Проверьте настройки брандмауэра, чтобы заблокировать несанкционированный исходящий трафик.</p>
+
+<p>Регулярно используйте Монитор ресурсов для проверки системы, особенно после установки нового программного обеспечения. Это поможет выработать привычку следить за состоянием ПК и быстро реагировать на аномалии. <strong>Проактивный мониторинг</strong> всегда эффективнее борьбы с последствиями вируса.</p>
+
+<p>Помните, что ни один инструмент не дает 100% гарантии защиты. Сочетание здравого смысла, регулярных обновлений и использования системных утилит для анализа — лучшая стратегия безопасности. Если вы заметили странное поведение системы, не игнорируйте его, а сразу приступайте к диагностике через <em>resmon</em>.</p>
+
+<blockquote>⚠️ Внимание! В мире кибербезопасности угрозы меняются ежедневно. Правила и методы обнаружения вирусов, описанные в этой статье, могут быть адаптированы под новые виды вредоносного ПО. Всегда сверяйтесь с актуальными базами данных угроз.</blockquote>
+
+<div class="attention-box attention-tip"><span class="attention-icon">💡</span><p>Регулярная проверка сетевой активности и дисковой нагрузки через Монитор ресурсов позволяет выявлять скрытые угрозы до того, как они нанесут серьезный ущерб данным.</p></div>
+
+<details>
+  <summary>Как быстро открыть Монитор ресурсов через командную строку?</summary>
+  <p>Вы можете использовать команду <code>resmon</code> в окне "Выполнить" (Win+R) или в командной строке (cmd). Если у вас есть права администратора, можно также использовать команду <code>typeperf "\Memory\Available Bytes"</code> для мониторинга памяти, но для визуального анализа лучше использовать графический интерфейс утилиты.</p>
+</details>
+
+<details>
+  <summary>Можно ли удалить вирус только через Монитор ресурсов?</summary>
+  <p>Нет, Монитор ресурсов — это инструмент диагностики, а не лечения. Он позволяет найти и остановить процесс, но не удаляет файлы с диска или записи в реестре. После остановки процесса необходимо вручную удалить файлы и использовать антивирус для полной очистки.</p>
+</details>
+
+<details>
+  <summary>Что делать, если процесс завершается сам по себе?</summary>
+  <p>Если вирус завершается сразу после попытки остановки, это может означать наличие механизма самозащиты. В таком случае необходимо загрузиться в безопасном режиме Windows и повторить процедуру удаления файлов и очистки реестра.</p>
+</details>
+
+<details>
+  <summary>Почему Монитор ресурсов показывает высокую нагрузку на диск, но я ничего не делаю?</summary>
+  <p>Это может быть признаком работы системных служб (например, индексации или обновления) или скрытого вируса (майнера). Проверьте вкладку "Диск" и отсортируйте процессы по "Общему вводу-выводу", чтобы найти виновника. Если это системный процесс, дождитесь окончания индексации.</p>
+</details></div>
+                    <!--#include virtual="/ssi/article_after.html" -->
+
+                </article>
+                <aside class="article-sidebar"><!--#include virtual="/ssi/sidebar_top.html" --><nav class="sidebar-search"><div class="sidebar-search-box"><input type="text" id="globalSearchInput" placeholder="🔍 Поиск статей..." autocomplete="off"><div class="search-dropdown" id="globalSearchDropdown"></div></div></nav><!--#include virtual="/ssi/sidebar_before_toc.html" --><nav class="sidebar-toc" id="sidebarToc"><h3>Содержание</h3><ul><li><a href="#запуск-утилиты-и-первичный-анализ-системы">Запуск утилиты и первичный анализ системы</a></li><li><a href="#анализ-сетевой-активности-главный-индикатор-угрозы">Анализ сетевой активности: главный индикатор угрозы</a></li><li><a href="#выявление-угрозы-через-нагрузку-на-диск">Выявление угрозы через нагрузку на диск</a></li><li><a href="#анализ-процессов-и-их-цифровых-подписей">Анализ процессов и их цифровых подписей</a></li><li><a href="#сравнительный-анализ-диспетчер-задач-против-монитора-ресурсов">Сравнительный анализ: Диспетчер задач против Монитора ресурсов</a></li><li><a href="#действия-после-обнаружения-вируса">Действия после обнаружения вируса</a></li><li><a href="#профилактика-и-настройка-системы">Профилактика и настройка системы</a></li></ul></nav><!--#include virtual="/ssi/sidebar_before_related.html" --><nav class="sidebar-related"><h3>Похожие статьи</h3><ul><li><a href="/articles/k/ka/kak-zapisat-video-s-monitora-kompyutera-na-windows-10.html" class="related-card">Как записать видео с экрана на Windows 10: встроенные и сторонние способы</a></li><li><a href="/articles/o/ot/ot-chego-zavisit-kartinka-na-monitore.html" class="related-card">От чего зависит качество картинки на мониторе: полный разбор</a></li><li><a href="/articles/p/po/pochemu-morgaet-monitor-noutbuka-vo-vremya-igry.html" class="related-card">Почему моргает монитор ноутбука во время игры: Причины и решения</a></li><li><a href="/articles/k/ka/kak-ponyat-razreshenie-monitora.html" class="related-card">Как понять разрешение монитора: полная инструкция по проверке</a></li><li><a href="/articles/c/ch/chto-oznachaet-razreshenie-monitora-1280kh1024.html" class="related-card">1280×1024 на мониторе: что это значит и для кого подходит?</a></li></ul></nav><!--#include virtual="/ssi/sidebar_after_related.html" --></aside>
+            </div>
+        </div>
+    </main>
+
+    <!--#include virtual="/ssi/before_related_bottom.html" -->
+    <section class="related-bottom">
+        <div class="container">
+            <h2 class="related-bottom-heading">📖 Читайте также</h2>
+            <div class="related-bottom-grid"><a href="/articles/k/ka/kak-zapisat-video-s-monitora-kompyutera-na-windows-10.html" class="related-bottom-card"><span class="related-bottom-title">Как записать видео с экрана на Windows 10: встроенные и сторонние способы</span><span class="related-bottom-desc">Полное руководство по записи видео с монитора на Windows 10. Обзор встроенного Xbox Game Bar, OBS St</span></a><a href="/articles/o/ot/ot-chego-zavisit-kartinka-na-monitore.html" class="related-bottom-card"><span class="related-bottom-title">От чего зависит качество картинки на мониторе: полный разбор</span><span class="related-bottom-desc">Узнайте, какие параметры определяют изображение на экране. Разбор матриц, разрешения, герцовки и нас</span></a><a href="/articles/p/po/pochemu-morgaet-monitor-noutbuka-vo-vremya-igry.html" class="related-bottom-card"><span class="related-bottom-title">Почему моргает монитор ноутбука во время игры: Причины и решения</span><span class="related-bottom-desc">Монитор мерцает в играх? Узнайте, как устранить проблему с освещением, обновить драйверы видеокарты </span></a><a href="/articles/k/ka/kak-ponyat-razreshenie-monitora.html" class="related-bottom-card"><span class="related-bottom-title">Как понять разрешение монитора: полная инструкция по проверке</span><span class="related-bottom-desc">Узнайте, как определить разрешение экрана Windows и macOS, почему оно важно для четкости изображения</span></a><a href="/articles/c/ch/chto-oznachaet-razreshenie-monitora-1280kh1024.html" class="related-bottom-card"><span class="related-bottom-title">1280×1024 на мониторе: что это значит и для кого подходит?</span><span class="related-bottom-desc">Разрешение 1280×1024: расшифровка, особенности, сравнение с Full HD и 4K. Кому подойдёт такой монито</span></a><a href="/articles/k/ka/kakuyu-chastotu-monitora-vidit-chelovecheskij-glaz.html" class="related-bottom-card"><span class="related-bottom-title">Какую частоту монитора видит человеческий глаз? Разбор мифов и фактов</span><span class="related-bottom-desc">Человеческий глаз и частота обновления экрана: как мы воспринимаем 60 Гц, 144 Гц и 240 Гц? Разбираем</span></a></div>
+        </div>
+    </section>
+    <!--#include virtual="/ssi/after_related_bottom.html" -->
+
+    <footer class="site-footer-premium">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-col">
+                    <div class="footer-brand">🖥️ Мониторум</div>
+                    <p class="footer-about">Полный справочник по настройке, ремонту и выбору компьютерных мониторов для любых задач.</p>
+                </div>
+                <div class="footer-col">
+                    <h4>Разделы</h4>
+                    <ul><li><a href="/category/nastrojka-ekrana/">⚙️ Настройка экрана</a></li>
+<li><a href="/category/podklyuchenie-ustrojstv/">🔌 Подключение устройств</a></li>
+<li><a href="/category/mnozhestvennye-ekrany/">🖥️🖥️ Множественные экраны</a></li>
+<li><a href="/category/zvuk-i-audio/">🔊 Звук и аудио</a></li>
+<li><a href="/category/remont-i-polomki/">🔧 Ремонт и поломки</a></li>
+<li><a href="/category/ukhod-i-chistka/">🧼 Уход и чистка</a></li></ul>
+                </div>
+                <div class="footer-col">
+                    <h4>Информация</h4>
+                    <ul>
+                        <li><a href="/">Главная</a></li>
+                        <li><a href="/about.html">О проекте</a></li>
+                        <li><a href="/categories.html">Все разделы</a></li>
+                        <li><a href="/contact.html">Контакты</a></li>
+                        <li><a href="/privacy.html">Конфиденциальность</a></li>
+                        <li><a href="/sitemap.xml">Карта сайта</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>© Мониторум. Все права защищены.</p>
+                <!--LiveInternet counter--><div style="margin-top:10px;"><a href="https://www.liveinternet.ru/click"
+                target="_blank"><img id="licnt06C4" width="88" height="15" style="border:0" 
+                title="LiveInternet: показано число посетителей за сегодня"
+                src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAEALAAAAAABAAEAAAIBTAA7"
+                alt=""/></a><script>(function(d,s){d.getElementById("licnt06C4").src=
+                "https://counter.yadro.ru/hit?t26.5;r"+escape(d.referrer)+
+                ((typeof(s)=="undefined")?"":";s"+s.width+"*"+s.height+"*"+
+                (s.colorDepth?s.colorDepth:s.pixelDepth))+";u"+escape(d.URL)+
+                ";h"+escape(d.title.substring(0,150))+";"+Math.random()})(document,screen)</script></div><!--/LiveInternet-->
+            </div>
+        </div>
+    </footer>
+    <div id="cookie-consent" class="cookie-popup">
+        <div class="cookie-inner">
+            <span>🍪 Мы используем файлы cookie для улучшения работы сайта.</span>
+            <button id="cookie-accept" class="cookie-btn">Принять</button>
+        </div>
+    </div>
+    <script src="/static/js/main.js"></script>
+    <script>
+    (function() {
+        const popup = document.getElementById('cookie-consent');
+        const btn = document.getElementById('cookie-accept');
+        if (popup && btn && !localStorage.getItem('cookie-accepted')) {
+            popup.classList.add('visible');
+            btn.onclick = () => {
+                localStorage.setItem('cookie-accepted', 'true');
+                popup.classList.remove('visible');
+            };
+        }
+    })();
+    </script>
+    <script>
+    function pbPollVote(el) {
+        var poll = el.closest('.poll-widget');
+        if (poll.classList.contains('voted')) return;
+        poll.classList.add('voted');
+        el.classList.add('selected');
+        var opts = poll.querySelectorAll('.poll-widget-option');
+        var n = opts.length;
+        var raw = [];
+        var sum = 0;
+        for (var i = 0; i < n; i++) {
+            var v = Math.random() * 50 + 5;
+            if (opts[i] === el) v += 30;
+            raw.push(v);
+            sum += v;
+        }
+        var pcts = raw.map(function(v) { return Math.round(v / sum * 100); });
+        var diff = 100 - pcts.reduce(function(a,b){ return a+b; }, 0);
+        pcts[Array.from(opts).indexOf(el)] += diff;
+        setTimeout(function() {
+            opts.forEach(function(opt, i) {
+                opt.querySelector('.poll-widget-bar').style.width = pcts[i] + '%';
+                opt.querySelector('.poll-widget-pct').textContent = pcts[i] + '%';
+            });
+        }, 50);
+    }
+    </script>
+    <!--#include virtual="/ssi/body_bottom.html" -->
+    <script src="/static/js/inject.js" defer></script>
+</body>
+</html>

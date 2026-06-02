@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27><text y=%27.9em%27 font-size=%2790%27>🖥️</text></svg>">
+    <title>Как использовать планшет как монитор для Raspberry Pi: Полное руководство — Мониторум</title>
+    <meta name="description" content="Инструкция по превращению планшета в второй экран для Raspberry Pi. Обзор программ VNC, Spacedesk, DroidCam и настройка HDMI-захвата.">
+    <link rel="canonical" href="https://monitorium.vercel.app/articles/p/pl/planshet-kak-monitor-raspberry-pi.html">
+
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="Как использовать планшет как монитор для Raspberry Pi: Полное руководство">
+    <meta property="og:description" content="Инструкция по превращению планшета в второй экран для Raspberry Pi. Обзор программ VNC, Spacedesk, DroidCam и настройка HDMI-захвата.">
+    <meta property="og:locale" content="ru_RU">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css?v=1780420684">
+    <style>
+    .site-footer-premium {
+        margin-top: 60px; padding: 40px 0 0; background: #1e293b; color: #94a3b8;
+    }
+    .footer-grid {
+        display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 40px;
+        padding-bottom: 32px; border-bottom: 1px solid #334155;
+    }
+    .footer-brand { font-size: 1.2rem; font-weight: 700; color: #f1f5f9; margin-bottom: 12px; }
+    .footer-about { font-size: 0.9rem; line-height: 1.6; margin-bottom: 8px; }
+    .footer-updated { font-size: 0.8rem; color: #64748b; }
+    .footer-col h4 { color: #f1f5f9; font-size: 0.95rem; margin-bottom: 16px; }
+    .footer-col ul { list-style: none; }
+    .footer-col li { margin-bottom: 8px; }
+    .footer-col a { color: #94a3b8; font-size: 0.9rem; transition: color 0.2s; }
+    .footer-col a:hover { color: #60a5fa; }
+    .footer-bottom { padding: 20px 0; text-align: center; font-size: 0.85rem; }
+    @media (max-width: 640px) {
+        .footer-grid { grid-template-columns: 1fr; gap: 24px; }
+    }
+    .cookie-popup {
+        position: fixed; bottom: 0; left: 0; right: 0; background: #1e293b; color: #fff;
+        padding: 16px; transition: transform 0.5s ease; z-index: 9999; border-top: 2px solid #2563eb;
+        transform: translateY(100%);
+    }
+    .cookie-popup.visible { transform: translateY(0); }
+    .cookie-inner { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; gap: 16px; font-size: 0.9rem; }
+    .cookie-btn { background: #2563eb; color: #fff; border: none; padding: 8px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+    .cookie-btn:hover { background: #1d4ed8; }
+    @media (max-width: 640px) {
+        .cookie-inner { flex-direction: column; text-align: center; }
+    }
+</style>
+    
+    <!--#include virtual="/ssi/head.html" -->
+</head>
+<body>
+        <!--#include virtual="/ssi/body_top.html" -->
+    <style>
+    .nav-dropdown { position: relative; display: inline-block; }
+    .dropdown-toggle {
+        background: none; border: none; cursor: pointer;
+        font: inherit; color: inherit; padding: 8px 12px;
+        border-radius: 8px; transition: background 0.2s;
+    }
+    .dropdown-toggle:hover { background: rgba(0,0,0,0.05); }
+    .dropdown-menu {
+        display: none; position: absolute; right: 0; top: 100%;
+        min-width: 240px; max-height: 70vh; overflow-y: auto;
+        background: var(--card-bg, #fff); border: 1px solid var(--border, #e5e7eb);
+        border-radius: 12px; box-shadow: 0 12px 40px rgba(0,0,0,0.12);
+        padding: 8px 0; z-index: 1000;
+    }
+    .nav-dropdown::after {
+        content: ''; position: absolute; left: 0; right: 0;
+        top: 100%; height: 12px;
+    }
+    .nav-dropdown:hover .dropdown-menu,
+    .nav-dropdown:focus-within .dropdown-menu { display: block; }
+    .dropdown-item {
+        display: block; padding: 10px 20px; color: var(--text, #1f2937);
+        text-decoration: none; font-size: 0.95rem; transition: background 0.15s;
+        white-space: nowrap;
+    }
+    .dropdown-item:hover { background: rgba(37,99,235,0.06); color: var(--primary, #2563eb); }
+    @media (max-width: 768px) {
+        .main-nav > .nav-link { display: none; }
+        .dropdown-toggle { display: none; }
+        .dropdown-menu {
+            display: block !important; position: static;
+            box-shadow: none; border: none; border-radius: 0;
+            min-width: auto; max-height: none; padding: 0;
+            background: transparent;
+        }
+        .dropdown-item {
+            padding: 8px 0; font-size: 1rem;
+        }
+    }
+    </style>
+    <header class="site-header">
+        <div class="container header-inner">
+            <a href="/" class="logo">
+                <span class="logo-icon">🖥️</span>
+                <span>Мониторум</span>
+            </a>
+            <button class="mobile-menu-btn" aria-label="Меню" id="menuBtn">☰</button>
+            <nav class="main-nav" id="mainNav">
+                <a href="/category/nastrojka-ekrana/" class="nav-link">⚙️ Настройка экрана</a>
+<a href="/category/podklyuchenie-ustrojstv/" class="nav-link">🔌 Подключение устройств</a>
+<a href="/category/mnozhestvennye-ekrany/" class="nav-link">🖥️🖥️ Множественные экраны</a>
+<a href="/category/zvuk-i-audio/" class="nav-link">🔊 Звук и аудио</a>
+<div class="nav-dropdown">
+            <button class="nav-link dropdown-toggle">📂 Все разделы ▾</button>
+            <div class="dropdown-menu"><a href="/category/nastrojka-ekrana/" class="dropdown-item">⚙️ Настройка экрана</a>
+<a href="/category/podklyuchenie-ustrojstv/" class="dropdown-item">🔌 Подключение устройств</a>
+<a href="/category/mnozhestvennye-ekrany/" class="dropdown-item">🖥️🖥️ Множественные экраны</a>
+<a href="/category/zvuk-i-audio/" class="dropdown-item">🔊 Звук и аудио</a>
+<a href="/category/remont-i-polomki/" class="dropdown-item">🔧 Ремонт и поломки</a>
+<a href="/category/ukhod-i-chistka/" class="dropdown-item">🧼 Уход и чистка</a>
+<a href="/category/vybor-i-kharakteristiki/" class="dropdown-item">📊 Выбор и характеристики</a>
+<a href="/category/drajvery-i-po/" class="dropdown-item">💿 Драйверы и ПО</a>
+<a href="/category/krepleniya-i-ustanovka/" class="dropdown-item">🔩 Крепления и установка</a>
+<a href="/category/utilizatsiya-i-prodazha/" class="dropdown-item">♻️ Утилизация и продажа</a>
+<a href="/category/spetsialnye-rezhimy/" class="dropdown-item">🎮 Специальные режимы</a>
+<a href="/category/drugoe/" class="dropdown-item">📁 Другое</a></div>
+        </div>
+            </nav>
+        </div>
+    </header>
+
+    <nav class="breadcrumbs" aria-label="Навигация">
+        <div class="container"><a href="/">Главная</a><span class="breadcrumb-sep">›</span><a href="/category/podklyuchenie-ustrojstv/">Подключение устройств</a><span class="breadcrumb-sep">›</span><span class="breadcrumb-current">Как использовать планшет как монитор для Raspberry Pi: Полное руководство</span></div>
+    </nav>
+
+    <main class="site-main">
+        <div class="container">
+            <div class="article-layout">
+                <article class="article-main">
+                    
+                    <h1>Превращаем планшет в полноценный монитор для Raspberry Pi</h1>
+                    <nav class="mobile-toc"><details><summary>📋 Содержание</summary><ul><li><a href="#подготовка-оборудования-и-выбор-интерфейса">Подготовка оборудования и выбор интерфейса</a></li><li><a href="#виртуальный-рабочий-стол-через-vnc">Виртуальный рабочий стол через VNC</a></li><li><a href="#использование-hdmi-захвата-для-нулевой-задержки">Использование HDMI-захвата для нулевой задержки</a></li><li><a href="#программные-решения-для-расширения-экрана">Программные решения для расширения экрана</a></li><li><a href="#сравнительная-таблица-методов-подключения">Сравнительная таблица методов подключения</a></li><li><a href="#оптимизация-графики-и-производительности">Оптимизация графики и производительности</a></li><li><a href="#альтернативные-сценарии-использования">Альтернативные сценарии использования</a></li><li><a href="#faq-часто-задаваемые-вопросы">FAQ: Часто задаваемые вопросы</a></li></ul></details></nav>
+                    <!--#include virtual="/ssi/article_before.html" -->
+                    <div class="article-body"><p>Многие энтузиасты сталкиваются с проблемой нехватки экранов при работе с одноплатными компьютерами, такими как <em>Raspberry Pi</em>. Покупка отдельного монитора может быть излишней тратой, особенно если у вас уже есть мощный <em>Android</em> или <em>iPad</em> с качественным дисплеем. Использование планшета в качестве внешнего дисплея открывает широкие возможности для создания компактных станций управления, медиацентров или удаленных рабочих столов.</p>
+
+<p>Существует несколько способов реализовать эту задачу, от беспроводных сетевых решений до использования специального аппаратного оборудования. Выбор метода зависит от вашей задачи: нужна ли вам минимальная задержка для игр или достаточно комфортного интерфейса для написания кода и настройки систем. В этом материале мы разберем самые эффективные способы подключения, их плюсы и минусы.</p>
+
+<h2 id="подготовка-оборудования-и-выбор-интерфейса">Подготовка оборудования и выбор интерфейса</h2>
+
+<p>Прежде чем приступать к настройке программного обеспечения, необходимо оценить возможности вашего <em>Raspberry Pi</em> и планшета. Если вы планируете использовать беспроводное подключение, убедитесь, что оба устройства находятся в одной сети Wi-Fi с высокой пропускной способностью. Для стабильной передачи видеосигнала в реальном времени лучше всего использовать диапазон <code>5 ГГц</code>, так как стандартный <code>2.4 ГГц</code> может создавать задержки и артефакты.</p>
+
+<p>Аппаратная часть также играет роль. Некоторые модели <em>Raspberry Pi</em>, например <em>Model 4</em> или <em>Model 5</em>, обладают достаточной мощностью для кодирования видеопотока без существенной нагрузки на процессор. Старые модели, такие как <em>Raspberry Pi 3 Model B+</em>, могут испытывать трудности при передаче видео высокого разрешения по сети, поэтому для них рекомендуется снижать разрешение или использовать более легкие протоколы.</p>
+
+<p>Важно понимать, что планшет не имеет встроенного видеовхода (HDMI-in) в большинстве случаев. Это означает, что вы не можете просто подключить кабель от платы к планшету без использования специального перехватчика сигнала (HDMI capture card). Без этого устройства подключение возможно только программными методами.</p>
+
+<blockquote>⚠️ Внимание: Если вы планируете использовать планшет как основной монитор для работы с интерфейсом <em>Raspberry Pi OS</em>, убедитесь, что тачскрин поддерживается драйверами, иначе управление может быть затруднено без мыши.</blockquote>
+
+<p>Рассмотрим основные варианты взаимодействия:</p>
+<ul>
+<li><strong>Сетевое подключение (VNC/SSH):</strong> Идеально для удаленного администрирования и написания кода.</li>
+<li><strong>Специализированные драйверы (Spacedesk):</strong> Превращает планшет в расширение рабочего стола Windows, но требует настройки на стороне Pi.</li>
+<li><strong>Аппаратный HDMI-захват:</strong> Единственный способ получить картинку без задержек, близкую к нативному монитору.</li>
+</ul>
+
+<div class="poll-widget" id="poll-a24f598f"><div class="poll-widget-question">📊 Какой тип подключения вы предпочитаете для Raspberry Pi?</div><div class="poll-widget-option" data-poll="a24f598f" data-idx="0" onclick="pbPollVote(this)"><span class="poll-widget-label">Беспроводной (Wi-Fi)</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="a24f598f" data-idx="1" onclick="pbPollVote(this)"><span class="poll-widget-label">Проводной (USB/Ethernet)</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="a24f598f" data-idx="2" onclick="pbPollVote(this)"><span class="poll-widget-label">Через HDMI-захват</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="a24f598f" data-idx="3" onclick="pbPollVote(this)"><span class="poll-widget-label">Не использовал ранее</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div></div>
+
+<h2 id="виртуальный-рабочий-стол-через-vnc">Виртуальный рабочий стол через VNC</h2>
+
+<p>Самый популярный и проверенный метод — использование протокола <strong>VNC</strong> (Virtual Network Computing). Стандартная операционная система <em>Raspberry Pi OS</em> уже имеет встроенную поддержку этого протокола, что устраняет необходимость установки дополнительного софта на саму плату. Вам достаточно включить VNC Server в настройках системы и установить приложение VNC Viewer на планшет.</p>
+
+<p>Для активации функции зайдите в конфигурацию системы через терминал или графический интерфейс. Введите команду <code>sudo raspi-config</code>, перейдите в раздел <code>Interface Options</code> и выберите <code>VNC</code>. После включения сервера, система запросит создание пароля удаленного доступа. Этот пароль будет использоваться для авторизации с планшета.</p>
+
+<p>На планшете скачайте приложение <em>RealVNC Viewer</em> или аналогичный клиент. После запуска введите IP-адрес вашего <em>Raspberry Pi</em>. Вы увидите рабочий стол платы прямо на дисплее устройства. Качество изображения и плавность курсора будут напрямую зависеть от скорости вашей локальной сети.</p>
+
+<p>Этот метод отлично подходит для задач, где не требуется мгновенная реакция. Однако при попытке воспроизведения видео или быстрой прокрутки страниц могут наблюдаться разрывы изображения. Для комфортной работы рекомендуется настроить разрешение экрана на сам/em>Raspberry Pi</em> под физические параметры дисплея планшета.</p>
+
+<div class="attention-box attention-tip"><span class="attention-icon">💡</span><p>VNC — это стандартное решение для удаленного управления, но оно не подходит для задач, требующих высокой частоты обновления кадров или минимальной задержки ввода.</p></div>
+
+<h2 id="использование-hdmi-захвата-для-нулевой-задержки">Использование HDMI-захвата для нулевой задержки</h2>
+
+<p>Если вам критически важна плавность изображения, например, для игр или просмотра видео с высоким битрейтом, программные методы могут не подойти. В этом случае единственным выходом станет использование внешнего видеозахватчика (HDMI capture card). Это небольшое устройство, которое подключается к планшету через <strong>USB Type-C</strong> (с поддержкой OTG) или <strong>Micro-USB</strong>.</p>
+
+<p>Подключение выполняется по схеме: <em>Raspberry Pi</em> (выход HDMI) → Кабель HDMI → Видеозахватчик → USB-кабель → Планшет. На планшете необходимо установить приложение, способное отображать сигнал с USB-захвата, например, <em>USB Camera</em> или специализированные плееры.</p>
+
+<p>Такой метод превращает планшет в настоящий монитор с минимальной задержкой, так как видеопоток передается напрямую без сжатия в сеть. Однако это требует дополнительных затрат на покупку адаптера и кабеля, а также наличия свободного USB-порта на планшете.</p>
+
+<blockquote>⚠️ Внимание: Не все дешевые видеозахватчики поддерживают полное разрешение <code>1080p</code> и частоту <code>60 Гц</code>. Перед покупкой проверьте спецификации устройства на официальном сайте производителя.</blockquote>
+
+<details class="faq-item"><summary>Какие адаптеры лучше всего работают с планшетом?</summary><div class="faq-answer"><p>Для стабильной работы выбирайте картридеры с чипсетами UVC (USB Video Class). Дешевые модели на чипах CVBS могут выдавать изображение только в 480p или 720p, что сделает использование Pi некомфортным. Ищите модели с поддержкой "1080p @ 60fps".</p></div></details>
+
+<h2 id="программные-решения-для-расширения-экрана">Программные решения для расширения экрана</h2>
+
+<p>Существуют сторонние утилиты, позволяющие использовать планшет не просто как удаленный терминал, а как физическое расширение рабочего стола. Одним из таких решений является <em>Spacedesk</em>, которое изначально разрабатывалось для Windows, но имеет экспериментальные серверные версии для Linux.</p>
+
+<p>Для настройки вам потребуется установить серверную часть драйвера на <em>Raspberry Pi</em>, что может потребовать компиляции исходного кода или поиска готовых бинарных файлов. После установки и запуска сервиса, планшет с клиентом Spacedesk обнаружит его в локальной сети и предложит подключиться.</p>
+
+<p>Преимуществом этого метода является возможность перетаскивать окна между экранами, создавая многомониторную конфигурацию. Однако производительность этого решения на одноплатных компьютерах часто оставляет желать лучшего, так как процесс кодирования видеопотока ложится на основной CPU платы.</p>
+
+<p>Альтернативой может служить использование <em>Deskreen</em> — открытого проекта, который транслирует экран через браузер. Это избавляет от необходимости устанавливать приложения на планшет, достаточно открыть ссылку, выдаваемую сервером, в любом веб-обозревателе.</p>
+
+<div class="checklist-block"><h4>☑️ Настройка Deskreen</h4><label class="check-item"><input type="checkbox"><span>Установить Node.js на Raspberry Pi</span></label><label class="check-item"><input type="checkbox"><span>Скачать Deskreen на Pi</span></label><label class="check-item"><input type="checkbox"><span>Настроить сеть Wi-Fi</span></label><label class="check-item"><input type="checkbox"><span>Открыть ссылку в браузере планшета</span></label><div class="check-progress">Выполнено: <span class="check-count">0</span> / 4</div></div>
+
+<h2 id="сравнительная-таблица-методов-подключения">Сравнительная таблица методов подключения</h2>
+
+<p>Чтобы облегчить выбор подходящего способа, мы собрали основные характеристики разных методов в одну таблицу. Это поможет вам быстро сориентироваться в зависимости от ваших задач и имеющегося оборудования.</p>
+
+<table>
+<thead>
+<tr>
+<th>Метод</th>
+<th>Задержка (Latency)</th>
+<th>Требования к сети</th>
+<th>Сложность настройки</th>
+<th>Идеально для</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>VNC (RealVNC)</td>
+<td>Средняя (50-150 мс)</td>
+<td>Wi-Fi 2.4/5 ГГц</td>
+<td>Низкая</td>
+<td>Администрирование, код</td>
+</tr>
+<tr>
+<td>HDMI-захват</td>
+<td>Низкая (< 20 мс)</td>
+<td>Не требуется (USB)</td>
+<td>Средняя</td>
+<td>Видео, игры, GUI</td>
+</tr>
+<tr>
+<td>Spacedesk</td>
+<td>Высокая (100-300 мс)</td>
+<td>Wi-Fi 5 ГГц (желательно)</td>
+<td>Высокая</td>
+<td>Доп. экран для окон</td>
+</tr>
+<tr>
+<td>Deskreen</td>
+<td>Средняя (50-100 мс)</td>
+<td>Wi-Fi (любой)</td>
+<td>Средняя</td>
+<td>Быстрый просмотр</td>
+</tr>
+</tbody>
+</table>
+
+<div class="attention-box attention-tip"><span class="attention-icon">💡</span><p>Для получения наилучшего результата с HDMI-захватом используйте качественные кабели HDMI с поддержкой High Speed, чтобы избежать появления полос или мерцания на экране планшета.</p></div>
+
+<h2 id="оптимизация-графики-и-производительности">Оптимизация графики и производительности</h2>
+
+<p>После выбора метода подключения важно оптимизировать систему для комфортной работы. Если вы используете графический интерфейс <em>Raspberry Pi OS</em>, убедитесь, что отключены лишние визуальные эффекты, такие как анимация окон или прозрачность. Это существенно снизит нагрузку на видеодрайвер.</p>
+
+<p>В настройках дисплея попробуйте изменить разрешение на <code>1920x1080</code> или даже ниже, если планшет поддерживает только <code>1280x800</code>. Несоответствие разрешений может привести к размытию текста и проблемам с масштабированием интерфейса. Используйте утилиту <code>raspi-config</code> или настройки отображения в среде рабочего стола для корректировки параметров.</p>
+
+<p>Также стоит проверить частоту кадров. Если изображение "тормозит", попробуйте ограничить частоту обновления в настройках драйвера или уменьшить цветовую глубину. Иногда переход с 60 Гц на 30 Гц в сетевом соединении дает прирост стабильности картинки за счет снижения объема передаваемых данных.</p>
+
+<p>Для пользователей, работающих с <strong>Python</strong> или другими языками программирования, может быть полезным отключение графического интерфейса при загрузке и запуск только консольного режима, если планшет используется через SSH. Это высвободит все ресурсы памяти и процессора для выполнения задач.</p>
+
+<blockquote>⚠️ Внимание: При использовании планшета в режиме "второго монитора" не забывайте о нагреве устройства. Длительная работа с высокой яркостью экрана и активным Wi-Fi модулем может привести к перегреву планшета и троттлингу.</blockquote>
+
+<h2 id="альтернативные-сценарии-использования">Альтернативные сценарии использования</h2>
+
+<p>Использование планшета в связке с <em>Raspberry Pi</em> не ограничивается просто дублированием экрана. Вы можете создать полноценную станцию управления умным домом. Установив на планшет специализированные приложения, вы сможете управлять освещением, температурой и камерами, в то время как сам <em>Pi</em> работает сервером в фоновом режиме.</p>
+
+<p>Еще один интересный сценарий — создание портативной игровой консоли. Подключив геймпад к планшету, а <em>Raspberry Pi</em> к нему же по сети, можно запускать эмуляторы старых приставок. Для этого потребуется настроить низкую задержку ввода, возможно, с использованием HDMI-захвата.</p>
+
+<p>Также планшет можно использовать как панель мониторинга для серверов. Настроив дашборды (Grafana, Home Assistant), вы получите красивый и информативный интерфейс, который всегда под рукой. Это особенно удобно в серверных стойках или на рабочих столах, где нет места для дополнительного монитора.</p>
+
+<h2 id="faq-часто-задаваемые-вопросы">FAQ: Часто задаваемые вопросы</h2>
+
+<details>
+<summary>Можно ли использовать планшет как монитор без интернета?</summary>
+<p>Да, если вы используете локальную сеть (Wi-Fi роутер) или прямое подключение через USB-кабель с HDMI-захватом. Интернет для передачи картинки между устройствами в одной сети не требуется, достаточно наличия локального маршрутизатора.</p>
+</details>
+
+<details>
+<summary>Почему на планшете нет звука при подключении через VNC?</summary>
+<p>Протокол VNC по умолчанию передает только видеопоток и ввод. Для передачи звука необходимо использовать дополнительные плагины или настройки, которые поддерживают не все клиенты. Проще использовать HDMI-захват или отдельный аудиоканал.</p>
+</details>
+
+<details>
+<summary>Сколько энергии потребляет планшет в режиме монитора?</summary>
+<p>Значительно больше, чем в режиме ожидания. Экран и Wi-Fi модуль работают на полную мощность. Рекомендуется подключать планшет к внешнему источнику питания или использовать Power Bank высокой емкости.</p>
+</details>
+
+<details>
+<summary>Поддерживает ли Raspberry Pi Zero подключение к планшету?</summary>
+<p>Да, но с ограничениями. Из-за слабой производительности Pi Zero лучше использовать только для текстовых интерфейсов (SSH) или очень простых графических интерфейсов. Тяжелые сетевые протоколы могут не потянуть.</p>
+</details>
+
+<details>
+<summary>Как убрать задержку курсора мыши?</summary>
+<p>Используйте проводное Ethernet-подключение вместо Wi-Fi, если возможно. Также попробуйте уменьшить разрешение экрана в настройках <em>Raspberry Pi</em> и отключить аппаратное ускорение в клиенте VNC.</p>
+</details></div>
+                    <!--#include virtual="/ssi/article_after.html" -->
+
+                </article>
+                <aside class="article-sidebar"><!--#include virtual="/ssi/sidebar_top.html" --><nav class="sidebar-search"><div class="sidebar-search-box"><input type="text" id="globalSearchInput" placeholder="🔍 Поиск статей..." autocomplete="off"><div class="search-dropdown" id="globalSearchDropdown"></div></div></nav><!--#include virtual="/ssi/sidebar_before_toc.html" --><nav class="sidebar-toc" id="sidebarToc"><h3>Содержание</h3><ul><li><a href="#подготовка-оборудования-и-выбор-интерфейса">Подготовка оборудования и выбор интерфейса</a></li><li><a href="#виртуальный-рабочий-стол-через-vnc">Виртуальный рабочий стол через VNC</a></li><li><a href="#использование-hdmi-захвата-для-нулевой-задержки">Использование HDMI-захвата для нулевой задержки</a></li><li><a href="#программные-решения-для-расширения-экрана">Программные решения для расширения экрана</a></li><li><a href="#сравнительная-таблица-методов-подключения">Сравнительная таблица методов подключения</a></li><li><a href="#оптимизация-графики-и-производительности">Оптимизация графики и производительности</a></li><li><a href="#альтернативные-сценарии-использования">Альтернативные сценарии использования</a></li><li><a href="#faq-часто-задаваемые-вопросы">FAQ: Часто задаваемые вопросы</a></li></ul></nav><!--#include virtual="/ssi/sidebar_before_related.html" --><nav class="sidebar-related"><h3>Похожие статьи</h3><ul><li><a href="/articles/k/ka/kak-podklyuchit-xbox-one-k-monitoru-bez-hdmi.html" class="related-card">Подключение Xbox One к монитору без HDMI: альтернативные методы</a></li><li><a href="/articles/k/ku/kuda-podklyuchat-monitor.html" class="related-card">Куда подключать монитор: выбор порта HDMI, DisplayPort и USB-C</a></li><li><a href="/articles/k/ku/kuda-luchshe-podklyuchat-naushniki-k-kompyuteru-ili-monitoru.html" class="related-card">Куда лучше подключать наушники: монитор или системный блок?</a></li><li><a href="/articles/k/ka/kak-podsoedinit-ps4-k-monitoru.html" class="related-card">Как подключить PS4 к монитору: HDMI, звук и настройки</a></li><li><a href="/articles/h/hd/hdmi-kak-vklyuchit-monitor-cherez-hdmi.html" class="related-card">Как подключить монитор через HDMI: пошаговая инструкция 2026</a></li></ul></nav><!--#include virtual="/ssi/sidebar_after_related.html" --></aside>
+            </div>
+        </div>
+    </main>
+
+    <!--#include virtual="/ssi/before_related_bottom.html" -->
+    <section class="related-bottom">
+        <div class="container">
+            <h2 class="related-bottom-heading">📖 Читайте также</h2>
+            <div class="related-bottom-grid"><a href="/articles/k/ka/kak-podklyuchit-xbox-one-k-monitoru-bez-hdmi.html" class="related-bottom-card"><span class="related-bottom-title">Подключение Xbox One к монитору без HDMI: альтернативные методы</span><span class="related-bottom-desc">Узнайте, как подключить Xbox One к монитору без HDMI кабеля. Полное руководство по использованию VGA</span></a><a href="/articles/k/ku/kuda-podklyuchat-monitor.html" class="related-bottom-card"><span class="related-bottom-title">Куда подключать монитор: выбор порта HDMI, DisplayPort и USB-C</span><span class="related-bottom-desc">Где подключить монитор к ПК: разъемы видеокарты и материнской платы, выбор интерфейса для 4K и высок</span></a><a href="/articles/k/ku/kuda-luchshe-podklyuchat-naushniki-k-kompyuteru-ili-monitoru.html" class="related-bottom-card"><span class="related-bottom-title">Куда лучше подключать наушники: монитор или системный блок?</span><span class="related-bottom-desc">Где звук качественнее: в разъеме монитора или материнской платы? Разбор шума, задержек и совместимос</span></a><a href="/articles/k/ka/kak-podsoedinit-ps4-k-monitoru.html" class="related-bottom-card"><span class="related-bottom-title">Как подключить PS4 к монитору: HDMI, звук и настройки</span><span class="related-bottom-desc">Пошаговая инструкция по подключению PlayStation 4 к компьютерному монитору. Решение проблем со звуко</span></a><a href="/articles/h/hd/hdmi-kak-vklyuchit-monitor-cherez-hdmi.html" class="related-bottom-card"><span class="related-bottom-title">Как подключить монитор через HDMI: пошаговая инструкция 2026</span><span class="related-bottom-desc">Не работает HDMI на мониторе? Узнайте, как правильно включить монитор через HDMI с ПК, ноутбука или </span></a><a href="/articles/c/ch/cherez-chto-podklyuchat-monitor-dp-ili-hdmi.html" class="related-bottom-card"><span class="related-bottom-title">Через что подключать монитор: DP или HDMI — полный разбор</span><span class="related-bottom-desc">Сравниваем DisplayPort и HDMI для подключения монитора. Узнайте, какой кабель выбрать для игр, работ</span></a></div>
+        </div>
+    </section>
+    <!--#include virtual="/ssi/after_related_bottom.html" -->
+
+    <footer class="site-footer-premium">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-col">
+                    <div class="footer-brand">🖥️ Мониторум</div>
+                    <p class="footer-about">Полный справочник по настройке, ремонту и выбору компьютерных мониторов для любых задач.</p>
+                </div>
+                <div class="footer-col">
+                    <h4>Разделы</h4>
+                    <ul><li><a href="/category/nastrojka-ekrana/">⚙️ Настройка экрана</a></li>
+<li><a href="/category/podklyuchenie-ustrojstv/">🔌 Подключение устройств</a></li>
+<li><a href="/category/mnozhestvennye-ekrany/">🖥️🖥️ Множественные экраны</a></li>
+<li><a href="/category/zvuk-i-audio/">🔊 Звук и аудио</a></li>
+<li><a href="/category/remont-i-polomki/">🔧 Ремонт и поломки</a></li>
+<li><a href="/category/ukhod-i-chistka/">🧼 Уход и чистка</a></li></ul>
+                </div>
+                <div class="footer-col">
+                    <h4>Информация</h4>
+                    <ul>
+                        <li><a href="/">Главная</a></li>
+                        <li><a href="/about.html">О проекте</a></li>
+                        <li><a href="/categories.html">Все разделы</a></li>
+                        <li><a href="/contact.html">Контакты</a></li>
+                        <li><a href="/privacy.html">Конфиденциальность</a></li>
+                        <li><a href="/sitemap.xml">Карта сайта</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>© Мониторум. Все права защищены.</p>
+                <!--LiveInternet counter--><div style="margin-top:10px;"><a href="https://www.liveinternet.ru/click"
+                target="_blank"><img id="licnt06C4" width="88" height="15" style="border:0" 
+                title="LiveInternet: показано число посетителей за сегодня"
+                src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAEALAAAAAABAAEAAAIBTAA7"
+                alt=""/></a><script>(function(d,s){d.getElementById("licnt06C4").src=
+                "https://counter.yadro.ru/hit?t26.5;r"+escape(d.referrer)+
+                ((typeof(s)=="undefined")?"":";s"+s.width+"*"+s.height+"*"+
+                (s.colorDepth?s.colorDepth:s.pixelDepth))+";u"+escape(d.URL)+
+                ";h"+escape(d.title.substring(0,150))+";"+Math.random()})(document,screen)</script></div><!--/LiveInternet-->
+            </div>
+        </div>
+    </footer>
+    <div id="cookie-consent" class="cookie-popup">
+        <div class="cookie-inner">
+            <span>🍪 Мы используем файлы cookie для улучшения работы сайта.</span>
+            <button id="cookie-accept" class="cookie-btn">Принять</button>
+        </div>
+    </div>
+    <script src="/static/js/main.js"></script>
+    <script>
+    (function() {
+        const popup = document.getElementById('cookie-consent');
+        const btn = document.getElementById('cookie-accept');
+        if (popup && btn && !localStorage.getItem('cookie-accepted')) {
+            popup.classList.add('visible');
+            btn.onclick = () => {
+                localStorage.setItem('cookie-accepted', 'true');
+                popup.classList.remove('visible');
+            };
+        }
+    })();
+    </script>
+    <script>
+    function pbPollVote(el) {
+        var poll = el.closest('.poll-widget');
+        if (poll.classList.contains('voted')) return;
+        poll.classList.add('voted');
+        el.classList.add('selected');
+        var opts = poll.querySelectorAll('.poll-widget-option');
+        var n = opts.length;
+        var raw = [];
+        var sum = 0;
+        for (var i = 0; i < n; i++) {
+            var v = Math.random() * 50 + 5;
+            if (opts[i] === el) v += 30;
+            raw.push(v);
+            sum += v;
+        }
+        var pcts = raw.map(function(v) { return Math.round(v / sum * 100); });
+        var diff = 100 - pcts.reduce(function(a,b){ return a+b; }, 0);
+        pcts[Array.from(opts).indexOf(el)] += diff;
+        setTimeout(function() {
+            opts.forEach(function(opt, i) {
+                opt.querySelector('.poll-widget-bar').style.width = pcts[i] + '%';
+                opt.querySelector('.poll-widget-pct').textContent = pcts[i] + '%';
+            });
+        }, 50);
+    }
+    </script>
+    <!--#include virtual="/ssi/body_bottom.html" -->
+    <script src="/static/js/inject.js" defer></script>
+</body>
+</html>

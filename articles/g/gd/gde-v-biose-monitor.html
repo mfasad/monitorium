@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27><text y=%27.9em%27 font-size=%2790%27>🖥️</text></svg>">
+    <title>Где в BIOS найти настройки монитора и подключить второй экран — Мониторум</title>
+    <meta name="description" content="Полное руководство по поиску настроек видеовыходов в BIOS/UEFI. Как включить iGPU, изменить частоту обновления и отключить встроенную графику.">
+    <link rel="canonical" href="https://monitorium.vercel.app/articles/g/gd/gde-v-biose-monitor.html">
+
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="Где в BIOS найти настройки монитора и подключить второй экран">
+    <meta property="og:description" content="Полное руководство по поиску настроек видеовыходов в BIOS/UEFI. Как включить iGPU, изменить частоту обновления и отключить встроенную графику.">
+    <meta property="og:locale" content="ru_RU">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css?v=1780420684">
+    <style>
+    .site-footer-premium {
+        margin-top: 60px; padding: 40px 0 0; background: #1e293b; color: #94a3b8;
+    }
+    .footer-grid {
+        display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 40px;
+        padding-bottom: 32px; border-bottom: 1px solid #334155;
+    }
+    .footer-brand { font-size: 1.2rem; font-weight: 700; color: #f1f5f9; margin-bottom: 12px; }
+    .footer-about { font-size: 0.9rem; line-height: 1.6; margin-bottom: 8px; }
+    .footer-updated { font-size: 0.8rem; color: #64748b; }
+    .footer-col h4 { color: #f1f5f9; font-size: 0.95rem; margin-bottom: 16px; }
+    .footer-col ul { list-style: none; }
+    .footer-col li { margin-bottom: 8px; }
+    .footer-col a { color: #94a3b8; font-size: 0.9rem; transition: color 0.2s; }
+    .footer-col a:hover { color: #60a5fa; }
+    .footer-bottom { padding: 20px 0; text-align: center; font-size: 0.85rem; }
+    @media (max-width: 640px) {
+        .footer-grid { grid-template-columns: 1fr; gap: 24px; }
+    }
+    .cookie-popup {
+        position: fixed; bottom: 0; left: 0; right: 0; background: #1e293b; color: #fff;
+        padding: 16px; transition: transform 0.5s ease; z-index: 9999; border-top: 2px solid #2563eb;
+        transform: translateY(100%);
+    }
+    .cookie-popup.visible { transform: translateY(0); }
+    .cookie-inner { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; gap: 16px; font-size: 0.9rem; }
+    .cookie-btn { background: #2563eb; color: #fff; border: none; padding: 8px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+    .cookie-btn:hover { background: #1d4ed8; }
+    @media (max-width: 640px) {
+        .cookie-inner { flex-direction: column; text-align: center; }
+    }
+</style>
+    
+    <!--#include virtual="/ssi/head.html" -->
+</head>
+<body>
+        <!--#include virtual="/ssi/body_top.html" -->
+    <style>
+    .nav-dropdown { position: relative; display: inline-block; }
+    .dropdown-toggle {
+        background: none; border: none; cursor: pointer;
+        font: inherit; color: inherit; padding: 8px 12px;
+        border-radius: 8px; transition: background 0.2s;
+    }
+    .dropdown-toggle:hover { background: rgba(0,0,0,0.05); }
+    .dropdown-menu {
+        display: none; position: absolute; right: 0; top: 100%;
+        min-width: 240px; max-height: 70vh; overflow-y: auto;
+        background: var(--card-bg, #fff); border: 1px solid var(--border, #e5e7eb);
+        border-radius: 12px; box-shadow: 0 12px 40px rgba(0,0,0,0.12);
+        padding: 8px 0; z-index: 1000;
+    }
+    .nav-dropdown::after {
+        content: ''; position: absolute; left: 0; right: 0;
+        top: 100%; height: 12px;
+    }
+    .nav-dropdown:hover .dropdown-menu,
+    .nav-dropdown:focus-within .dropdown-menu { display: block; }
+    .dropdown-item {
+        display: block; padding: 10px 20px; color: var(--text, #1f2937);
+        text-decoration: none; font-size: 0.95rem; transition: background 0.15s;
+        white-space: nowrap;
+    }
+    .dropdown-item:hover { background: rgba(37,99,235,0.06); color: var(--primary, #2563eb); }
+    @media (max-width: 768px) {
+        .main-nav > .nav-link { display: none; }
+        .dropdown-toggle { display: none; }
+        .dropdown-menu {
+            display: block !important; position: static;
+            box-shadow: none; border: none; border-radius: 0;
+            min-width: auto; max-height: none; padding: 0;
+            background: transparent;
+        }
+        .dropdown-item {
+            padding: 8px 0; font-size: 1rem;
+        }
+    }
+    </style>
+    <header class="site-header">
+        <div class="container header-inner">
+            <a href="/" class="logo">
+                <span class="logo-icon">🖥️</span>
+                <span>Мониторум</span>
+            </a>
+            <button class="mobile-menu-btn" aria-label="Меню" id="menuBtn">☰</button>
+            <nav class="main-nav" id="mainNav">
+                <a href="/category/nastrojka-ekrana/" class="nav-link">⚙️ Настройка экрана</a>
+<a href="/category/podklyuchenie-ustrojstv/" class="nav-link">🔌 Подключение устройств</a>
+<a href="/category/mnozhestvennye-ekrany/" class="nav-link">🖥️🖥️ Множественные экраны</a>
+<a href="/category/zvuk-i-audio/" class="nav-link">🔊 Звук и аудио</a>
+<div class="nav-dropdown">
+            <button class="nav-link dropdown-toggle">📂 Все разделы ▾</button>
+            <div class="dropdown-menu"><a href="/category/nastrojka-ekrana/" class="dropdown-item">⚙️ Настройка экрана</a>
+<a href="/category/podklyuchenie-ustrojstv/" class="dropdown-item">🔌 Подключение устройств</a>
+<a href="/category/mnozhestvennye-ekrany/" class="dropdown-item">🖥️🖥️ Множественные экраны</a>
+<a href="/category/zvuk-i-audio/" class="dropdown-item">🔊 Звук и аудио</a>
+<a href="/category/remont-i-polomki/" class="dropdown-item">🔧 Ремонт и поломки</a>
+<a href="/category/ukhod-i-chistka/" class="dropdown-item">🧼 Уход и чистка</a>
+<a href="/category/vybor-i-kharakteristiki/" class="dropdown-item">📊 Выбор и характеристики</a>
+<a href="/category/drajvery-i-po/" class="dropdown-item">💿 Драйверы и ПО</a>
+<a href="/category/krepleniya-i-ustanovka/" class="dropdown-item">🔩 Крепления и установка</a>
+<a href="/category/utilizatsiya-i-prodazha/" class="dropdown-item">♻️ Утилизация и продажа</a>
+<a href="/category/spetsialnye-rezhimy/" class="dropdown-item">🎮 Специальные режимы</a>
+<a href="/category/drugoe/" class="dropdown-item">📁 Другое</a></div>
+        </div>
+            </nav>
+        </div>
+    </header>
+
+    <nav class="breadcrumbs" aria-label="Навигация">
+        <div class="container"><a href="/">Главная</a><span class="breadcrumb-sep">›</span><a href="/category/drugoe/">Другое</a><span class="breadcrumb-sep">›</span><span class="breadcrumb-current">Где в BIOS найти настройки монитора и подключить второй экран</span></div>
+    </nav>
+
+    <main class="site-main">
+        <div class="container">
+            <div class="article-layout">
+                <article class="article-main">
+                    
+                    <h1>Где в BIOS/UEFI находятся настройки монитора: полное руководство</h1>
+                    <nav class="mobile-toc"><details><summary>📋 Содержание</summary><ul><li><a href="#почему-настройки-монитора-спрятаны-в-bios-и-как-это-работает">Почему настройки монитора спрятаны в BIOS и как это работает</a></li><li><a href="#поиск-раздела-видеонастроек-в-разных-версиях-bios">Поиск раздела видеонастроек в разных версиях BIOS</a></li><li><a href="#включение-и-настройка-интегрированной-графики-igpu">Включение и настройка интегрированной графики (iGPU)</a></li><li><a href="#таблица-основных-параметров-видеоподсистемы-в-bios">Таблица основных параметров видеоподсистемы в BIOS</a></li><li><a href="#настройка-частоты-обновления-и-совместимости-csm">Настройка частоты обновления и совместимости (CSM)</a></li><li><a href="#чек-лист-настройки-видеовыходов-для-второго-монитора">Чек-лист настройки видеовыходов для второго монитора</a></li><li><a href="#особые-случаи-ноутбуки-и-серверные-платы">Особые случаи: ноутбуки и серверные платы</a></li><li><a href="#частые-ошибки-и-методы-их-устранения">Частые ошибки и методы их устранения</a></li><li><a href="#faq-вопросы-и-ответы-по-настройке-монитора-в-bios">FAQ: Вопросы и ответы по настройке монитора в BIOS</a></li></ul></details></nav>
+                    <!--#include virtual="/ssi/article_before.html" -->
+                    <div class="article-body"><p>Отсутствие изображения при загрузке или сбой вывода сигнала на встроенный видеорегилятор часто связаны не с драйверами, а с настройками базовой системы ввода-вывода <strong>BIOS</strong> или <strong>UEFI</strong>. В этой прошивке фиксируется приоритет видеовыходов, активируется встроенная графика и определяются параметры инициализации дисплея на самых ранних этапах запуска компьютера, поэтому именно здесь нужно искать причину нестабильной работы монитора.</p>
+
+<p>Важно понимать, что интерфейс BIOS не имеет отдельной кнопки под названием «Монитор» в привычном понимании. Настройки дисплея распределены по разным разделам, зависящим от производителя материнской платы и процессора. Чтобы найти нужные параметры, необходимо знать специфику вашего оборудования и уметь ориентироваться в меню, где встречаются термины вроде <em>Primary Display</em>, <em>Integrated Graphics</em> или <em>IGD Multi-Monitor</em>.</p>
+
+<h2 id="почему-настройки-монитора-спрятаны-в-bios-и-как-это-работает">Почему настройки монитора спрятаны в BIOS и как это работает</h2>
+<p>Базовая система ввода-вывода отвечает за инициализацию оборудования до начала загрузки операционной системы. В этот момент ОС и её драйверы ещё не активны, поэтому все решения о том, какой видеовыход использовать (дискретная видеокарта или встроенное ядро процессора), принимаются именно здесь. Если настройки заданы некорректно, экран может остаться чёрным, даже если кабели подключены верно.</p>
+
+<p>Современные материнские платы с процессорами <em>Intel Core</em> или <em>AMD Ryzen</em> имеют мощный встроенный графический процессор (iGPU). По умолчанию система пытается определить наличие внешней видеокарты. Если её нет, или если внешний монитор подключен к портам материнской платы, BIOS должен знать, что активировать именно встроенное ядро. Без этого переключателя система просто не выведет сигнал на монитор.</p>
+
+<p>Кроме того, в разделе видеоподсистемы часто скрываются параметры, влияющие на частоту обновления и разрешение при загрузке. Хотя операционная система управляет этими настройками в обычном режиме, некоторые функции, такие как <strong>Fast Boot</strong> или <strong>CSM</strong>, могут блокировать инициализацию высокоскоростных дисплеев на начальном этапе, вызывая проблемы с отображением.</p>
+
+<blockquote>
+<p>⚠️ <strong>Внимание!</strong> Изменение настроек видеоподсистемы в BIOS без понимания последствий может привести к отсутствию изображения на экране. Если после изменений экран остается черным, потребуется сброс настроек BIOS через перемычку на материнской плате или извлечение батарейки CMOS.</p>
+</blockquote>
+
+<h2 id="поиск-раздела-видеонастроек-в-разных-версиях-bios">Поиск раздела видеонастроек в разных версиях BIOS</h2>
+<p>Найти настройки монитора можно, зайдя в меню при загрузке компьютера, нажав клавишу <code>Del</code>, <code>F2</code> или <code>F10</code>. Интерфейс может быть классическим синим (Legacy BIOS) или современным графическим (UEFI). В зависимости от производителя платы, названия разделов будут отличаться, но логика поиска остается схожей.</p>
+
+<p>В материнских платах <em>ASUS</em> нужно перейти в режим <code>Advanced Mode</code> (клавиша F7) и найти вкладку <code>Advanced</code>. Нас интересует подраздел <code>System Agent Configuration</code> или <code>North Bridge</code>. Там будет пункт <code>iGPU Multi-Monitor</code>. Его необходимо установить в состояние <code>Enabled</code>, если вы используете процессор со встроенной графикой.</p>
+
+<p>Для плат <em>Gigabyte</em> искомый раздел чаще всего находится во вкладке <code>Settings</code> или <code>Peripherals</code>. Ищите пункт <code>Initial Display Output</code>. Если у вас нет отдельной видеокарты, выберите <code>IGFX</code>. Если карта есть, но вы хотите подключить второй монитор к материнской плате, выберите <code>Both</code> или включите <code>Integrated Graphics</code>.</p>
+
+<p>На платах <em>MSI</em> логика похожа, но меню называется <code>Settings</code> -> <code>Advanced</code> -> <code>Integrated Graphics Configuration</code>. Здесь нужно активировать <code>IGD Multi-Monitor</code>. </p>
+
+<div class="attention-box attention-tip"><span class="attention-icon">💡</span><p>Параметры видеовыхода в BIOS часто находятся в разделах Advanced, Chipset или Settings, а не в разделе Boot или Power.</p></div>
+
+<h2 id="включение-и-настройка-интегрированной-графики-igpu">Включение и настройка интегрированной графики (iGPU)</h2>
+<p>Самая частая причина отсутствия изображения на мониторе, подключенном к материнской плате — отключенная интегрированная графика. Это стандартное поведение для ПК с установленной дискретной видеокартой, чтобы сэкономить ресурсы процессора. Однако, если вы хотите использовать два монитора (один на карте, другой на плате), эту функцию нужно принудительно включить.</p>
+
+<p>Найдите параметр <strong>Integrated Graphics</strong> или <strong>Internal Graphics</strong> и переключите его из <code>Disabled</code> в <code>Enabled</code> или <code>Auto</code>. В некоторых случаях также требуется изменить параметр <code>IGD Memory</code> (выделение оперативной памяти под видео), установив значение <code>64MB</code> или <code>128MB</code>, хотя современные системы делают это автоматически.</p>
+
+<p>Если вы используете процессор <em>Intel</em> без индекса <strong>F</strong> (например, i5-12400), встроенная графика активна. А вот процессоры серии <em>F</em> (например, i5-12400F) физически не имеют видеоядра, и настройка в BIOS работать не будет. В этом случае монитор должен быть подключен исключительно к дискретной видеокарте.</p>
+
+<details class="faq-item"><summary>Почему процессоры с индексом F не имеют графики?</summary><div class="faq-answer"><p>Процессоры серии F (например, i5-12400F) были созданы как бюджетная альтернатива с отключенным видеоядром. Это позволяет производителю снизить стоимость кристалла и цену конечного продукта, но требует обязательного наличия отдельной видеокарты для вывода изображения.</p></div></details>
+
+<p>Иногда для активации второго монитора требуется изменить приоритет загрузки видеоконтроллера. Параметр <code>Primary Display</code> или <code>Init Display First</code> позволяет выбрать, с какого устройства система должна начать вывод изображения. Варианты обычно включают <code>PCIe</code> (дискретная карта), <code>IGD</code> (встроенная графика) или <code>Auto</code>.</p>
+
+<h2 id="таблица-основных-параметров-видеоподсистемы-в-bios">Таблица основных параметров видеоподсистемы в BIOS</h2>
+<p>Ниже приведена сводная таблица самых распространенных названий параметров, которые влияют на работу монитора, с указанием их типичных значений.</p>
+
+<table>
+<thead>
+<tr>
+<th>Параметр (название может отличаться)</th>
+<th>Описание назначения</th>
+<th>Рекомендуемое значение для 2 мониторов</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Integrated Graphics</strong></td>
+<td>Включение/выключение встроенного видеоядра процессора</td>
+<td>Enabled</td>
+</tr>
+<tr>
+<td><strong>Primary Display</strong></td>
+<td>Выбор основного устройства вывода изображения при старте</td>
+<td>Auto или PCIe (для карты)</td>
+</tr>
+<tr>
+<td><strong>IGD Multi-Monitor</strong></td>
+<td>Разрешение работы нескольких мониторов одновременно</td>
+<td>Enabled</td>
+</tr>
+<tr>
+<td><strong>Initial Display Output</strong></td>
+<td>Первое устройство, на которое выдается видеосигнал</td>
+<td>IGFX (если нет карты) или Both</td>
+</tr>
+<tr>
+<td><strong>CSM Support</strong></td>
+<td>Поддержка устаревших интерфейсов для совместимости</td>
+<td>Enabled (для старых мониторов)</td>
+</tr>
+</tbody>
+</table>
+
+<div class="poll-widget" id="poll-d684963a"><div class="poll-widget-question">📊 Есть ли у вас дискретная видеокарта?</div><div class="poll-widget-option" data-poll="d684963a" data-idx="0" onclick="pbPollVote(this)"><span class="poll-widget-label">Да, мощная карта</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="d684963a" data-idx="1" onclick="pbPollVote(this)"><span class="poll-widget-label">Да, но слабая</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="d684963a" data-idx="2" onclick="pbPollVote(this)"><span class="poll-widget-label">Нет, только встроенная</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="d684963a" data-idx="3" onclick="pbPollVote(this)"><span class="poll-widget-label">Не знаю</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div></div>
+
+<h2 id="настройка-частоты-обновления-и-совместимости-csm">Настройка частоты обновления и совместимости (CSM)</h2>
+<p>Новые мониторы с высокой частотой обновления, например <code>144 Гц</code> или <code>240 Гц</code>, могут не инициализироваться в старом режиме BIOS. Это связано с тем, что традиционный режим <strong>Legacy</strong> имеет ограничения по пропускной способности видеосигнала. Решением служит переключение в режим <strong>UEFI</strong> или активация <strong>CSM (Compatibility Support Module)</strong>.</p>
+
+<p>Параметр <code>CSM Support</code> позволяет системе загружать драйверы в старом формате, что иногда необходимо для работы специфических мониторов или при использовании переходников. Однако для современных дисплеев часто требуется, чтобы CSM был отключен (<code>Disabled</code>), чтобы использовать чистый режим UEFI и функции <strong>Fast Boot</strong>.</p>
+
+<p>Если экран моргает или сообщает об ошибке <code>Out of Range</code> сразу после включения, попробуйте в разделе <code>Boot</code> отключить <code>Fast Boot</code>. Это замедлит загрузку, но даст системе больше времени на инициализацию видеоконтроллера и синхронизацию с монитором по <code>HDMI</code> или <code>DisplayPort</code>.</p>
+
+<blockquote>
+<p>⚠️ <strong>Внимание!</strong> Отключение CSM на старых мониторах или при использовании адаптеров VGA может привести к полной потере изображения. Всегда проверяйте совместимость вашего дисплея с режимом UEFI перед изменением этой настройки.</p>
+</blockquote>
+
+<div class="attention-box attention-tip"><span class="attention-icon">💡</span><p>Если монитор не видит сигнал, попробуйте временно подключить его к другому выходу на видеокарте (например, вместо DisplayPort использовать HDMI), так как некоторые порты требуют обновления прошивки для поддержки высокого разрешения.</p></div>
+
+<h2 id="чек-лист-настройки-видеовыходов-для-второго-монитора">Чек-лист настройки видеовыходов для второго монитора</h2>
+<p>Перед тем как менять настройки, убедитесь, что вы подготовили систему правильно. Следуйте этому алгоритму, чтобы избежать ошибок при конфигурировании.</p>
+
+<div class="checklist-block"><h4>☑️ Настройка второго монитора в BIOS</h4><label class="check-item"><input type="checkbox"><span>Подключить кабели к нужным портам</span></label><label class="check-item"><input type="checkbox"><span>Войти в BIOS (Del/F2)</span></label><label class="check-item"><input type="checkbox"><span>Найти раздел Graphics/Video</span></label><label class="check-item"><input type="checkbox"><span>Включить Integrated Graphics</span></label><label class="check-item"><input type="checkbox"><span>Сохранить настройки (F10)</span></label><div class="check-progress">Выполнено: <span class="check-count">0</span> / 5</div></div>
+
+<ul>
+<li>🔌 <strong>Физическое подключение:</strong> Убедитесь, что кабель от второго монитора подключен к видеовыходу материнской платы, а не к уже занятому порту видеокарты.</li>
+<li>🖥️ <strong>Включение iGPU:</strong> В разделе <code>Advanced</code> найдите <code>Integrated Graphics</code> и установите значение <code>Enabled</code>.</li>
+<li>⚙️ <strong>Настройка приоритета:</strong> Убедитесь, что <code>Primary Display</code> стоит в режиме <code>Auto</code>, чтобы система сама выбирала активное устройство.</li>
+<li>💾 <strong>Сохранение:</strong> Обязательно нажмите <code>F10</code> для сохранения и выхода, иначе изменения не вступят в силу.</li>
+</ul>
+
+<p>Иногда проблема возникает из-за того, что BIOS не видит монитор как активное устройство. В этом случае может помочь сброс настроек до заводских (<code>Load Optimized Defaults</code>), после чего необходимо заново включить <strong>Integrated Graphics</strong>.</p>
+
+<h2 id="особые-случаи-ноутбуки-и-серверные-платы">Особые случаи: ноутбуки и серверные платы</h2>
+<p>В ноутбуках настройка видеовыходов в BIOS часто ограничена. Производители, такие как <em>Dell</em>, <em>Lenovo</em> или <em>HP</em>, скрывают продвинутые графические настройки. Обычно там доступен только выбор между <code>Dedicated</code> (дискретная) и <code>Integrated</code> (встроенная) графикой для всего устройства, но не для отдельных портов.</p>
+
+<p>На серверных платах, например, серии <em>Supermicro</em> или <em>ASRock Rack</em>, настройки могут называться <code>Video Configuration</code>. Здесь важно следить за параметром <code>Video Output</code>, где можно выбрать <code>Onboard</code> или <code>PCIe</code>. Серверные системы часто требуют отключения встроенной графики для экономии ресурсов, если установлена профессиональная карта.</p>
+
+<p>В редких случаях, особенно на бюджетных офисных ПК, в BIOS может отсутствовать возможность включения <strong>iGPU</strong>, если производитель заблокировал эту функцию на уровне прошивки. В такой ситуации единственный выход — использование внешнего USB-видеоадаптера, который не зависит от настроек BIOS.</p>
+
+<details class="faq-item"><summary>Почему на многих ноутбуках нельзя включить iGPU?</summary><div class="faq-answer"><p>На ноутбуках процессор и графика жестко связаны с матрицей. Включение второй видеокарты через BIOS часто невозможно, так как экран ноутбука подключен к одному контроллеру. Переключение происходит программно через драйверы Windows (Optimus), а не через BIOS.</p></div></details>
+
+<h2 id="частые-ошибки-и-методы-их-устранения">Частые ошибки и методы их устранения</h2>
+<p>Самая распространенная проблема — «черный экран» после изменения настроек. Это означает, что система не может инициализировать видеовыход, выбранный вами. Если вы отключили дискретную карту, но монитор подключен к ней, изображения не будет. Если вы включили iGPU, но монитор подключен к карте, а карта не выбрана как основная, тоже может быть черный экран.</p>
+
+<p>Для выхода из такой ситуации потребуется визуальный сброс. Отключите питание компьютера, откройте корпус и найдите на материнской плате перемычку <code>CLR_CMOS</code>. Замкните её контакты на 10 секунд или извлеките круглую батарейку <em>CR2032</em> на 5 минут. Это вернет BIOS к заводским настройкам.</p>
+
+<p>Также стоит проверить, поддерживает ли ваш процессор <strong>Quick Sync Video</strong> или аналогичные технологии. Если процессор не поддерживает вывод изображения (серия F у Intel или процессоры без графики у AMD), никакие настройки в BIOS не помогут. В этом случае единственный вариант — установить дискретную видеокарту.</p>
+
+<h2 id="faq-вопросы-и-ответы-по-настройке-монитора-в-bios">FAQ: Вопросы и ответы по настройке монитора в BIOS</h2>
+
+<details>
+<summary>Можно ли изменить частоту обновления (Гц) в BIOS?</summary>
+<p>Обычно нет. BIOS отвечает только за инициализацию сигнала. Частоту обновления <code>Hz</code> и разрешение настраиваются в операционной системе (Windows) через «Параметры экрана» -> «Дополнительные параметры дисплея». В BIOS можно только включить поддержку высокопроизводительного режима через отключение CSM.</p>
+</details>
+
+<details>
+<summary>Что делать, если BIOS не видит монитор при включении?</summary>
+<p>Проверьте кабель и порт. Попробуйте подключить монитор к другому порту на видеокарте. Если используется встроенная графика, убедитесь, что процессор имеет видеоядро. В самом BIOS проверьте параметр <code>Primary Display</code> и установите его в <code>Auto</code>.</p>
+</details>
+
+<details>
+<summary>Нужно ли выключать компьютер при подключении второго монитора?</summary>
+<p>Современные порты <code>HDMI</code> и <code>DisplayPort</code> поддерживают горячее подключение (Hot Plug). Однако, если вы меняете настройки в BIOS (например, включаете iGPU), перезагрузка обязательна. Для первого подключения лучше выключить ПК, чтобы избежать короткого замыкания или сбоя драйверов.</p>
+</details>
+
+<details>
+<summary>Как узнать, есть ли у моего процессора встроенная графика?</summary>
+<p>У процессоров <em>Intel</em> если в названии нет индекса <strong>F</strong> (например, i7-12700K), то графика есть. У <em>AMD Ryzen</em> встроенная графика есть у моделей с индексом <strong>G</strong> (например, Ryzen 5 5600G) или у новых серий 7000 и выше (у которых графика есть у всех, но производительность разная).</p>
+</details>
+
+<blockquote>
+<p>⚠️ <strong>Внимание!</strong> Названия пунктов меню в BIOS могут отличаться в зависимости от версии прошивки. Всегда сверяйтесь с официальной инструкцией к вашей материнской плате или процессору при поиске конкретных настроек.</p>
+</blockquote>
+
+<p>Правильная настройка видеоподсистемы в BIOS — фундамент стабильной работы ваших дисплеев. Не бойтесь экспериментировать, но делайте это осознанно, сохраняя возможность сброса настроек, если что-то пойдет не так.</p></div>
+                    <!--#include virtual="/ssi/article_after.html" -->
+
+                </article>
+                <aside class="article-sidebar"><!--#include virtual="/ssi/sidebar_top.html" --><nav class="sidebar-search"><div class="sidebar-search-box"><input type="text" id="globalSearchInput" placeholder="🔍 Поиск статей..." autocomplete="off"><div class="search-dropdown" id="globalSearchDropdown"></div></div></nav><!--#include virtual="/ssi/sidebar_before_toc.html" --><nav class="sidebar-toc" id="sidebarToc"><h3>Содержание</h3><ul><li><a href="#почему-настройки-монитора-спрятаны-в-bios-и-как-это-работает">Почему настройки монитора спрятаны в BIOS и как это работает</a></li><li><a href="#поиск-раздела-видеонастроек-в-разных-версиях-bios">Поиск раздела видеонастроек в разных версиях BIOS</a></li><li><a href="#включение-и-настройка-интегрированной-графики-igpu">Включение и настройка интегрированной графики (iGPU)</a></li><li><a href="#таблица-основных-параметров-видеоподсистемы-в-bios">Таблица основных параметров видеоподсистемы в BIOS</a></li><li><a href="#настройка-частоты-обновления-и-совместимости-csm">Настройка частоты обновления и совместимости (CSM)</a></li><li><a href="#чек-лист-настройки-видеовыходов-для-второго-монитора">Чек-лист настройки видеовыходов для второго монитора</a></li><li><a href="#особые-случаи-ноутбуки-и-серверные-платы">Особые случаи: ноутбуки и серверные платы</a></li><li><a href="#частые-ошибки-и-методы-их-устранения">Частые ошибки и методы их устранения</a></li><li><a href="#faq-вопросы-и-ответы-по-настройке-монитора-в-bios">FAQ: Вопросы и ответы по настройке монитора в BIOS</a></li></ul></nav><!--#include virtual="/ssi/sidebar_before_related.html" --><nav class="sidebar-related"><h3>Похожие статьи</h3><ul><li><a href="/articles/p/pr/programmy-dlya-podklyucheniya-noutbuka-k-kompyuteru-kak-monitor.html" class="related-card">Программы для подключения ноутбука к компьютеру как монитор</a></li><li><a href="/articles/k/ka/kak-izmenit-gammu-monitora-v-ks-go.html" class="related-card">Как изменить гамму в CS:GO: настройка монитора для побед</a></li><li><a href="/articles/z/za/zamok-kensington-na-monitore-dlya-chego.html" class="related-card">Замок Kensington на мониторе: для чего нужен и как установить</a></li><li><a href="/articles/k/ka/kak-sdelat-studijnyj-monitor-svoimi-rukami.html" class="related-card">Самодельные студийные мониторы: пошаговая сборка и настройка</a></li><li><a href="/articles/p/po/pochemu-monitor-suzilsya.html" class="related-card">Почему изображение на мониторе сузилось с боков: причины и решение</a></li></ul></nav><!--#include virtual="/ssi/sidebar_after_related.html" --></aside>
+            </div>
+        </div>
+    </main>
+
+    <!--#include virtual="/ssi/before_related_bottom.html" -->
+    <section class="related-bottom">
+        <div class="container">
+            <h2 class="related-bottom-heading">📖 Читайте также</h2>
+            <div class="related-bottom-grid"><a href="/articles/p/pr/programmy-dlya-podklyucheniya-noutbuka-k-kompyuteru-kak-monitor.html" class="related-bottom-card"><span class="related-bottom-title">Программы для подключения ноутбука к компьютеру как монитор</span><span class="related-bottom-desc">Полный обзор лучших утилит для превращения ноутбука во второй экран. Инструкция по настройке Miracas</span></a><a href="/articles/k/ka/kak-izmenit-gammu-monitora-v-ks-go.html" class="related-bottom-card"><span class="related-bottom-title">Как изменить гамму в CS:GO: настройка монитора для побед</span><span class="related-bottom-desc">Пошаговая инструкция по корректировке гаммы монитора в CS:GO: от калибровки Windows до настроек виде</span></a><a href="/articles/z/za/zamok-kensington-na-monitore-dlya-chego.html" class="related-bottom-card"><span class="related-bottom-title">Замок Kensington на мониторе: для чего нужен и как установить</span><span class="related-bottom-desc">Разбираем назначение замка Kensington на мониторе, типы креплений, правила установки и способы защит</span></a><a href="/articles/k/ka/kak-sdelat-studijnyj-monitor-svoimi-rukami.html" class="related-bottom-card"><span class="related-bottom-title">Самодельные студийные мониторы: пошаговая сборка и настройка</span><span class="related-bottom-desc">Пошаговое руководство по созданию студийных мониторов своими руками. Выбор динамиков, корпусов, усил</span></a><a href="/articles/p/po/pochemu-monitor-suzilsya.html" class="related-bottom-card"><span class="related-bottom-title">Почему изображение на мониторе сузилось с боков: причины и решение</span><span class="related-bottom-desc">Изображение на экране сжалось? Узнайте, почему монитор сузился: настройки разрешения, масштабировани</span></a><a href="/articles/k/ka/kak-delat-skrin-ekrana-monitora.html" class="related-bottom-card"><span class="related-bottom-title">Как сделать скриншот экрана монитора: 8 способов для Windows, Mac и Linux</span><span class="related-bottom-desc">Пошаговые инструкции для создания скриншотов на ПК, ноутбуке и телефоне. Горячие клавиши, программы </span></a></div>
+        </div>
+    </section>
+    <!--#include virtual="/ssi/after_related_bottom.html" -->
+
+    <footer class="site-footer-premium">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-col">
+                    <div class="footer-brand">🖥️ Мониторум</div>
+                    <p class="footer-about">Полный справочник по настройке, ремонту и выбору компьютерных мониторов для любых задач.</p>
+                </div>
+                <div class="footer-col">
+                    <h4>Разделы</h4>
+                    <ul><li><a href="/category/nastrojka-ekrana/">⚙️ Настройка экрана</a></li>
+<li><a href="/category/podklyuchenie-ustrojstv/">🔌 Подключение устройств</a></li>
+<li><a href="/category/mnozhestvennye-ekrany/">🖥️🖥️ Множественные экраны</a></li>
+<li><a href="/category/zvuk-i-audio/">🔊 Звук и аудио</a></li>
+<li><a href="/category/remont-i-polomki/">🔧 Ремонт и поломки</a></li>
+<li><a href="/category/ukhod-i-chistka/">🧼 Уход и чистка</a></li></ul>
+                </div>
+                <div class="footer-col">
+                    <h4>Информация</h4>
+                    <ul>
+                        <li><a href="/">Главная</a></li>
+                        <li><a href="/about.html">О проекте</a></li>
+                        <li><a href="/categories.html">Все разделы</a></li>
+                        <li><a href="/contact.html">Контакты</a></li>
+                        <li><a href="/privacy.html">Конфиденциальность</a></li>
+                        <li><a href="/sitemap.xml">Карта сайта</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>© Мониторум. Все права защищены.</p>
+                <!--LiveInternet counter--><div style="margin-top:10px;"><a href="https://www.liveinternet.ru/click"
+                target="_blank"><img id="licnt06C4" width="88" height="15" style="border:0" 
+                title="LiveInternet: показано число посетителей за сегодня"
+                src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAEALAAAAAABAAEAAAIBTAA7"
+                alt=""/></a><script>(function(d,s){d.getElementById("licnt06C4").src=
+                "https://counter.yadro.ru/hit?t26.5;r"+escape(d.referrer)+
+                ((typeof(s)=="undefined")?"":";s"+s.width+"*"+s.height+"*"+
+                (s.colorDepth?s.colorDepth:s.pixelDepth))+";u"+escape(d.URL)+
+                ";h"+escape(d.title.substring(0,150))+";"+Math.random()})(document,screen)</script></div><!--/LiveInternet-->
+            </div>
+        </div>
+    </footer>
+    <div id="cookie-consent" class="cookie-popup">
+        <div class="cookie-inner">
+            <span>🍪 Мы используем файлы cookie для улучшения работы сайта.</span>
+            <button id="cookie-accept" class="cookie-btn">Принять</button>
+        </div>
+    </div>
+    <script src="/static/js/main.js"></script>
+    <script>
+    (function() {
+        const popup = document.getElementById('cookie-consent');
+        const btn = document.getElementById('cookie-accept');
+        if (popup && btn && !localStorage.getItem('cookie-accepted')) {
+            popup.classList.add('visible');
+            btn.onclick = () => {
+                localStorage.setItem('cookie-accepted', 'true');
+                popup.classList.remove('visible');
+            };
+        }
+    })();
+    </script>
+    <script>
+    function pbPollVote(el) {
+        var poll = el.closest('.poll-widget');
+        if (poll.classList.contains('voted')) return;
+        poll.classList.add('voted');
+        el.classList.add('selected');
+        var opts = poll.querySelectorAll('.poll-widget-option');
+        var n = opts.length;
+        var raw = [];
+        var sum = 0;
+        for (var i = 0; i < n; i++) {
+            var v = Math.random() * 50 + 5;
+            if (opts[i] === el) v += 30;
+            raw.push(v);
+            sum += v;
+        }
+        var pcts = raw.map(function(v) { return Math.round(v / sum * 100); });
+        var diff = 100 - pcts.reduce(function(a,b){ return a+b; }, 0);
+        pcts[Array.from(opts).indexOf(el)] += diff;
+        setTimeout(function() {
+            opts.forEach(function(opt, i) {
+                opt.querySelector('.poll-widget-bar').style.width = pcts[i] + '%';
+                opt.querySelector('.poll-widget-pct').textContent = pcts[i] + '%';
+            });
+        }, 50);
+    }
+    </script>
+    <!--#include virtual="/ssi/body_bottom.html" -->
+    <script src="/static/js/inject.js" defer></script>
+</body>
+</html>

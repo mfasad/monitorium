@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27><text y=%27.9em%27 font-size=%2790%27>🖥️</text></svg>">
+    <title>Как включить 2 монитора через BIOS: настройка встроенной графики — Мониторум</title>
+    <meta name="description" content="Пошаговая инструкция по активации нескольких дисплеев в BIOS/UEFI. Разбор настроек iGPU, Multi-Monitor и устранение ошибок при подключении.">
+    <link rel="canonical" href="https://monitorium.vercel.app/articles/k/ka/kak-vklyuchit-2-monitora-cherez-bios.html">
+
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="Как включить 2 монитора через BIOS: настройка встроенной графики">
+    <meta property="og:description" content="Пошаговая инструкция по активации нескольких дисплеев в BIOS/UEFI. Разбор настроек iGPU, Multi-Monitor и устранение ошибок при подключении.">
+    <meta property="og:locale" content="ru_RU">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css?v=1780420684">
+    <style>
+    .site-footer-premium {
+        margin-top: 60px; padding: 40px 0 0; background: #1e293b; color: #94a3b8;
+    }
+    .footer-grid {
+        display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 40px;
+        padding-bottom: 32px; border-bottom: 1px solid #334155;
+    }
+    .footer-brand { font-size: 1.2rem; font-weight: 700; color: #f1f5f9; margin-bottom: 12px; }
+    .footer-about { font-size: 0.9rem; line-height: 1.6; margin-bottom: 8px; }
+    .footer-updated { font-size: 0.8rem; color: #64748b; }
+    .footer-col h4 { color: #f1f5f9; font-size: 0.95rem; margin-bottom: 16px; }
+    .footer-col ul { list-style: none; }
+    .footer-col li { margin-bottom: 8px; }
+    .footer-col a { color: #94a3b8; font-size: 0.9rem; transition: color 0.2s; }
+    .footer-col a:hover { color: #60a5fa; }
+    .footer-bottom { padding: 20px 0; text-align: center; font-size: 0.85rem; }
+    @media (max-width: 640px) {
+        .footer-grid { grid-template-columns: 1fr; gap: 24px; }
+    }
+    .cookie-popup {
+        position: fixed; bottom: 0; left: 0; right: 0; background: #1e293b; color: #fff;
+        padding: 16px; transition: transform 0.5s ease; z-index: 9999; border-top: 2px solid #2563eb;
+        transform: translateY(100%);
+    }
+    .cookie-popup.visible { transform: translateY(0); }
+    .cookie-inner { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; gap: 16px; font-size: 0.9rem; }
+    .cookie-btn { background: #2563eb; color: #fff; border: none; padding: 8px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+    .cookie-btn:hover { background: #1d4ed8; }
+    @media (max-width: 640px) {
+        .cookie-inner { flex-direction: column; text-align: center; }
+    }
+</style>
+    
+    <!--#include virtual="/ssi/head.html" -->
+</head>
+<body>
+        <!--#include virtual="/ssi/body_top.html" -->
+    <style>
+    .nav-dropdown { position: relative; display: inline-block; }
+    .dropdown-toggle {
+        background: none; border: none; cursor: pointer;
+        font: inherit; color: inherit; padding: 8px 12px;
+        border-radius: 8px; transition: background 0.2s;
+    }
+    .dropdown-toggle:hover { background: rgba(0,0,0,0.05); }
+    .dropdown-menu {
+        display: none; position: absolute; right: 0; top: 100%;
+        min-width: 240px; max-height: 70vh; overflow-y: auto;
+        background: var(--card-bg, #fff); border: 1px solid var(--border, #e5e7eb);
+        border-radius: 12px; box-shadow: 0 12px 40px rgba(0,0,0,0.12);
+        padding: 8px 0; z-index: 1000;
+    }
+    .nav-dropdown::after {
+        content: ''; position: absolute; left: 0; right: 0;
+        top: 100%; height: 12px;
+    }
+    .nav-dropdown:hover .dropdown-menu,
+    .nav-dropdown:focus-within .dropdown-menu { display: block; }
+    .dropdown-item {
+        display: block; padding: 10px 20px; color: var(--text, #1f2937);
+        text-decoration: none; font-size: 0.95rem; transition: background 0.15s;
+        white-space: nowrap;
+    }
+    .dropdown-item:hover { background: rgba(37,99,235,0.06); color: var(--primary, #2563eb); }
+    @media (max-width: 768px) {
+        .main-nav > .nav-link { display: none; }
+        .dropdown-toggle { display: none; }
+        .dropdown-menu {
+            display: block !important; position: static;
+            box-shadow: none; border: none; border-radius: 0;
+            min-width: auto; max-height: none; padding: 0;
+            background: transparent;
+        }
+        .dropdown-item {
+            padding: 8px 0; font-size: 1rem;
+        }
+    }
+    </style>
+    <header class="site-header">
+        <div class="container header-inner">
+            <a href="/" class="logo">
+                <span class="logo-icon">🖥️</span>
+                <span>Мониторум</span>
+            </a>
+            <button class="mobile-menu-btn" aria-label="Меню" id="menuBtn">☰</button>
+            <nav class="main-nav" id="mainNav">
+                <a href="/category/nastrojka-ekrana/" class="nav-link">⚙️ Настройка экрана</a>
+<a href="/category/podklyuchenie-ustrojstv/" class="nav-link">🔌 Подключение устройств</a>
+<a href="/category/mnozhestvennye-ekrany/" class="nav-link">🖥️🖥️ Множественные экраны</a>
+<a href="/category/zvuk-i-audio/" class="nav-link">🔊 Звук и аудио</a>
+<div class="nav-dropdown">
+            <button class="nav-link dropdown-toggle">📂 Все разделы ▾</button>
+            <div class="dropdown-menu"><a href="/category/nastrojka-ekrana/" class="dropdown-item">⚙️ Настройка экрана</a>
+<a href="/category/podklyuchenie-ustrojstv/" class="dropdown-item">🔌 Подключение устройств</a>
+<a href="/category/mnozhestvennye-ekrany/" class="dropdown-item">🖥️🖥️ Множественные экраны</a>
+<a href="/category/zvuk-i-audio/" class="dropdown-item">🔊 Звук и аудио</a>
+<a href="/category/remont-i-polomki/" class="dropdown-item">🔧 Ремонт и поломки</a>
+<a href="/category/ukhod-i-chistka/" class="dropdown-item">🧼 Уход и чистка</a>
+<a href="/category/vybor-i-kharakteristiki/" class="dropdown-item">📊 Выбор и характеристики</a>
+<a href="/category/drajvery-i-po/" class="dropdown-item">💿 Драйверы и ПО</a>
+<a href="/category/krepleniya-i-ustanovka/" class="dropdown-item">🔩 Крепления и установка</a>
+<a href="/category/utilizatsiya-i-prodazha/" class="dropdown-item">♻️ Утилизация и продажа</a>
+<a href="/category/spetsialnye-rezhimy/" class="dropdown-item">🎮 Специальные режимы</a>
+<a href="/category/drugoe/" class="dropdown-item">📁 Другое</a></div>
+        </div>
+            </nav>
+        </div>
+    </header>
+
+    <nav class="breadcrumbs" aria-label="Навигация">
+        <div class="container"><a href="/">Главная</a><span class="breadcrumb-sep">›</span><a href="/category/mnozhestvennye-ekrany/">Множественные экраны</a><span class="breadcrumb-sep">›</span><span class="breadcrumb-current">Как включить 2 монитора через BIOS: настройка встроенной графики</span></div>
+    </nav>
+
+    <main class="site-main">
+        <div class="container">
+            <div class="article-layout">
+                <article class="article-main">
+                    
+                    <h1>Как включить работу двух мониторов через настройки BIOS</h1>
+                    <nav class="mobile-toc"><details><summary>📋 Содержание</summary><ul><li><a href="#подготовка-оборудования-и-проверка-совместимости">Подготовка оборудования и проверка совместимости</a></li><li><a href="#вход-в-bios-и-поиск-раздела-с-графикой">Вход в BIOS и поиск раздела с графикой</a></li><li><a href="#активация-функции-multi-monitor">Активация функции Multi-Monitor</a></li><li><a href="#настройка-приоритета-и-выделения-памяти">Настройка приоритета и выделения памяти</a></li><li><a href="#сохранение-настроек-и-работа-в-windows">Сохранение настроек и работа в Windows</a></li><li><a href="#устранение-типичных-проблем-и-конфликтов">Устранение типичных проблем и конфликтов</a></li><li><a href="#особенности-настройки-для-ноутбуков-и-мини-пк">Особенности настройки для ноутбуков и мини-ПК</a></li><li><a href="#итоговая-проверка-и-оптимизация">Итоговая проверка и оптимизация</a></li></ul></details></nav>
+                    <!--#include virtual="/ssi/article_before.html" -->
+                    <div class="article-body"><p>Многие пользователи покупают мощные дискретные видеокарты и ошибочно считают, что встроенное видеоядро процессора отключается автоматически навсегда. Это заблуждение часто приводит к тому, что при попытке подключить второй монитор к материнской плате вы видите черный экран, хотя первый дисплей работает исправно через дискретную карту. Для реализации схемы с несколькими дисплеями, где один подключен к <strong>GPU</strong>, а второй к встроенной <strong>iGPU</strong>, необходимо вмешаться в настройки базовой системы ввода-вывода.</p>
+<p>Актуальность этой задачи возрастает, когда требуется расширить рабочее пространство для трейдинга, программирования или видеомонтажа без покупки дополнительной видеокарты. Современные процессоры от <em>Intel</em> (серии Core с индексами F, кроме) и <em>AMD</em> (серии G) обладают достаточной мощностью для вывода изображения на второй экран, но по умолчанию эта функция часто деактивирована в целях экономии ресурсов системы. Чтобы изменить это поведение, потребуется перезагрузить компьютер и войти в интерфейс <code>BIOS/UEFI</code>.</p>
+
+<h2 id="подготовка-оборудования-и-проверка-совместимости">Подготовка оборудования и проверка совместимости</h2>
+<p>Перед тем как лезть в настройки <strong>BIOS</strong>, необходимо убедиться, что ваше железо вообще поддерживает одновременную работу двух видеовыходов. Если у вас процессор без встроенной графики (например, <em>Intel Core i5-12400F</em> или старые <em>AMD Ryzen</em> без индекса G), то порты на материнской плате будут неактивны физически, и никакие настройки не помогут. В этом случае единственный вариант — подключить оба монитора к дискретной видеокарте или установить вторую.</p>
+<p>Также проверьте физическое состояние портов. Часто пользователи подключают второй дисплей в разъем <code>HDMI</code> или <code>DisplayPort</code> на материнской плате, забывая, что они могут быть заблокированы программно. Убедитесь, что кабели плотно вставлены и переключатели на самих мониторах настроены на правильный вход сигнала. Если вы используете адаптеры (например, с <code>USB-C</code> на <code>HDMI</code>), проверьте их совместимость с вашим портом, так как не все порты поддерживают вывод изображения.</p>
+
+<h2 id="вход-в-bios-и-поиск-раздела-с-графикой">Вход в BIOS и поиск раздела с графикой</h2>
+<p>Чтобы изменить конфигурацию, нужно перезагрузить компьютер и нажать специальную клавишу при загрузке. Чаще всего это <code>Del</code> или <code>F2</code>, но в некоторых ноутбуках могут использоваться <code>F10</code>, <code>F12</code> или <code>Esc</code>. Интерфейс <strong>UEFI</strong> на современных платах может иметь графическую оболочку с поддержкой мыши, что упрощает навигацию. Если вы видите только синий экран с текстом — ориентируйтесь на подсказки внизу, где указаны клавиши для перехода в <code>Advanced Mode</code>.</p>
+<p>Вам нужно найти раздел, отвечающий за настройки системы или периферии. Названия могут отличаться в зависимости от производителя: <code>Advanced</code>, <code>Chipset</code>, <code>Peripherals</code> или <code>System Agent</code>. В меню <em>ASUS</em> это часто находится в <code>Advanced → System Agent (SA) Configuration</code>, а в платах <em>Gigabyte</em> — в <code>Chipset → Internal Graphics</code>. Ищите пункты, содержащие слова <strong>Graphics</strong>, <strong>Display</strong> или <strong>Integrated</strong>.</p>
+
+<div class="poll-widget" id="poll-ef800d42"><div class="poll-widget-question">📊 Какая у вас материнская плата?</div><div class="poll-widget-option" data-poll="ef800d42" data-idx="0" onclick="pbPollVote(this)"><span class="poll-widget-label">ASUS</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="ef800d42" data-idx="1" onclick="pbPollVote(this)"><span class="poll-widget-label">Gigabyte</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="ef800d42" data-idx="2" onclick="pbPollVote(this)"><span class="poll-widget-label">MSI</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="ef800d42" data-idx="3" onclick="pbPollVote(this)"><span class="poll-widget-label">ASRock</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="ef800d42" data-idx="4" onclick="pbPollVote(this)"><span class="poll-widget-label">Другая</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div></div>
+
+<h2 id="активация-функции-multi-monitor">Активация функции Multi-Monitor</h2>
+<p>Ключевым параметром, который вы ищете, обычно называется <code>Multi-Monitor</code>, <code>IGD Multi-Monitor</code> или <code>Integrated Graphics</code>. По умолчанию он часто стоит в значении <code>Auto</code> или <code>Disabled</code>. Вам необходимо изменить его на <code>Enabled</code>. Это действие сообщает системе, что встроенное графическое ядро должно оставаться активным даже при наличии дискретной карты.</p>
+<p>После изменения этой настройки может появиться дополнительный параметр <code>Primary Display</code> или <code>Initiate Graphic Adapter</code>. Здесь нужно выбрать, какой адаптер будет основным. Обычно рекомендуется оставить <code>PCIE/PEG</code> (дискретная карта), чтобы основной интерфейс и игры работали через неё, но система будет использовать и встроенное ядро для второго экрана. Если выбрать <code>IGD</code>, то основной вывод пойдет на материнскую плату, что может снизить производительность в тяжелых задачах.</p>
+
+<div class="checklist-block"><h4>☑️ Настройка Multi-Monitor в BIOS</h4><label class="check-item"><input type="checkbox"><span>Перейти в Advanced Mode</span></label><label class="check-item"><input type="checkbox"><span>Найти раздел Chipset или System Agent</span></label><label class="check-item"><input type="checkbox"><span>Изменить параметр Multi-Monitor на Enabled</span></label><label class="check-item"><input type="checkbox"><span>Сохранить настройки и выйти (F10)</span></label><div class="check-progress">Выполнено: <span class="check-count">0</span> / 4</div></div>
+
+<blockquote>⚠️ Внимание: Если вы не видите нужного пункта в меню BIOS, возможно, ваша версия прошивки устарела. Производители часто добавляют поддержку новых функций в обновленных версиях BIOS. Проверьте сайт производителя материнской платы на наличие актуального файла прошивки.</blockquote>
+
+<h2 id="настройка-приоритета-и-выделения-памяти">Настройка приоритета и выделения памяти</h2>
+<p>Кроме включения функции, важно правильно настроить выделение оперативной памяти под встроенную графику. Этот параметр называется <code>DVMT Pre-Allocated</code> или <code>Video Memory</code>. По умолчанию система выделяет минимум памяти (часто 32 или 64 МБ), чего может быть недостаточно для комфортной работы двух мониторов, особенно если они имеют высокое разрешение. Увеличьте значение до <code>128 МБ</code>, <code>256 МБ</code> или <code>512 МБ</code> в зависимости от доступной оперативной памяти.</p>
+<p>Также в некоторых случаях требуется настроить приоритет инициализации. Если система при загрузке пытается вывести изображение только на один порт, вы можете не успеть увидеть экран BIOS. В таких ситуациях полезно отключить функцию <code>Fast Boot</code> в разделе <code>Boot</code>. Это замедлит загрузку, но даст системе больше времени на инициализацию всех подключенных устройств, включая встроенную графику.</p>
+
+<details class="faq-item"><summary>Почему важно выделять память под iGPU?</summary><div class="faq-answer"><p>При недостатке выделенной памяти система может использовать общую оперативную память динамически, что иногда вызывает "подтормаживания" или мерцание на втором мониторе, особенно при прокрутке страниц или воспроизведении видео.</p></div></details>
+
+<h2 id="сохранение-настроек-и-работа-в-windows">Сохранение настроек и работа в Windows</h2>
+<p>После внесения изменений в <strong>BIOS</strong> не забудьте сохранить их перед выходом. Обычно для этого служит клавиша <code>F10</code> с подтверждением действия. Компьютер перезагрузится. Если всё сделано верно, система должна определить оба монитора. Возможно, изображение с материнской платы появится не сразу, а после запуска операционной системы. Не паникуйте, если на втором экране в момент загрузки BIOS ничего нет — это нормальное поведение.</p>
+<p>Войдите в <strong>Windows</strong> и откройте настройки дисплея. Нажмите правой кнопкой мыши на рабочий стол и выберите <code>Параметры экрана</code>. Система должна обнаружить второй монитор. Если он не определяется автоматически, нажмите кнопку <code>Обнаружить</code>. В списке устройств вы увидите два экрана, которые можно расположить мышкой в нужном порядке, чтобы курсор перемещался между ними естественным образом.</p>
+
+<div class="attention-box attention-tip"><span class="attention-icon">💡</span><p>Если после включения Multi-Monitor компьютер стал загружаться медленнее, попробуйте в Windows в диспетчере устройств отключить лишние виртуальные мониторы, если они появились по ошибке.</p></div>
+
+<table>
+  <thead>
+    <tr>
+      <th>Производитель BIOS</th>
+      <th>Раздел меню</th>
+      <th>Параметр включения</th>
+      <th>Рекомендуемое значение</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>ASUS</td>
+      <td>Advanced → System Agent</td>
+      <td><code>IGD Multi-Monitor</code></td>
+      <td>Enabled</td>
+    </tr>
+    <tr>
+      <td>Gigabyte</td>
+      <td>Chipset</td>
+      <td><code>Integrated Graphics</code></td>
+      <td>Enabled</td>
+    </tr>
+    <tr>
+      <td>MSI</td>
+      <td>Settings → Advanced</td>
+      <td><code>Integrated Graphics</code></td>
+      <td>Auto / Enabled</td>
+    </tr>
+    <tr>
+      <td>ASRock</td>
+      <td>Advanced → Chipset</td>
+      <td><code>IGD Multi-Monitor</code></td>
+      <td>Enabled</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 id="устранение-типичных-проблем-и-конфликтов">Устранение типичных проблем и конфликтов</h2>
+<p>Иногда после активации функции система начинает выводить изображение только на один экран или выдавать ошибку "No Signal". Это может быть связано с конфликтом драйверов. В <strong>Диспетчере устройств</strong> Windows убедитесь, что для встроенной графики (<em>Intel HD Graphics</em> или <em>AMD Radeon Graphics</em>) установлены корректные драйверы, а не базовые драйверы Microsoft. Удалите их и установите свежие версии с официального сайта производителя процессора.</p>
+<p>Другая проблема может заключаться в том, что система некорректно переключает режимы работы. Если вы используете ноутбук, убедитесь, что функция гибридной графики (Optimus у NVIDIA) не блокирует вывод на внешний порт. В некоторых случаях помогает отключение режима <code>Fast Boot</code> не только в BIOS, но и в настройках электропитания Windows. Это заставит систему полностью инициализировать все порты при каждом запуске.</p>
+
+<blockquote>⚠️ Внимание: Если вы используете процессор с буквой "F" в названии (например, i5-12400F), функция включения второго монитора через BIOS не сработает, так как у этого процессора физически нет встроенного видеочипа. Проверьте спецификацию вашей модели перед настройкой.</blockquote>
+
+<div class="attention-box attention-tip"><span class="attention-icon">💡</span><p>Настройка BIOS позволяет использовать встроенную графику параллельно с дискретной, но требует наличия процессора с iGPU и корректной установки драйверов в операционной системе.</p></div>
+
+<h2 id="особенности-настройки-для-ноутбуков-и-мини-пк">Особенности настройки для ноутбуков и мини-ПК</h2>
+<p>В ноутбуках и мини-компьютерах (например, <em>Intel NUC</em>) процесс может отличаться. Часто производители скрывают расширенные настройки графического ядра в меню для разработчиков или вообще блокируют возможность включения второго видеовыхода, если он физически подключен через док-станцию. Ищите раздел <code>Power</code> или <code>Security</code>, где может быть скрыт параметр <code>Graphics Device</code>.</p>
+<p>Некоторые модели ноутбуков требуют включения функции <code>Hybrid Graphics</code> или <code>Switchable Graphics</code>. Это позволяет системе динамически распределять нагрузку между мощной дискретной картой и энергоэффективным встроенным ядром. Для выхода изображения на внешний монитор в таких устройствах часто достаточно просто подключить кабель, но если не работает, проверьте настройки в панели управления видеокарты (NVIDIA Control Panel или AMD Software).</p>
+
+<details class="faq-item"><summary>Скрытый параметр в Lenovo и Dell</summary><div class="faq-answer"><p>В некоторых ноутбуках Lenovo и Dell параметр называется "UMA Frame Buffer Size" и находится в разделе "Config" -> "Display". Его изменение может активировать дополнительные порты.</p></div></details>
+
+<h2 id="итоговая-проверка-и-оптимизация">Итоговая проверка и оптимизация</h2>
+<p>После того как оба монитора работают, проверьте их частоты обновления. Нередко возникает ситуация, когда один экран работает на <code>60 Гц</code>, а второй — на <code>30 Гц</code> или <code>29.97 Гц</code>, что вызывает дискомфорт. Зайдите в <code>Параметры экрана → Дополнительные параметры экрана</code> и убедитесь, что для обоих устройств выставлено максимальное значение, поддерживаемое кабелем и монитором.</p>
+<p>Для максимальной производительности в играх на основном экране убедитесь, что приложение запускается именно на дискретной карте, а не на встроенной. Это можно настроить в <code>Параметры Windows → Система → Дисплей → Графика</code>. Выберите игру и в её настройках укажите выполнение на "Высокопроизводительный GPU". Встроенное ядро в этот момент будет заниматься только вторым монитором, не нагружая основную систему.</p>
+
+<blockquote>⚠️ Внимание: Увеличение выделенной памяти под встроенную графику в BIOS уменьшает объем доступной оперативной памяти для системы. Если у вас всего 8 ГБ ОЗУ, не выделяйте более 128-256 МБ, чтобы не вызвать нехватку памяти.</blockquote>
+
+<details>
+  <summary>Почему второй монитор не определяется после включения в BIOS?</summary>
+  <p>Причин может быть несколько: отсутствие драйверов на встроенную графику, использование несовместимого кабеля (например, старый VGA для цифрового сигнала), или проблема с самим портом. Попробуйте обновить драйверы Intel/AMD и проверьте кабель на другом устройстве.</p>
+</details>
+
+<details>
+  <summary>Можно ли играть в игры на обоих мониторах одновременно?</summary>
+  <p>Технически можно, но это имеет смысл только если вы используете встроенную графику для второго экрана, а дискретную для первого. Однако, если игра запущена на встроенной графике, она будет работать очень медленно. Лучше использовать второй монитор для чата, браузера или мониторинга системы.</p>
+</details>
+
+<details>
+  <summary>Что делать, если BIOS не сохраняет настройки?</summary>
+  <p>Это может указывать на севшую батарейку CMOS (CR2032) на материнской плате. Замените батарейку. Также проверьте, не включен ли в BIOS режим "Load Optimized Defaults" при каждом запуске, что может сбрасывать ваши ручные настройки.</p>
+</details>
+
+<details>
+  <summary>Нужно ли устанавливать дополнительные драйверы после включения Multi-Monitor?</summary>
+  <p>Да, Windows обычно устанавливает базовый драйвер, который может не поддерживать все функции. Скачайте актуальный драйвер для вашего процессора (Intel Graphics Driver или AMD Radeon Software) с официального сайта производителя.</p>
+</details></div>
+                    <!--#include virtual="/ssi/article_after.html" -->
+
+                </article>
+                <aside class="article-sidebar"><!--#include virtual="/ssi/sidebar_top.html" --><nav class="sidebar-search"><div class="sidebar-search-box"><input type="text" id="globalSearchInput" placeholder="🔍 Поиск статей..." autocomplete="off"><div class="search-dropdown" id="globalSearchDropdown"></div></div></nav><!--#include virtual="/ssi/sidebar_before_toc.html" --><nav class="sidebar-toc" id="sidebarToc"><h3>Содержание</h3><ul><li><a href="#подготовка-оборудования-и-проверка-совместимости">Подготовка оборудования и проверка совместимости</a></li><li><a href="#вход-в-bios-и-поиск-раздела-с-графикой">Вход в BIOS и поиск раздела с графикой</a></li><li><a href="#активация-функции-multi-monitor">Активация функции Multi-Monitor</a></li><li><a href="#настройка-приоритета-и-выделения-памяти">Настройка приоритета и выделения памяти</a></li><li><a href="#сохранение-настроек-и-работа-в-windows">Сохранение настроек и работа в Windows</a></li><li><a href="#устранение-типичных-проблем-и-конфликтов">Устранение типичных проблем и конфликтов</a></li><li><a href="#особенности-настройки-для-ноутбуков-и-мини-пк">Особенности настройки для ноутбуков и мини-ПК</a></li><li><a href="#итоговая-проверка-и-оптимизация">Итоговая проверка и оптимизация</a></li></ul></nav><!--#include virtual="/ssi/sidebar_before_related.html" --><nav class="sidebar-related"><h3>Похожие статьи</h3><ul><li><a href="/articles/k/ka/kak-razdvoit-monitor-vindovs-10.html" class="related-card">Как раздвоить монитор в Windows 10: Полная настройка двух экранов</a></li><li><a href="/articles/k/ka/kak-sdelat-klon-monitora-na-televizor-windows-10.html" class="related-card">Как дублировать экран Windows 10 на телевизор — 3 способа</a></li><li><a href="/articles/k/ka/kak-razdelit-monitory-v-windows-10.html" class="related-card">Как разделить экраны в Windows 10: Полное руководство по настройке</a></li><li><a href="/articles/k/ka/kak-peremeshchat-okna-mezhdu-neskolkimi-monitorami.html" class="related-card">Как перемещать окна между мониторами: 5 способов для Windows и macOS</a></li><li><a href="/articles/k/ka/kak-sdelat-raznye-zastavki-na-2-monitora.html" class="related-card">Как настроить разные заставки на 2 монитора: Полное руководство</a></li></ul></nav><!--#include virtual="/ssi/sidebar_after_related.html" --></aside>
+            </div>
+        </div>
+    </main>
+
+    <!--#include virtual="/ssi/before_related_bottom.html" -->
+    <section class="related-bottom">
+        <div class="container">
+            <h2 class="related-bottom-heading">📖 Читайте также</h2>
+            <div class="related-bottom-grid"><a href="/articles/k/ka/kak-razdvoit-monitor-vindovs-10.html" class="related-bottom-card"><span class="related-bottom-title">Как раздвоить монитор в Windows 10: Полная настройка двух экранов</span><span class="related-bottom-desc">Инструкция по подключению и настройке нескольких мониторов в Windows 10. Решаем проблемы с драйверам</span></a><a href="/articles/k/ka/kak-sdelat-klon-monitora-na-televizor-windows-10.html" class="related-bottom-card"><span class="related-bottom-title">Как дублировать экран Windows 10 на телевизор — 3 способа</span><span class="related-bottom-desc">Пошаговая инструкция по созданию клона монитора на ТВ в Windows 10: через HDMI, Miracast и Wi-Fi Dir</span></a><a href="/articles/k/ka/kak-razdelit-monitory-v-windows-10.html" class="related-bottom-card"><span class="related-bottom-title">Как разделить экраны в Windows 10: Полное руководство по настройке</span><span class="related-bottom-desc">Узнайте, как разделить мониторы в Windows 10, настроить расширение рабочего стола, привязать окна и </span></a><a href="/articles/k/ka/kak-peremeshchat-okna-mezhdu-neskolkimi-monitorami.html" class="related-bottom-card"><span class="related-bottom-title">Как перемещать окна между мониторами: 5 способов для Windows и macOS</span><span class="related-bottom-desc">Пошаговые инструкции по переносу окон на другой экран: горячие клавиши, мышь, настройки ОС и програм</span></a><a href="/articles/k/ka/kak-sdelat-raznye-zastavki-na-2-monitora.html" class="related-bottom-card"><span class="related-bottom-title">Как настроить разные заставки на 2 монитора: Полное руководство</span><span class="related-bottom-desc">Узнайте, как установить индивидуальные обои для каждого экрана в Windows и macOS. Пошаговая инструкц</span></a><a href="/articles/z/za/zachem-nuzhny-tri-monitora-k-odnomu-kompyuteru.html" class="related-bottom-card"><span class="related-bottom-title">Зачем нужны три монитора к одному компьютеру: польза и настройки</span><span class="related-bottom-desc">Разбираем преимущества многосерийной конфигурации. Как подключить три экрана, повысить продуктивност</span></a></div>
+        </div>
+    </section>
+    <!--#include virtual="/ssi/after_related_bottom.html" -->
+
+    <footer class="site-footer-premium">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-col">
+                    <div class="footer-brand">🖥️ Мониторум</div>
+                    <p class="footer-about">Полный справочник по настройке, ремонту и выбору компьютерных мониторов для любых задач.</p>
+                </div>
+                <div class="footer-col">
+                    <h4>Разделы</h4>
+                    <ul><li><a href="/category/nastrojka-ekrana/">⚙️ Настройка экрана</a></li>
+<li><a href="/category/podklyuchenie-ustrojstv/">🔌 Подключение устройств</a></li>
+<li><a href="/category/mnozhestvennye-ekrany/">🖥️🖥️ Множественные экраны</a></li>
+<li><a href="/category/zvuk-i-audio/">🔊 Звук и аудио</a></li>
+<li><a href="/category/remont-i-polomki/">🔧 Ремонт и поломки</a></li>
+<li><a href="/category/ukhod-i-chistka/">🧼 Уход и чистка</a></li></ul>
+                </div>
+                <div class="footer-col">
+                    <h4>Информация</h4>
+                    <ul>
+                        <li><a href="/">Главная</a></li>
+                        <li><a href="/about.html">О проекте</a></li>
+                        <li><a href="/categories.html">Все разделы</a></li>
+                        <li><a href="/contact.html">Контакты</a></li>
+                        <li><a href="/privacy.html">Конфиденциальность</a></li>
+                        <li><a href="/sitemap.xml">Карта сайта</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>© Мониторум. Все права защищены.</p>
+                <!--LiveInternet counter--><div style="margin-top:10px;"><a href="https://www.liveinternet.ru/click"
+                target="_blank"><img id="licnt06C4" width="88" height="15" style="border:0" 
+                title="LiveInternet: показано число посетителей за сегодня"
+                src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAEALAAAAAABAAEAAAIBTAA7"
+                alt=""/></a><script>(function(d,s){d.getElementById("licnt06C4").src=
+                "https://counter.yadro.ru/hit?t26.5;r"+escape(d.referrer)+
+                ((typeof(s)=="undefined")?"":";s"+s.width+"*"+s.height+"*"+
+                (s.colorDepth?s.colorDepth:s.pixelDepth))+";u"+escape(d.URL)+
+                ";h"+escape(d.title.substring(0,150))+";"+Math.random()})(document,screen)</script></div><!--/LiveInternet-->
+            </div>
+        </div>
+    </footer>
+    <div id="cookie-consent" class="cookie-popup">
+        <div class="cookie-inner">
+            <span>🍪 Мы используем файлы cookie для улучшения работы сайта.</span>
+            <button id="cookie-accept" class="cookie-btn">Принять</button>
+        </div>
+    </div>
+    <script src="/static/js/main.js"></script>
+    <script>
+    (function() {
+        const popup = document.getElementById('cookie-consent');
+        const btn = document.getElementById('cookie-accept');
+        if (popup && btn && !localStorage.getItem('cookie-accepted')) {
+            popup.classList.add('visible');
+            btn.onclick = () => {
+                localStorage.setItem('cookie-accepted', 'true');
+                popup.classList.remove('visible');
+            };
+        }
+    })();
+    </script>
+    <script>
+    function pbPollVote(el) {
+        var poll = el.closest('.poll-widget');
+        if (poll.classList.contains('voted')) return;
+        poll.classList.add('voted');
+        el.classList.add('selected');
+        var opts = poll.querySelectorAll('.poll-widget-option');
+        var n = opts.length;
+        var raw = [];
+        var sum = 0;
+        for (var i = 0; i < n; i++) {
+            var v = Math.random() * 50 + 5;
+            if (opts[i] === el) v += 30;
+            raw.push(v);
+            sum += v;
+        }
+        var pcts = raw.map(function(v) { return Math.round(v / sum * 100); });
+        var diff = 100 - pcts.reduce(function(a,b){ return a+b; }, 0);
+        pcts[Array.from(opts).indexOf(el)] += diff;
+        setTimeout(function() {
+            opts.forEach(function(opt, i) {
+                opt.querySelector('.poll-widget-bar').style.width = pcts[i] + '%';
+                opt.querySelector('.poll-widget-pct').textContent = pcts[i] + '%';
+            });
+        }, 50);
+    }
+    </script>
+    <!--#include virtual="/ssi/body_bottom.html" -->
+    <script src="/static/js/inject.js" defer></script>
+</body>
+</html>

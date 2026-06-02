@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27><text y=%27.9em%27 font-size=%2790%27>🖥️</text></svg>">
+    <title>Как программно определить разрешение экрана в JS: полное руководство — Мониторум</title>
+    <meta name="description" content="Узнайте, как с помощью JavaScript получить текущее и физическое разрешение монитора, учесть масштабирование и адаптировать интерфейс под любые устройства.">
+    <link rel="canonical" href="https://monitorium.vercel.app/articles/k/ka/kak-opredelit-razreshenie-ekrana-monitora-js.html">
+
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="Как программно определить разрешение экрана в JS: полное руководство">
+    <meta property="og:description" content="Узнайте, как с помощью JavaScript получить текущее и физическое разрешение монитора, учесть масштабирование и адаптировать интерфейс под любые устройства.">
+    <meta property="og:locale" content="ru_RU">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css?v=1780420684">
+    <style>
+    .site-footer-premium {
+        margin-top: 60px; padding: 40px 0 0; background: #1e293b; color: #94a3b8;
+    }
+    .footer-grid {
+        display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 40px;
+        padding-bottom: 32px; border-bottom: 1px solid #334155;
+    }
+    .footer-brand { font-size: 1.2rem; font-weight: 700; color: #f1f5f9; margin-bottom: 12px; }
+    .footer-about { font-size: 0.9rem; line-height: 1.6; margin-bottom: 8px; }
+    .footer-updated { font-size: 0.8rem; color: #64748b; }
+    .footer-col h4 { color: #f1f5f9; font-size: 0.95rem; margin-bottom: 16px; }
+    .footer-col ul { list-style: none; }
+    .footer-col li { margin-bottom: 8px; }
+    .footer-col a { color: #94a3b8; font-size: 0.9rem; transition: color 0.2s; }
+    .footer-col a:hover { color: #60a5fa; }
+    .footer-bottom { padding: 20px 0; text-align: center; font-size: 0.85rem; }
+    @media (max-width: 640px) {
+        .footer-grid { grid-template-columns: 1fr; gap: 24px; }
+    }
+    .cookie-popup {
+        position: fixed; bottom: 0; left: 0; right: 0; background: #1e293b; color: #fff;
+        padding: 16px; transition: transform 0.5s ease; z-index: 9999; border-top: 2px solid #2563eb;
+        transform: translateY(100%);
+    }
+    .cookie-popup.visible { transform: translateY(0); }
+    .cookie-inner { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; gap: 16px; font-size: 0.9rem; }
+    .cookie-btn { background: #2563eb; color: #fff; border: none; padding: 8px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+    .cookie-btn:hover { background: #1d4ed8; }
+    @media (max-width: 640px) {
+        .cookie-inner { flex-direction: column; text-align: center; }
+    }
+</style>
+    
+    <!--#include virtual="/ssi/head.html" -->
+</head>
+<body>
+        <!--#include virtual="/ssi/body_top.html" -->
+    <style>
+    .nav-dropdown { position: relative; display: inline-block; }
+    .dropdown-toggle {
+        background: none; border: none; cursor: pointer;
+        font: inherit; color: inherit; padding: 8px 12px;
+        border-radius: 8px; transition: background 0.2s;
+    }
+    .dropdown-toggle:hover { background: rgba(0,0,0,0.05); }
+    .dropdown-menu {
+        display: none; position: absolute; right: 0; top: 100%;
+        min-width: 240px; max-height: 70vh; overflow-y: auto;
+        background: var(--card-bg, #fff); border: 1px solid var(--border, #e5e7eb);
+        border-radius: 12px; box-shadow: 0 12px 40px rgba(0,0,0,0.12);
+        padding: 8px 0; z-index: 1000;
+    }
+    .nav-dropdown::after {
+        content: ''; position: absolute; left: 0; right: 0;
+        top: 100%; height: 12px;
+    }
+    .nav-dropdown:hover .dropdown-menu,
+    .nav-dropdown:focus-within .dropdown-menu { display: block; }
+    .dropdown-item {
+        display: block; padding: 10px 20px; color: var(--text, #1f2937);
+        text-decoration: none; font-size: 0.95rem; transition: background 0.15s;
+        white-space: nowrap;
+    }
+    .dropdown-item:hover { background: rgba(37,99,235,0.06); color: var(--primary, #2563eb); }
+    @media (max-width: 768px) {
+        .main-nav > .nav-link { display: none; }
+        .dropdown-toggle { display: none; }
+        .dropdown-menu {
+            display: block !important; position: static;
+            box-shadow: none; border: none; border-radius: 0;
+            min-width: auto; max-height: none; padding: 0;
+            background: transparent;
+        }
+        .dropdown-item {
+            padding: 8px 0; font-size: 1rem;
+        }
+    }
+    </style>
+    <header class="site-header">
+        <div class="container header-inner">
+            <a href="/" class="logo">
+                <span class="logo-icon">🖥️</span>
+                <span>Мониторум</span>
+            </a>
+            <button class="mobile-menu-btn" aria-label="Меню" id="menuBtn">☰</button>
+            <nav class="main-nav" id="mainNav">
+                <a href="/category/nastrojka-ekrana/" class="nav-link">⚙️ Настройка экрана</a>
+<a href="/category/podklyuchenie-ustrojstv/" class="nav-link">🔌 Подключение устройств</a>
+<a href="/category/mnozhestvennye-ekrany/" class="nav-link">🖥️🖥️ Множественные экраны</a>
+<a href="/category/zvuk-i-audio/" class="nav-link">🔊 Звук и аудио</a>
+<div class="nav-dropdown">
+            <button class="nav-link dropdown-toggle">📂 Все разделы ▾</button>
+            <div class="dropdown-menu"><a href="/category/nastrojka-ekrana/" class="dropdown-item">⚙️ Настройка экрана</a>
+<a href="/category/podklyuchenie-ustrojstv/" class="dropdown-item">🔌 Подключение устройств</a>
+<a href="/category/mnozhestvennye-ekrany/" class="dropdown-item">🖥️🖥️ Множественные экраны</a>
+<a href="/category/zvuk-i-audio/" class="dropdown-item">🔊 Звук и аудио</a>
+<a href="/category/remont-i-polomki/" class="dropdown-item">🔧 Ремонт и поломки</a>
+<a href="/category/ukhod-i-chistka/" class="dropdown-item">🧼 Уход и чистка</a>
+<a href="/category/vybor-i-kharakteristiki/" class="dropdown-item">📊 Выбор и характеристики</a>
+<a href="/category/drajvery-i-po/" class="dropdown-item">💿 Драйверы и ПО</a>
+<a href="/category/krepleniya-i-ustanovka/" class="dropdown-item">🔩 Крепления и установка</a>
+<a href="/category/utilizatsiya-i-prodazha/" class="dropdown-item">♻️ Утилизация и продажа</a>
+<a href="/category/spetsialnye-rezhimy/" class="dropdown-item">🎮 Специальные режимы</a>
+<a href="/category/drugoe/" class="dropdown-item">📁 Другое</a></div>
+        </div>
+            </nav>
+        </div>
+    </header>
+
+    <nav class="breadcrumbs" aria-label="Навигация">
+        <div class="container"><a href="/">Главная</a><span class="breadcrumb-sep">›</span><a href="/category/drajvery-i-po/">Драйверы и ПО</a><span class="breadcrumb-sep">›</span><span class="breadcrumb-current">Как программно определить разрешение экрана в JS: полное руководство</span></div>
+    </nav>
+
+    <main class="site-main">
+        <div class="container">
+            <div class="article-layout">
+                <article class="article-main">
+                    
+                    <h1>Определение разрешения экрана монитора через JavaScript: методы и нюансы</h1>
+                    <nav class="mobile-toc"><details><summary>📋 Содержание</summary><ul><li><a href="#базовые-свойства-объекта-window-и-screen">Базовые свойства объекта Window и Screen</a></li><li><a href="#разница-между-логическими-и-физическими-пикселями">Разница между логическими и физическими пикселями</a></li><li><a href="#учет-масштабирования-и-настроек-ос">Учет масштабирования и настроек ОС</a></li><li><a href="#методы-получения-данных-для-адаптивного-дизайна">Методы получения данных для адаптивного дизайна</a></li><li><a href="#ограничения-и-проблемы-безопасности">Ограничения и проблемы безопасности</a></li><li><a href="#практическое-применение-полученных-данных">Практическое применение полученных данных</a></li><li><a href="#работа-с-нестандартными-конфигурациями">Работа с нестандартными конфигурациями</a></li><li><a href="#faq-частые-вопросы-по-определению-разрешения">FAQ: Частые вопросы по определению разрешения</a></li></ul></details></nav>
+                    <!--#include virtual="/ssi/article_before.html" -->
+                    <div class="article-body">
+
+<p>В современной веб-разработке адаптивность интерфейса является критически важным аспектом, особенно при создании сложных дашбордов или графических редакторов. Часто возникает задача не просто подстроиться под ширину окна браузера, а получить точные данные о физических характеристиках устройства пользователя. <strong>Определение разрешения экрана</strong> с помощью JavaScript позволяет разработчикам создавать умные адаптивные решения, которые работают корректно даже при нестандартных настройках операционной системы.</p>
+
+<p>Многие начинающие специалисты путают понятия логического и физического разрешения, что приводит к ошибкам в верстке и некорректному отображению графики. Важно понимать, что <em>window.screen</em> предоставляет одни данные, тогда как <em>window.devicePixelRatio</em> дает совершенно иную картину, учитывающую масштабирование интерфейса. Понимание этих различий — залог создания качественного программного продукта, который будет выглядеть идеально на мониторах с высокой плотностью пикселей.</p>
+
+<h2 id="базовые-свойства-объекта-window-и-screen">Базовые свойства объекта Window и Screen</h2>
+
+<p>Для начала работы с характеристиками дисплея необходимо обратиться к глобальному объекту <code>window</code>, который является корнем всей DOM-структуры. Самым простым способом узнать размеры области просмотра является обращение к свойствам <code>window.innerWidth</code> и <code>window.innerHeight</code>. Эти значения отражают текущий размер окна браузера, но не всего монитора, и могут меняться при изменении размеров окна пользователем.</p>
+
+<p>Если же ваша цель — узнать параметры именно экрана, а не окна приложения, следует использовать объект <code>screen</code>. Свойства <code>screen.width</code> и <code>screen.height</code> возвращают полные размеры дисплея в логических пикселях. Это базовый уровень информации, который доступен в любом браузере без дополнительных библиотек и настроек безопасности.</p>
+
+<p>Однако стоит учитывать, что современные операционные системы часто используют масштабирование интерфейса (DPI scaling), особенно на ноутбуках с экранами Retina или 4K мониторах. В таких случаях <code>screen.width</code> может показывать значение, отличное от реального количества физических светящихся точек на матрице. Например, при масштабировании 150% значение ширины будет уменьшено пропорционально коэффициенту.</p>
+
+<blockquote>⚠️ Внимание: Свойства объекта <code>screen</code> могут быть изменены пользователем через настройки операционной системы или расширения браузера, поэтому полагаться на них как на единственный источник истины при разработке критически важного ПО рискованно.</p>
+
+<div class="attention-box attention-tip"><span class="attention-icon">💡</span><p>Всегда проверяйте поддержку свойств в целевых браузерах, так как устаревшие версии могут некорректно обрабатывать высокие значения разрешений, возвращая 0 или ограниченные значения.</p></div>
+
+<h2 id="разница-между-логическими-и-физическими-пикселями">Разница между логическими и физическими пикселями</h2>
+
+<p>Ключевым моментом в понимании работы с экранами является различие между CSS-пикселями (логическими) и аппаратными пикселями (физическими). Логический пиксель — это единица измерения, используемая браузером для рендеринга контента, которая может состоять из нескольких физических пикселей на высокоплотных дисплеях. Это разделение позволяет контенту оставаться читаемым и четким независимо от плотности пикселей устройства.</p>
+
+<p>Чтобы получить коэффициент масштабирования, который показывает соотношение физического и логического разрешения, используется свойство <code>window.devicePixelRatio</code>. Если вы умножите значения <code>window.innerWidth</code> на этот коэффициент, вы получите реальное количество физических пикселей по ширине. Это критически важно для отрисовки графики через <code>Canvas</code> или SVG, чтобы избежать размытия элементов.</p>
+
+<p>Вот как можно вычислить физическое разрешение программно:</p>
+
+<pre><code>const logicalWidth = window.screen.width;
+<p>const logicalHeight = window.screen.height;</p>
+<p>const dpr = window.devicePixelRatio || 1;</p>
+
+<p>const physicalWidth = logicalWidth * dpr;</p>
+<p>const physicalHeight = logicalHeight * dpr;</code></pre></p>
+
+<p>Важно отметить, что <em>window.devicePixelRatio</em> — это динамическое свойство, которое может измениться, если пользователь переместит окно браузера на другой монитор с другой плотностью пикселей во время работы приложения.</p>
+
+<div class="attention-box attention-tip"><span class="attention-icon">💡</span><p>Физическое разрешение всегда равно логическому разрешению, умноженному на коэффициент devicePixelRatio, что позволяет получить точные данные для рендеринга графики.</p></div>
+
+<h2 id="учет-масштабирования-и-настроек-ос">Учет масштабирования и настроек ОС</h2>
+
+<p>При разработке приложений, требующих точного позиционирования или работы с графикой, игнорирование настроек масштабирования операционной системы может привести к серьезным багам. Пользователи часто устанавливают масштаб 125%, 150% или 200% для комфортной работы с текстом, что искажает реальную картину доступного пространства. JavaScript должен уметь считывать эти изменения в реальном времени.</p>
+
+<p>Для отслеживания изменений масштаба или разрешения в реальном времени существуют события, такие как <code>resize</code> (для окна) и <code>resize</code> на объекте <code>window</code>. Однако, более современным и эффективным подходом является использование Media Queries через JavaScript, что позволяет адаптировать логику работы скрипта под конкретные условия отображения.</p>
+
+<p>Иногда браузеры могут сообщать обманчивые данные, если включены специальные режимы энергосбережения или упростители интерфейса. В таких случаях значение <code>devicePixelRatio</code> может быть искусственно занижено для экономии ресурсов.</p>
+
+<div class="poll-widget" id="poll-706ad00d"><div class="poll-widget-question">📊 Какое разрешение экрана чаще всего вы используете в разработке?</div><div class="poll-widget-option" data-poll="706ad00d" data-idx="0" onclick="pbPollVote(this)"><span class="poll-widget-label">Full HD (1920x1080)</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="706ad00d" data-idx="1" onclick="pbPollVote(this)"><span class="poll-widget-label">2K (2560x1440)</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="706ad00d" data-idx="2" onclick="pbPollVote(this)"><span class="poll-widget-label">4K (3840x2160)</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="706ad00d" data-idx="3" onclick="pbPollVote(this)"><span class="poll-widget-label">Мобильное устройство</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div></div>
+
+<blockquote>⚠️ Внимание: В некоторых корпоративных средах политики безопасности могут ограничивать доступ к полному разрешению экрана, выдавая упрощенные данные для защиты приватности пользователя.</p>
+
+<h2 id="методы-получения-данных-для-адаптивного-дизайна">Методы получения данных для адаптивного дизайна</h2>
+
+<p>Для создания по-настоящему адаптивных интерфейсов недостаточно просто получить числа ширины и высоты. Необходимо понимать, как эти данные соотносятся с типами устройств и возможностями рендеринга. Существует несколько подходов к получению этой информации, каждый из которых имеет свои преимущества и недостатки в зависимости от контекста использования.</p>
+
+<p>Одним из самых надежных способов является использование объекта <code>matchMedia</code>, который позволяет проверять условия, аналогичные CSS Media Queries, прямо из JavaScript кода. Это дает возможность запускать специфичную логику для определенных диапазонов разрешений или плотностей пикселей без необходимости проверять все свойства вручную.</p>
+
+<p>Пример использования <code>matchMedia</code> для проверки высокой плотности пикселей:</p>
+
+<pre><code>if (window.matchMedia('(-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi)').matches) {
+<p>// Загрузка графики высокого разрешения</p>
+<p>}</code></pre></p>
+
+<p>Такой подход позволяет динамически подгружать только необходимые ресурсы, снижая нагрузку на сетевой канал и ускоряя загрузку страницы для пользователей с мощными мониторами.</p>
+
+<table>
+<thead>
+<tr>
+<th>Свойство</th>
+<th>Описание</th>
+<th>Тип данных</th>
+<th>Зависимость от масштабирования</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>window.innerWidth</code></td>
+<td>Ширина области просмотра браузера</td>
+<td>Integer</td>
+<td>Нет</td>
+</tr>
+<tr>
+<td><code>screen.width</code></td>
+<td>Полная ширина экрана в логических пикселях</td>
+<td>Integer</td>
+<td>Да</td>
+</tr>
+<tr>
+<td><code>window.devicePixelRatio</code></td>
+<td>Коэффициент физического к логическому пикселю</td>
+<td>Float</td>
+<td>Да (реактивный)</td>
+</tr>
+<tr>
+<td><code>screen.availWidth</code></td>
+<td>Доступная ширина экрана (без панели задач)</td>
+<td>Integer</td>
+<td>Да</td>
+</tr>
+</tbody>
+</table>
+
+<details class="faq-item"><summary>Особенности работы в мобильных браузерах</summary><div class="faq-answer"><p>В мобильной среде понятие "разрешение экрана" часто размывается из-за ориентации устройства. При повороте экрана свойства <code>screen.width</code> и <code>screen.height</code> могут меняться местами, но <code>screen.availWidth</code> может оставаться неизменным, если система не пересчитывает доступное пространство мгновенно.</p></div></details>
+
+<h2 id="ограничения-и-проблемы-безопасности">Ограничения и проблемы безопасности</h2>
+
+<p>Разработчики должны помнить, что доступ к информации о железе пользователя не всегда является полным и прозрачным. Браузеры внедряют механизмы защиты приватности, чтобы предотвратить создание уникальных "отпечатков" устройств (fingerprinting), которые могут использоваться для отслеживания пользователей без их ведома.</p>
+
+<p>В частности, некоторые браузеры могут округлять значения <code>devicePixelRatio</code> или выдавать фиксированные значения разрешений для групп устройств, чтобы затруднить идентификацию конкретного устройства. Это особенно актуально для мобильных браузеров и режимов инкогнито.</p>
+
+<p>Также стоит учитывать, что в iframe или при работе с кросс-доменными ресурсами доступ к объекту <code>screen</code> может быть ограничен политиками Same-Origin Policy. В таких случаях попытка прочитать свойства чужого контекста приведет к ошибке безопасности.</p>
+
+<blockquote>⚠️ Внимание: Не используйте данные о разрешении экрана для однозначной идентификации пользователя, так как современные браузеры могут намеренно искажать эти значения в целях конфиденциальности.</p>
+
+<h2 id="практическое-применение-полученных-данных">Практическое применение полученных данных</h2>
+
+<p>Полученные значения разрешения можно использовать для самых разных задач: от динамической подгрузки изображений нужного качества до перестройки сетки макета в реальном времени. Например, если вы разрабатываете веб-игру или интерактивную презентацию, знание физического разрешения позволяет рассчитывать размеры игровых объектов так, чтобы они выглядели одинаково на любом устройстве.</p>
+
+<p>В корпоративных приложениях, таких как системы управления цифровыми вывесками (Digital Signage), точное определение разрешения критично для корректного отображения контента на больших и нестандартных экранах. Здесь часто приходится учитывать не только стандартные соотношения сторон, но и специфические обрезки изображения.</p>
+
+<p>Для реализации адаптивной логики лучше всего создать отдельный модуль, который будет собирать все данные о дисплее и предоставлять их другим частям приложения через единый интерфейс. Это упростит тестирование и поддержку кода в будущем.</p>
+
+<div class="checklist-block"><h4>☑️ Алгоритм корректного определения разрешения</h4><label class="check-item"><input type="checkbox"><span>Определить логическое разрешение через screen.width/h</span></label><label class="check-item"><input type="checkbox"><span>Получить коэффициент devicePixelRatio</span></label><label class="check-item"><input type="checkbox"><span>Вычислить физическое разрешение</span></label><label class="check-item"><input type="checkbox"><span>Проверить доступное пространство через availWidth</span></label><label class="check-item"><input type="checkbox"><span>Обработать события изменения масштаба</span></label><div class="check-progress">Выполнено: <span class="check-count">0</span> / 5</div></div>
+
+<h2 id="работа-с-нестандартными-конфигурациями">Работа с нестандартными конфигурациями</h2>
+
+<p>Не все пользователи используют стандартные мониторы с соотношением сторон 16:9. Существуют ультраширокие мониторы (21:9), вертикальные дисплеи и даже изогнутые панели, которые могут вести себя непредсказуемо в веб-среде. В таких случаях простая проверка ширины может быть недостаточной.</p>
+
+<p>Особое внимание следует уделить свойству <code>screen.availHeight</code>, которое показывает высоту экрана за вычетом системных панелей задач. На некоторых операционных системах, таких как Windows или macOS, положение и размер этих панелей могут варьироваться, влияя на доступное пространство для веб-приложения.</p>
+
+<p>Если вы разрабатываете полноэкранные приложения, используйте метод <code>requestFullscreen()</code>, который переводит браузер в режим, максимально приближенный к нативному приложению. В этом режиме свойства <code>screen</code> часто становятся более точными, так как браузер перестает учитывать рамки своего окна.</p>
+
+<p>Кроме того, стоит помнить о поддержке нескольких мониторов. Если пользователь подключил два экрана с разным разрешением, объект <code>screen</code> может возвращать данные только для основного дисплея или объединять их, в зависимости от настроек ОС и версии браузера.</p>
+
+<h2 id="faq-частые-вопросы-по-определению-разрешения">FAQ: Частые вопросы по определению разрешения</h2>
+
+<details>
+<summary>Почему значения разрешения меняются при изменении размера окна?</summary>
+<p>Свойства <code>window.innerWidth</code> и <code>window.innerHeight</code> относятся к области просмотра (viewport), а не всего экрана. При изменении размера окна браузера эти значения обновляются динамически. Если вам нужны стабильные данные о мониторе, используйте <code>screen.width</code> и <code>screen.height</code>, которые меняются только при смене разрешения системы или перемещении окна на другой монитор.</p>
+</details>
+
+<details>
+<summary>Как получить разрешение экрана без использования JavaScript?</summary>
+<p>Без JavaScript получить точные данные о разрешении невозможно, так как это требует взаимодействия с API браузера. Однако, для стилизации можно использовать CSS Media Queries, которые позволяют применять разные стили в зависимости от ширины экрана, но не дают доступа к числовым значениям в логике страницы.</p>
+</details>
+
+<details>
+<summary>Что делать, если devicePixelRatio возвращает нецелое число?</summary>
+<p>Это нормальное поведение для современных дисплеев, где физический и логический пиксель не совпадают идеально. Например, на некоторых экранах Mac коэффициент может быть равен 1.5 или 2.0. При расчете размеров графики всегда округляйте значения или используйте дробные значения для максимальной точности рендеринга.</p>
+</details>
+
+<details>
+<summary>Можно ли определить тип монитора (LED, OLED) через JS?</summary>
+<p>Нет, JavaScript не имеет доступа к аппаратным спецификациям панели, таким как тип матрицы или технология подсветки. Доступны только геометрические параметры и характеристики рендеринга, но не физическая конструкция дисплея.</p>
+</details>
+
+<details>
+<summary>Влияет ли масштабирование Windows 125% на screen.width?</summary>
+<p>Да, свойство <code>screen.width</code> возвращает значение в логических пикселях. Если масштабирование установлено на 125%, то ширина будет меньше, чем реальное количество физических пикселей. Чтобы получить физическую ширину, необходимо умножить <code>screen.width</code> на <code>window.devicePixelRatio</code>.</p>
+</details></div>
+                    <!--#include virtual="/ssi/article_after.html" -->
+
+                </article>
+                <aside class="article-sidebar"><!--#include virtual="/ssi/sidebar_top.html" --><nav class="sidebar-search"><div class="sidebar-search-box"><input type="text" id="globalSearchInput" placeholder="🔍 Поиск статей..." autocomplete="off"><div class="search-dropdown" id="globalSearchDropdown"></div></div></nav><!--#include virtual="/ssi/sidebar_before_toc.html" --><nav class="sidebar-toc" id="sidebarToc"><h3>Содержание</h3><ul><li><a href="#базовые-свойства-объекта-window-и-screen">Базовые свойства объекта Window и Screen</a></li><li><a href="#разница-между-логическими-и-физическими-пикселями">Разница между логическими и физическими пикселями</a></li><li><a href="#учет-масштабирования-и-настроек-ос">Учет масштабирования и настроек ОС</a></li><li><a href="#методы-получения-данных-для-адаптивного-дизайна">Методы получения данных для адаптивного дизайна</a></li><li><a href="#ограничения-и-проблемы-безопасности">Ограничения и проблемы безопасности</a></li><li><a href="#практическое-применение-полученных-данных">Практическое применение полученных данных</a></li><li><a href="#работа-с-нестандартными-конфигурациями">Работа с нестандартными конфигурациями</a></li><li><a href="#faq-частые-вопросы-по-определению-разрешения">FAQ: Частые вопросы по определению разрешения</a></li></ul></nav><!--#include virtual="/ssi/sidebar_before_related.html" --><nav class="sidebar-related"><h3>Похожие статьи</h3><ul><li><a href="/articles/k/ka/kak-sdelat-zapis-ekrana-monitora-kompyutera.html" class="related-card">Как записать экран монитора: лучшие программы и встроенные средства</a></li><li><a href="/articles/v/vo/volfenshtajn-kak-pobedit-londonskij-monitor.html" class="related-card">Как победить Лондонский монитор в Wolfenstein: тактика, оружие и секреты</a></li><li><a href="/articles/m/mi/migaet-ekran-monitora-chto-delat-windows-10-na-noutbuke.html" class="related-card">Мерцает экран на ноутбуке с Windows 10: причины и способы устранения</a></li><li><a href="/articles/n/ni/nikogda-ne-znaesh-kto-sidit-po-tu-storonu-monitora.html" class="related-card">Кто скрывается за монитором: киберугрозы и безопасность в сети</a></li><li><a href="/articles/k/ka/kak-proshit-edid-monitora.html" class="related-card">Как прошить EDID монитора: Полная инструкция по безопасному обновлению</a></li></ul></nav><!--#include virtual="/ssi/sidebar_after_related.html" --></aside>
+            </div>
+        </div>
+    </main>
+
+    <!--#include virtual="/ssi/before_related_bottom.html" -->
+    <section class="related-bottom">
+        <div class="container">
+            <h2 class="related-bottom-heading">📖 Читайте также</h2>
+            <div class="related-bottom-grid"><a href="/articles/k/ka/kak-sdelat-zapis-ekrana-monitora-kompyutera.html" class="related-bottom-card"><span class="related-bottom-title">Как записать экран монитора: лучшие программы и встроенные средства</span><span class="related-bottom-desc">Полное руководство по захвату видео с экрана ПК. Обзор OBS, встроенных утилит Windows и Mac. Настрой</span></a><a href="/articles/v/vo/volfenshtajn-kak-pobedit-londonskij-monitor.html" class="related-bottom-card"><span class="related-bottom-title">Как победить Лондонский монитор в Wolfenstein: тактика, оружие и секреты</span><span class="related-bottom-desc">Полный гайд по устранению Лондонского монитора в Wolfenstein. Разбор уязвимостей, выбор лучшего оруж</span></a><a href="/articles/m/mi/migaet-ekran-monitora-chto-delat-windows-10-na-noutbuke.html" class="related-bottom-card"><span class="related-bottom-title">Мерцает экран на ноутбуке с Windows 10: причины и способы устранения</span><span class="related-bottom-desc">Экран ноутбука мигает? Узнайте, как быстро найти причину: от драйверов до аппаратных сбоев. Пошагова</span></a><a href="/articles/n/ni/nikogda-ne-znaesh-kto-sidit-po-tu-storonu-monitora.html" class="related-bottom-card"><span class="related-bottom-title">Кто скрывается за монитором: киберугрозы и безопасность в сети</span><span class="related-bottom-desc">Вы не знаете, кто наблюдает за вами через экран. Узнайте о рисках веб-камер, программ-шпионов и мето</span></a><a href="/articles/k/ka/kak-proshit-edid-monitora.html" class="related-bottom-card"><span class="related-bottom-title">Как прошить EDID монитора: Полная инструкция по безопасному обновлению</span><span class="related-bottom-desc">Пошаговое руководство по изменению EDID монитора через GPU-панели или утилиты. Узнайте, как восстано</span></a><a href="/articles/k/ka/kak-obnovit-drajver-monitora-na-windows-10.html" class="related-bottom-card"><span class="related-bottom-title">Как обновить драйвер монитора на Windows 10: полное руководство</span><span class="related-bottom-desc">Пошаговая инструкция по обновлению драйвера монитора в Windows 10. Методы через Диспетчер устройств,</span></a></div>
+        </div>
+    </section>
+    <!--#include virtual="/ssi/after_related_bottom.html" -->
+
+    <footer class="site-footer-premium">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-col">
+                    <div class="footer-brand">🖥️ Мониторум</div>
+                    <p class="footer-about">Полный справочник по настройке, ремонту и выбору компьютерных мониторов для любых задач.</p>
+                </div>
+                <div class="footer-col">
+                    <h4>Разделы</h4>
+                    <ul><li><a href="/category/nastrojka-ekrana/">⚙️ Настройка экрана</a></li>
+<li><a href="/category/podklyuchenie-ustrojstv/">🔌 Подключение устройств</a></li>
+<li><a href="/category/mnozhestvennye-ekrany/">🖥️🖥️ Множественные экраны</a></li>
+<li><a href="/category/zvuk-i-audio/">🔊 Звук и аудио</a></li>
+<li><a href="/category/remont-i-polomki/">🔧 Ремонт и поломки</a></li>
+<li><a href="/category/ukhod-i-chistka/">🧼 Уход и чистка</a></li></ul>
+                </div>
+                <div class="footer-col">
+                    <h4>Информация</h4>
+                    <ul>
+                        <li><a href="/">Главная</a></li>
+                        <li><a href="/about.html">О проекте</a></li>
+                        <li><a href="/categories.html">Все разделы</a></li>
+                        <li><a href="/contact.html">Контакты</a></li>
+                        <li><a href="/privacy.html">Конфиденциальность</a></li>
+                        <li><a href="/sitemap.xml">Карта сайта</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>© Мониторум. Все права защищены.</p>
+                <!--LiveInternet counter--><div style="margin-top:10px;"><a href="https://www.liveinternet.ru/click"
+                target="_blank"><img id="licnt06C4" width="88" height="15" style="border:0" 
+                title="LiveInternet: показано число посетителей за сегодня"
+                src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAEALAAAAAABAAEAAAIBTAA7"
+                alt=""/></a><script>(function(d,s){d.getElementById("licnt06C4").src=
+                "https://counter.yadro.ru/hit?t26.5;r"+escape(d.referrer)+
+                ((typeof(s)=="undefined")?"":";s"+s.width+"*"+s.height+"*"+
+                (s.colorDepth?s.colorDepth:s.pixelDepth))+";u"+escape(d.URL)+
+                ";h"+escape(d.title.substring(0,150))+";"+Math.random()})(document,screen)</script></div><!--/LiveInternet-->
+            </div>
+        </div>
+    </footer>
+    <div id="cookie-consent" class="cookie-popup">
+        <div class="cookie-inner">
+            <span>🍪 Мы используем файлы cookie для улучшения работы сайта.</span>
+            <button id="cookie-accept" class="cookie-btn">Принять</button>
+        </div>
+    </div>
+    <script src="/static/js/main.js"></script>
+    <script>
+    (function() {
+        const popup = document.getElementById('cookie-consent');
+        const btn = document.getElementById('cookie-accept');
+        if (popup && btn && !localStorage.getItem('cookie-accepted')) {
+            popup.classList.add('visible');
+            btn.onclick = () => {
+                localStorage.setItem('cookie-accepted', 'true');
+                popup.classList.remove('visible');
+            };
+        }
+    })();
+    </script>
+    <script>
+    function pbPollVote(el) {
+        var poll = el.closest('.poll-widget');
+        if (poll.classList.contains('voted')) return;
+        poll.classList.add('voted');
+        el.classList.add('selected');
+        var opts = poll.querySelectorAll('.poll-widget-option');
+        var n = opts.length;
+        var raw = [];
+        var sum = 0;
+        for (var i = 0; i < n; i++) {
+            var v = Math.random() * 50 + 5;
+            if (opts[i] === el) v += 30;
+            raw.push(v);
+            sum += v;
+        }
+        var pcts = raw.map(function(v) { return Math.round(v / sum * 100); });
+        var diff = 100 - pcts.reduce(function(a,b){ return a+b; }, 0);
+        pcts[Array.from(opts).indexOf(el)] += diff;
+        setTimeout(function() {
+            opts.forEach(function(opt, i) {
+                opt.querySelector('.poll-widget-bar').style.width = pcts[i] + '%';
+                opt.querySelector('.poll-widget-pct').textContent = pcts[i] + '%';
+            });
+        }, 50);
+    }
+    </script>
+    <!--#include virtual="/ssi/body_bottom.html" -->
+    <script src="/static/js/inject.js" defer></script>
+</body>
+</html>

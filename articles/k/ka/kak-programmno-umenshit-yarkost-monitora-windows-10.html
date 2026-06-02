@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27><text y=%27.9em%27 font-size=%2790%27>🖥️</text></svg>">
+    <title>Как программно уменьшить яркость монитора в Windows 10 — Мониторум</title>
+    <meta name="description" content="Тонкая настройка подсветки экрана: управление яркостью через DDC/CI, PowerShell и сторонние утилиты для комфортной работы в темноте.">
+    <link rel="canonical" href="https://monitorium.vercel.app/articles/k/ka/kak-programmno-umenshit-yarkost-monitora-windows-10.html">
+
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="Как программно уменьшить яркость монитора в Windows 10">
+    <meta property="og:description" content="Тонкая настройка подсветки экрана: управление яркостью через DDC/CI, PowerShell и сторонние утилиты для комфортной работы в темноте.">
+    <meta property="og:locale" content="ru_RU">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css?v=1780420684">
+    <style>
+    .site-footer-premium {
+        margin-top: 60px; padding: 40px 0 0; background: #1e293b; color: #94a3b8;
+    }
+    .footer-grid {
+        display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 40px;
+        padding-bottom: 32px; border-bottom: 1px solid #334155;
+    }
+    .footer-brand { font-size: 1.2rem; font-weight: 700; color: #f1f5f9; margin-bottom: 12px; }
+    .footer-about { font-size: 0.9rem; line-height: 1.6; margin-bottom: 8px; }
+    .footer-updated { font-size: 0.8rem; color: #64748b; }
+    .footer-col h4 { color: #f1f5f9; font-size: 0.95rem; margin-bottom: 16px; }
+    .footer-col ul { list-style: none; }
+    .footer-col li { margin-bottom: 8px; }
+    .footer-col a { color: #94a3b8; font-size: 0.9rem; transition: color 0.2s; }
+    .footer-col a:hover { color: #60a5fa; }
+    .footer-bottom { padding: 20px 0; text-align: center; font-size: 0.85rem; }
+    @media (max-width: 640px) {
+        .footer-grid { grid-template-columns: 1fr; gap: 24px; }
+    }
+    .cookie-popup {
+        position: fixed; bottom: 0; left: 0; right: 0; background: #1e293b; color: #fff;
+        padding: 16px; transition: transform 0.5s ease; z-index: 9999; border-top: 2px solid #2563eb;
+        transform: translateY(100%);
+    }
+    .cookie-popup.visible { transform: translateY(0); }
+    .cookie-inner { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; gap: 16px; font-size: 0.9rem; }
+    .cookie-btn { background: #2563eb; color: #fff; border: none; padding: 8px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+    .cookie-btn:hover { background: #1d4ed8; }
+    @media (max-width: 640px) {
+        .cookie-inner { flex-direction: column; text-align: center; }
+    }
+</style>
+    
+    <!--#include virtual="/ssi/head.html" -->
+</head>
+<body>
+        <!--#include virtual="/ssi/body_top.html" -->
+    <style>
+    .nav-dropdown { position: relative; display: inline-block; }
+    .dropdown-toggle {
+        background: none; border: none; cursor: pointer;
+        font: inherit; color: inherit; padding: 8px 12px;
+        border-radius: 8px; transition: background 0.2s;
+    }
+    .dropdown-toggle:hover { background: rgba(0,0,0,0.05); }
+    .dropdown-menu {
+        display: none; position: absolute; right: 0; top: 100%;
+        min-width: 240px; max-height: 70vh; overflow-y: auto;
+        background: var(--card-bg, #fff); border: 1px solid var(--border, #e5e7eb);
+        border-radius: 12px; box-shadow: 0 12px 40px rgba(0,0,0,0.12);
+        padding: 8px 0; z-index: 1000;
+    }
+    .nav-dropdown::after {
+        content: ''; position: absolute; left: 0; right: 0;
+        top: 100%; height: 12px;
+    }
+    .nav-dropdown:hover .dropdown-menu,
+    .nav-dropdown:focus-within .dropdown-menu { display: block; }
+    .dropdown-item {
+        display: block; padding: 10px 20px; color: var(--text, #1f2937);
+        text-decoration: none; font-size: 0.95rem; transition: background 0.15s;
+        white-space: nowrap;
+    }
+    .dropdown-item:hover { background: rgba(37,99,235,0.06); color: var(--primary, #2563eb); }
+    @media (max-width: 768px) {
+        .main-nav > .nav-link { display: none; }
+        .dropdown-toggle { display: none; }
+        .dropdown-menu {
+            display: block !important; position: static;
+            box-shadow: none; border: none; border-radius: 0;
+            min-width: auto; max-height: none; padding: 0;
+            background: transparent;
+        }
+        .dropdown-item {
+            padding: 8px 0; font-size: 1rem;
+        }
+    }
+    </style>
+    <header class="site-header">
+        <div class="container header-inner">
+            <a href="/" class="logo">
+                <span class="logo-icon">🖥️</span>
+                <span>Мониторум</span>
+            </a>
+            <button class="mobile-menu-btn" aria-label="Меню" id="menuBtn">☰</button>
+            <nav class="main-nav" id="mainNav">
+                <a href="/category/nastrojka-ekrana/" class="nav-link">⚙️ Настройка экрана</a>
+<a href="/category/podklyuchenie-ustrojstv/" class="nav-link">🔌 Подключение устройств</a>
+<a href="/category/mnozhestvennye-ekrany/" class="nav-link">🖥️🖥️ Множественные экраны</a>
+<a href="/category/zvuk-i-audio/" class="nav-link">🔊 Звук и аудио</a>
+<div class="nav-dropdown">
+            <button class="nav-link dropdown-toggle">📂 Все разделы ▾</button>
+            <div class="dropdown-menu"><a href="/category/nastrojka-ekrana/" class="dropdown-item">⚙️ Настройка экрана</a>
+<a href="/category/podklyuchenie-ustrojstv/" class="dropdown-item">🔌 Подключение устройств</a>
+<a href="/category/mnozhestvennye-ekrany/" class="dropdown-item">🖥️🖥️ Множественные экраны</a>
+<a href="/category/zvuk-i-audio/" class="dropdown-item">🔊 Звук и аудио</a>
+<a href="/category/remont-i-polomki/" class="dropdown-item">🔧 Ремонт и поломки</a>
+<a href="/category/ukhod-i-chistka/" class="dropdown-item">🧼 Уход и чистка</a>
+<a href="/category/vybor-i-kharakteristiki/" class="dropdown-item">📊 Выбор и характеристики</a>
+<a href="/category/drajvery-i-po/" class="dropdown-item">💿 Драйверы и ПО</a>
+<a href="/category/krepleniya-i-ustanovka/" class="dropdown-item">🔩 Крепления и установка</a>
+<a href="/category/utilizatsiya-i-prodazha/" class="dropdown-item">♻️ Утилизация и продажа</a>
+<a href="/category/spetsialnye-rezhimy/" class="dropdown-item">🎮 Специальные режимы</a>
+<a href="/category/drugoe/" class="dropdown-item">📁 Другое</a></div>
+        </div>
+            </nav>
+        </div>
+    </header>
+
+    <nav class="breadcrumbs" aria-label="Навигация">
+        <div class="container"><a href="/">Главная</a><span class="breadcrumb-sep">›</span><a href="/category/drugoe/">Другое</a><span class="breadcrumb-sep">›</span><span class="breadcrumb-current">Как программно уменьшить яркость монитора в Windows 10</span></div>
+    </nav>
+
+    <main class="site-main">
+        <div class="container">
+            <div class="article-layout">
+                <article class="article-main">
+                    
+                    <h1>Программное управление яркостью монитора в Windows 10</h1>
+                    <nav class="mobile-toc"><details><summary>📋 Содержание</summary><ul><li><a href="#введение-в-проблему-стандартного-управления-яркостью">Введение в проблему стандартного управления яркостью</a></li><li><a href="#аппаратный-протокол-ddcci-и-его-роль">Аппаратный протокол DDC/CI и его роль</a></li><li><a href="#использование-утилиты-monitorian-для-тонкой-настройки">Использование утилиты Monitorian для тонкой настройки</a></li><li><a href="#управление-через-powershell-и-wmi">Управление через PowerShell и WMI</a></li><li><a href="#сравнительная-таблица-методов-управления-яркостью">Сравнительная таблица методов управления яркостью</a></li><li><a href="#сторонние-решения-carely-и-flux">Сторонние решения: Carely и f.lux</a></li><li><a href="#решение-проблем-совместимости-и-сбоев">Решение проблем совместимости и сбоев</a></li><li><a href="#частые-вопросы-faq">Частые вопросы (FAQ)</a></li></ul></details></nav>
+                    <!--#include virtual="/ssi/article_before.html" -->
+                    <div class="article-body"><h2 id="введение-в-проблему-стандартного-управления-яркостью">Введение в проблему стандартного управления яркостью</h2>
+<p>Многие пользователи сталкиваются с ситуацией, когда стандартный ползунок яркости в <code>Параметрах Windows</code> не меняет фактическую интенсивность подсветки матрицы, а лишь затемняет изображение программно. Это особенно актуально для стационарных ПК, где драйвер видеокарты не имеет прямого доступа к контроллеру подсветки монитора, в отличие от ноутбуков.</p>
+<p>В таких случаях единственный верный способ снизить нагрузку на глаза — это взаимодействие с <strong>аппаратными настройками</strong> самого дисплея через программные интерфейсы. Стандартные средства операционной системы часто игнорируют команду, если монитор не поддерживает протокол <em>DDC/CI</em> или он отключен в меню устройства.</p>
+
+<h2 id="аппаратный-протокол-ddcci-и-его-роль">Аппаратный протокол DDC/CI и его роль</h2>
+<p>Фундаментальной технологией, позволяющей компьютеру управлять физическими параметрами монитора, является протокол <strong>Display Data Channel Command Interface</strong> (DDC/CI). Именно он обеспечивает передачу команд от графического адаптера к микроконтроллеру дисплея, изменяя напряжение на светодиодах подсветки.</p>
+<p>Без включения этой опции в меню самого монитора (через физические кнопки) никакая программная утилита не сможет изменить реальную яркость, оставив только программное затемнение. Проверить статус этой функции можно, войдя в оверлей настроек вашего <em>Dell</em>, <em>LG</em> или <em>Acer</em>, найдя раздел <code>System</code> или <code>General</code>.</p>
+<blockquote>⚠️ Внимание: Если вы не видите ползунок яркости в настройках Windows, первым делом зайдите в физическое меню монитора и убедитесь, что опция <code>DDC/CI</code> установлена в положение <strong>Enabled</strong>. Без этого шага программное управление невозможно.</blockquote>
+
+<p>Иногда после обновления драйверов видеоподсистемы эта настройка сбрасывается, поэтому при возникновении проблем с управлением светом стоит перепроверить её наличие. В некоторых моделях игровых мониторов протокол может быть отключен по умолчанию для предотвращения случайных изменений во время игры.</p>
+<pre><code>Примечание: В меню некоторых моделей название опции может варьироваться от "DDC/CI" до "I2C Control" или "Monitor Control".</code></pre>
+
+<div class="poll-widget" id="poll-9644c0a2"><div class="poll-widget-question">📊 Включен ли протокол DDC/CI на вашем мониторе?</div><div class="poll-widget-option" data-poll="9644c0a2" data-idx="0" onclick="pbPollVote(this)"><span class="poll-widget-label">Да, я знаю точно</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="9644c0a2" data-idx="1" onclick="pbPollVote(this)"><span class="poll-widget-label">Нет, я не проверял</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="9644c0a2" data-idx="2" onclick="pbPollVote(this)"><span class="poll-widget-label">Не знаю, где искать</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="9644c0a2" data-idx="3" onclick="pbPollVote(this)"><span class="poll-widget-label">Меню не работает</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div></div>
+
+<h2 id="использование-утилиты-monitorian-для-тонкой-настройки">Использование утилиты Monitorian для тонкой настройки</h2>
+<p>Самым эффективным решением для Windows 10 является специализированное приложение <strong>Monitorian</strong>, доступное в Microsoft Store. Оно работает через API <em>DDC/CI</em>, предоставляя удобный интерфейс для управления несколькими мониторами одновременно без необходимости лазать в физические меню.</p>
+<p>Программа позволяет не только менять яркость, но и настраивать контрастность, что часто упускается из виду при стандартной настройке. Утилита отлично интегрируется в панель уведомлений, позволяя быстро корректировать освещение без открытия лишних окон.</p>
+<p>Для установки достаточно найти <code>Monitorian</code> в магазине приложений и нажать кнопку установки. После запуска вы увидите ползунки для каждого подключенного экрана, отражающие текущее физическое состояние подсветки.</p>
+<ul>
+<li>🔍 Поддержка горячих клавиш для быстрого изменения уровня подсветки</li>
+<li>🌑 Возможность автоматического затемнения в ночное время суток</li>
+<li>📊 Отображение текущего уровня яркости в процентах</li>
+</ul>
+<div class="checklist-block"><h4>☑️ Настройка Monitorian</h4><label class="check-item"><input type="checkbox"><span>Установить из Microsoft Store</span></label><label class="check-item"><input type="checkbox"><span>Включить DDC/CI на мониторе</span></label><label class="check-item"><input type="checkbox"><span>Настроить горячие клавиши</span></label><label class="check-item"><input type="checkbox"><span>Проверить работу на всех экранах</span></label><div class="check-progress">Выполнено: <span class="check-count">0</span> / 4</div></div>
+
+<p>Важно отметить, что приложение может не работать на некоторых ноутбуках со специфическими драйверами дисплея, где управление подсветкой перехвачено собственным ПО производителя. В таких случаях утилита покажет ошибку отсутствия поддержки протокола.</p>
+
+<h2 id="управление-через-powershell-и-wmi">Управление через PowerShell и WMI</h2>
+<p>Для продвинутых пользователей, желающих автоматизировать процесс или встроить скрипт в систему, существует возможность управления яркостью через <strong>Windows Management Instrumentation</strong> (WMI). Это требует написания сценария на языке <em>PowerShell</em>, который будет отправлять команды напрямую к оборудованию.</p>
+<p>Хотя это не так просто, как использование готовой программы, такой метод дает полный контроль над процессом. Вы можете создать файл скрипта, который будет уменьшать яркость при запуске системы или при нажатии определенной клавиши.</p>
+<p>Ниже приведен пример команды, которая может быть использована в скрипте для установки яркости на конкретный уровень, если драйверы поддерживают соответствующие драйверы WMI.</p>
+<pre><code>$wmi = Get-WmiObject -Namespace root\WMI -Class WmiMonitorBrightnessMethods
+<p>$wmi.WmiSetBrightness(1, 25)</code></pre></p>
+<p>В данном примере число <code>25</code> обозначает желаемый процент яркости, а <code>1</code> — время задержки в секундах до применения изменений. Этот метод является наиболее "нативным" для системы, но требует корректно установленных драйверов монитора.</p>
+<details class="faq-item"><summary>Как создать скрипт для автоматизации?</summary><div class="faq-answer"><p>Откройте Блокнот, вставьте код PowerShell, сохраните файл с расширением .ps1 и запустите от имени администратора. Для создания ярлыка на рабочем столе используйте команду powershell.exe -ExecutionPolicy Bypass -File "путь_к_файлу.ps1".</p></div></details>
+
+<p>Стоит учитывать, что не все видеокарты корректно передают запросы через WMI, особенно старые модели или интегрированные графические решения в бюджетных ПК. В случае ошибки выполнения команды, система сообщит об отсутствии поддержки метода.</p>
+
+<h2 id="сравнительная-таблица-методов-управления-яркостью">Сравнительная таблица методов управления яркостью</h2>
+<p>Чтобы выбрать наиболее подходящий способ для вашей ситуации, полезно сравнить доступные методы по ключевым параметрам. Каждый из них имеет свои преимущества и ограничения, зависящие от аппаратной конфигурации.</p>
+<table>
+<thead>
+<tr>
+<th>Метод</th>
+<th>Требования</th>
+<th>Удобство</th>
+<th>Гибкость</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Меню монитора</td>
+<td>Физические кнопки</td>
+<td>Низкое</td>
+<td>Базовая</td>
+</tr>
+<tr>
+<td>Monitorian</td>
+<td>DDC/CI включен</td>
+<td>Высокое</td>
+<td>Средняя</td>
+</tr>
+<tr>
+<td>PowerShell</td>
+<td>Драйверы WMI</td>
+<td>Низкое</td>
+<td>Максимальная</td>
+</tr>
+<tr>
+<td>Драйвер GPU</td>
+<td>Поддержка ОС</td>
+<td>Среднее</td>
+<td>Средняя</td>
+</tr>
+<tr>
+<td>Физическая подсветка</td>
+<td>Внешний диммер</td>
+<td>Низкое</td>
+<td>Низкая</td>
+</tr>
+</tbody>
+</table>
+<p>Как видно из таблицы, использование специализированного ПО обеспечивает наилучший баланс между удобством и функциональностью. Прямое управление через меню остается самым надежным, но самым неудобным способом при частой смене условий освещения.</p>
+<blockquote>⚠️ Внимание: При использовании сторонних утилит убедитесь, что они скачаны с официальных источников. Некоторые программы могут перехватывать управление яркостью и передавать его некорректно, создавая мерцание экрана.</blockquote>
+
+<div class="attention-box attention-tip"><span class="attention-icon">💡</span><p>Если вы часто работаете в темноте, настройте автоматическое снижение яркости в утилите Monitorian при наступлении сумерек, чтобы не напрягать глаза резкими переходами.</p></div>
+
+<h2 id="сторонние-решения-carely-и-flux">Сторонние решения: Carely и f.lux</h2>
+<p>Помимо <strong>Monitorian</strong>, существуют и другие популярные утилиты, такие как <em>Carely</em> и <em>f.lux</em>, которые предлагают расширенные функции не только для яркости, но и для цветовой температуры. <em>f.lux</em> особенно известен своим алгоритмом автоматической подстройки цветов под время суток.</p>
+<p>Однако важно понимать разницу: <em>f.lux</em> часто работает на уровне программного фильтра изображения, меняя цветовую гамму, а не физическую яркость подсветки. Для реального снижения яркости в темноте лучше комбинировать его с утилитами, управляющими DDC/CI.</p>
+<p>Приложение <strong>Carely</strong> позиционируется как инструмент для защиты зрения, предлагая не только затемнение, но и напоминания о перерывах. Оно поддерживает создание профилей для разных задач: чтение, работа с кодом или просмотр видео.</p>
+<ul>
+<li>🎨 Регулировка цветовой температуры (теплый/холодный свет)</li>
+<li>🕒 Таймеры перерывов для профилактики усталости глаз</li>
+<li>🌙 Режим "ночной" с максимальным затемнением</li>
+</ul>
+<div class="attention-box attention-tip"><span class="attention-icon">💡</span><p>Комбинация f.lux для цветовой температуры и Monitorian для физической яркости дает наилучший результат для здоровья глаз.</p></div>
+
+<p>Некоторые пользователи отмечают, что после установки таких программ система может требовать перезагрузки для корректной работы драйверов фильтра. Это нормальная практика, обеспечивающая стабильность работы подсистемы дисплея.</p>
+
+<h2 id="решение-проблем-совместимости-и-сбоев">Решение проблем совместимости и сбоев</h2>
+<p>Иногда возникает ситуация, когда все настройки верны, но яркость не меняется. Это может указывать на конфликт драйверов или неправильную работу <strong>подсистемы администрирования</strong> монитора. В первую очередь стоит проверить, не блокируется ли доступ к порту DDC.</p>
+<p>Устаревшие драйверы видеокарт могут некорректно передавать команды через <em>WMI</em>. Обновление графического драйвера до последней версии часто решает проблему отсутствия ползунков яркости в сторонних утилитах. Также проверьте, не включен ли режим <code>Game Mode</code> в мониторе, который иногда отключает DDC/CI для повышения производительности.</p>
+<p>Если утилита показывает ошибку "Device not found" или "No DDC/CI support", попробуйте отключить и снова подключить монитор через кабель HDMI или DisplayPort. Это перезапустит инициализацию протокола.</p>
+<blockquote>⚠️ Внимание: Если вы используете док-станцию или переходник USB-HDMI, протокол DDC/CI может не работать из-за ограничений пропускной способности канала передачи данных.</blockquote>
+<p>В редких случаях помогает сброс настроек монитора до заводских (Reset All) через его физическое меню. Это вернет стандартные значения, включая включенный по умолчанию протокол управления, если он был случайно выключен.</p>
+
+<h2 id="частые-вопросы-faq">Частые вопросы (FAQ)</h2>
+<details>
+<summary>Почему ползунок яркости в Windows 10 не работает?</summary>
+<p>Скорее всего, у вас отключен протокол DDC/CI в меню монитора, либо вы используете ноутбук, где управление подсветкой осуществляется через драйвер видеокарты, а не DDC/CI.</p>
+</details>
+<details>
+<summary>Можно ли управлять яркостью через командную строку?</summary>
+<p>Да, через PowerShell с использованием команд WMI, но для этого требуются специфические драйверы и настройки, которые есть не на всех конфигурациях.</p>
+</details>
+<details>
+<summary>Влияет ли программное затемнение на здоровье глаз?</summary>
+<p>Программное затемнение (через драйвер) делает картинку темной, но подсветка остается на прежнем уровне, что может создавать контраст с окружающей темнотой. Физическое снижение яркости через DDC/CI безопаснее для зрения.</p>
+</details>
+<details>
+<summary>Работает ли Monitorian на всех мониторах?</summary>
+<p>Нет, программа требует поддержки протокола DDC/CI на уровне железа и включенной опции в меню монитора. Старые модели или некоторые игровые мониторы могут не поддерживать этот стандарт.</p>
+</details>
+<details>
+<summary>Как отключить управление яркостью из меню монитора?</summary>
+<p>В меню монитора (физические кнопки) найдите раздел настроек системы или управления и отключите опцию DDC/CI или Monitor Control, чтобы вернуть управление только физическим кнопкам.</p>
+</details></div>
+                    <!--#include virtual="/ssi/article_after.html" -->
+
+                </article>
+                <aside class="article-sidebar"><!--#include virtual="/ssi/sidebar_top.html" --><nav class="sidebar-search"><div class="sidebar-search-box"><input type="text" id="globalSearchInput" placeholder="🔍 Поиск статей..." autocomplete="off"><div class="search-dropdown" id="globalSearchDropdown"></div></div></nav><!--#include virtual="/ssi/sidebar_before_toc.html" --><nav class="sidebar-toc" id="sidebarToc"><h3>Содержание</h3><ul><li><a href="#введение-в-проблему-стандартного-управления-яркостью">Введение в проблему стандартного управления яркостью</a></li><li><a href="#аппаратный-протокол-ddcci-и-его-роль">Аппаратный протокол DDC/CI и его роль</a></li><li><a href="#использование-утилиты-monitorian-для-тонкой-настройки">Использование утилиты Monitorian для тонкой настройки</a></li><li><a href="#управление-через-powershell-и-wmi">Управление через PowerShell и WMI</a></li><li><a href="#сравнительная-таблица-методов-управления-яркостью">Сравнительная таблица методов управления яркостью</a></li><li><a href="#сторонние-решения-carely-и-flux">Сторонние решения: Carely и f.lux</a></li><li><a href="#решение-проблем-совместимости-и-сбоев">Решение проблем совместимости и сбоев</a></li><li><a href="#частые-вопросы-faq">Частые вопросы (FAQ)</a></li></ul></nav><!--#include virtual="/ssi/sidebar_before_related.html" --><nav class="sidebar-related"><h3>Похожие статьи</h3><ul><li><a href="/articles/k/ka/kak-ubrat-oranzhevyj-ottenok-v-monitore.html" class="related-card">Как убрать оранжевый оттенок монитора: полные настройки и калибровка</a></li><li><a href="/articles/n/na/na-kakie-vidy-delyatsya-monitory.html" class="related-card">Виды мониторов: как выбрать идеальный экран для работы и игр</a></li><li><a href="/articles/c/ch/chto-takoe-vne-diapazona-na-monitore-v-igre-chto-delat.html" class="related-card">Ошибка «Вне диапазона» на мониторе в игре: причины и способы решения</a></li><li><a href="/articles/k/ka/kak-ubrat-pusk-so-2-monitora.html" class="related-card">Как убрать Пуск со второго монитора: 3 рабочих способа</a></li><li><a href="/articles/k/ka/kak-dobavit-neskolko-monitorov-v-windows-10-pc.html" class="related-card">Как подключить несколько мониторов к Windows 10 — пошагово</a></li></ul></nav><!--#include virtual="/ssi/sidebar_after_related.html" --></aside>
+            </div>
+        </div>
+    </main>
+
+    <!--#include virtual="/ssi/before_related_bottom.html" -->
+    <section class="related-bottom">
+        <div class="container">
+            <h2 class="related-bottom-heading">📖 Читайте также</h2>
+            <div class="related-bottom-grid"><a href="/articles/k/ka/kak-ubrat-oranzhevyj-ottenok-v-monitore.html" class="related-bottom-card"><span class="related-bottom-title">Как убрать оранжевый оттенок монитора: полные настройки и калибровка</span><span class="related-bottom-desc">Устраняем желтизну экрана самостоятельно. Пошаговая инструкция по настройке RGB, фильтра синего свет</span></a><a href="/articles/n/na/na-kakie-vidy-delyatsya-monitory.html" class="related-bottom-card"><span class="related-bottom-title">Виды мониторов: как выбрать идеальный экран для работы и игр</span><span class="related-bottom-desc">Подробный гайд по классификации мониторов: от матриц до назначения. Узнайте, какой тип экрана подход</span></a><a href="/articles/c/ch/chto-takoe-vne-diapazona-na-monitore-v-igre-chto-delat.html" class="related-bottom-card"><span class="related-bottom-title">Ошибка «Вне диапазона» на мониторе в игре: причины и способы решения</span><span class="related-bottom-desc">Почему экран показывает «Out of Range» при запуске игр? Полный гайд по настройке частоты обновления,</span></a><a href="/articles/k/ka/kak-ubrat-pusk-so-2-monitora.html" class="related-bottom-card"><span class="related-bottom-title">Как убрать Пуск со второго монитора: 3 рабочих способа</span><span class="related-bottom-desc">Узнайте, как перенести или отключить панель задач и кнопку Пуск на втором экране в Windows 10 и 11. </span></a><a href="/articles/k/ka/kak-dobavit-neskolko-monitorov-v-windows-10-pc.html" class="related-bottom-card"><span class="related-bottom-title">Как подключить несколько мониторов к Windows 10 — пошагово</span><span class="related-bottom-desc">Детальная инструкция по подключению 2+ мониторов к ПК на Windows 10: выбор оборудования, настройка р</span></a><a href="/articles/c/ch/chto-znachit-monitor-blizhnego-polya.html" class="related-bottom-card"><span class="related-bottom-title">Монитор ближнего поля: что это и зачем нужен в 2026 году</span><span class="related-bottom-desc">Разбираемся, что значит «монитор ближнего поля» (NFC), как он работает, где применяется и чем отлича</span></a></div>
+        </div>
+    </section>
+    <!--#include virtual="/ssi/after_related_bottom.html" -->
+
+    <footer class="site-footer-premium">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-col">
+                    <div class="footer-brand">🖥️ Мониторум</div>
+                    <p class="footer-about">Полный справочник по настройке, ремонту и выбору компьютерных мониторов для любых задач.</p>
+                </div>
+                <div class="footer-col">
+                    <h4>Разделы</h4>
+                    <ul><li><a href="/category/nastrojka-ekrana/">⚙️ Настройка экрана</a></li>
+<li><a href="/category/podklyuchenie-ustrojstv/">🔌 Подключение устройств</a></li>
+<li><a href="/category/mnozhestvennye-ekrany/">🖥️🖥️ Множественные экраны</a></li>
+<li><a href="/category/zvuk-i-audio/">🔊 Звук и аудио</a></li>
+<li><a href="/category/remont-i-polomki/">🔧 Ремонт и поломки</a></li>
+<li><a href="/category/ukhod-i-chistka/">🧼 Уход и чистка</a></li></ul>
+                </div>
+                <div class="footer-col">
+                    <h4>Информация</h4>
+                    <ul>
+                        <li><a href="/">Главная</a></li>
+                        <li><a href="/about.html">О проекте</a></li>
+                        <li><a href="/categories.html">Все разделы</a></li>
+                        <li><a href="/contact.html">Контакты</a></li>
+                        <li><a href="/privacy.html">Конфиденциальность</a></li>
+                        <li><a href="/sitemap.xml">Карта сайта</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>© Мониторум. Все права защищены.</p>
+                <!--LiveInternet counter--><div style="margin-top:10px;"><a href="https://www.liveinternet.ru/click"
+                target="_blank"><img id="licnt06C4" width="88" height="15" style="border:0" 
+                title="LiveInternet: показано число посетителей за сегодня"
+                src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAEALAAAAAABAAEAAAIBTAA7"
+                alt=""/></a><script>(function(d,s){d.getElementById("licnt06C4").src=
+                "https://counter.yadro.ru/hit?t26.5;r"+escape(d.referrer)+
+                ((typeof(s)=="undefined")?"":";s"+s.width+"*"+s.height+"*"+
+                (s.colorDepth?s.colorDepth:s.pixelDepth))+";u"+escape(d.URL)+
+                ";h"+escape(d.title.substring(0,150))+";"+Math.random()})(document,screen)</script></div><!--/LiveInternet-->
+            </div>
+        </div>
+    </footer>
+    <div id="cookie-consent" class="cookie-popup">
+        <div class="cookie-inner">
+            <span>🍪 Мы используем файлы cookie для улучшения работы сайта.</span>
+            <button id="cookie-accept" class="cookie-btn">Принять</button>
+        </div>
+    </div>
+    <script src="/static/js/main.js"></script>
+    <script>
+    (function() {
+        const popup = document.getElementById('cookie-consent');
+        const btn = document.getElementById('cookie-accept');
+        if (popup && btn && !localStorage.getItem('cookie-accepted')) {
+            popup.classList.add('visible');
+            btn.onclick = () => {
+                localStorage.setItem('cookie-accepted', 'true');
+                popup.classList.remove('visible');
+            };
+        }
+    })();
+    </script>
+    <script>
+    function pbPollVote(el) {
+        var poll = el.closest('.poll-widget');
+        if (poll.classList.contains('voted')) return;
+        poll.classList.add('voted');
+        el.classList.add('selected');
+        var opts = poll.querySelectorAll('.poll-widget-option');
+        var n = opts.length;
+        var raw = [];
+        var sum = 0;
+        for (var i = 0; i < n; i++) {
+            var v = Math.random() * 50 + 5;
+            if (opts[i] === el) v += 30;
+            raw.push(v);
+            sum += v;
+        }
+        var pcts = raw.map(function(v) { return Math.round(v / sum * 100); });
+        var diff = 100 - pcts.reduce(function(a,b){ return a+b; }, 0);
+        pcts[Array.from(opts).indexOf(el)] += diff;
+        setTimeout(function() {
+            opts.forEach(function(opt, i) {
+                opt.querySelector('.poll-widget-bar').style.width = pcts[i] + '%';
+                opt.querySelector('.poll-widget-pct').textContent = pcts[i] + '%';
+            });
+        }, 50);
+    }
+    </script>
+    <!--#include virtual="/ssi/body_bottom.html" -->
+    <script src="/static/js/inject.js" defer></script>
+</body>
+</html>

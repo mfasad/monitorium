@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27><text y=%27.9em%27 font-size=%2790%27>🖥️</text></svg>">
+    <title>Как найти серийный номер монитора через командную строку Windows — Мониторум</title>
+    <meta name="description" content="Пошаговая инструкция: как узнать серийный номер монитора через CMD без разборки корпуса. Команды WMI, WMIC и PowerShell для Windows.">
+    <link rel="canonical" href="https://monitorium.vercel.app/articles/k/ka/kak-posmotret-serijnyj-nomer-monitora-cherez-komandnuyu-stroku.html">
+
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="Как найти серийный номер монитора через командную строку Windows">
+    <meta property="og:description" content="Пошаговая инструкция: как узнать серийный номер монитора через CMD без разборки корпуса. Команды WMI, WMIC и PowerShell для Windows.">
+    <meta property="og:locale" content="ru_RU">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css?v=1780420684">
+    <style>
+    .site-footer-premium {
+        margin-top: 60px; padding: 40px 0 0; background: #1e293b; color: #94a3b8;
+    }
+    .footer-grid {
+        display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 40px;
+        padding-bottom: 32px; border-bottom: 1px solid #334155;
+    }
+    .footer-brand { font-size: 1.2rem; font-weight: 700; color: #f1f5f9; margin-bottom: 12px; }
+    .footer-about { font-size: 0.9rem; line-height: 1.6; margin-bottom: 8px; }
+    .footer-updated { font-size: 0.8rem; color: #64748b; }
+    .footer-col h4 { color: #f1f5f9; font-size: 0.95rem; margin-bottom: 16px; }
+    .footer-col ul { list-style: none; }
+    .footer-col li { margin-bottom: 8px; }
+    .footer-col a { color: #94a3b8; font-size: 0.9rem; transition: color 0.2s; }
+    .footer-col a:hover { color: #60a5fa; }
+    .footer-bottom { padding: 20px 0; text-align: center; font-size: 0.85rem; }
+    @media (max-width: 640px) {
+        .footer-grid { grid-template-columns: 1fr; gap: 24px; }
+    }
+    .cookie-popup {
+        position: fixed; bottom: 0; left: 0; right: 0; background: #1e293b; color: #fff;
+        padding: 16px; transition: transform 0.5s ease; z-index: 9999; border-top: 2px solid #2563eb;
+        transform: translateY(100%);
+    }
+    .cookie-popup.visible { transform: translateY(0); }
+    .cookie-inner { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; gap: 16px; font-size: 0.9rem; }
+    .cookie-btn { background: #2563eb; color: #fff; border: none; padding: 8px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+    .cookie-btn:hover { background: #1d4ed8; }
+    @media (max-width: 640px) {
+        .cookie-inner { flex-direction: column; text-align: center; }
+    }
+</style>
+    
+    <!--#include virtual="/ssi/head.html" -->
+</head>
+<body>
+        <!--#include virtual="/ssi/body_top.html" -->
+    <style>
+    .nav-dropdown { position: relative; display: inline-block; }
+    .dropdown-toggle {
+        background: none; border: none; cursor: pointer;
+        font: inherit; color: inherit; padding: 8px 12px;
+        border-radius: 8px; transition: background 0.2s;
+    }
+    .dropdown-toggle:hover { background: rgba(0,0,0,0.05); }
+    .dropdown-menu {
+        display: none; position: absolute; right: 0; top: 100%;
+        min-width: 240px; max-height: 70vh; overflow-y: auto;
+        background: var(--card-bg, #fff); border: 1px solid var(--border, #e5e7eb);
+        border-radius: 12px; box-shadow: 0 12px 40px rgba(0,0,0,0.12);
+        padding: 8px 0; z-index: 1000;
+    }
+    .nav-dropdown::after {
+        content: ''; position: absolute; left: 0; right: 0;
+        top: 100%; height: 12px;
+    }
+    .nav-dropdown:hover .dropdown-menu,
+    .nav-dropdown:focus-within .dropdown-menu { display: block; }
+    .dropdown-item {
+        display: block; padding: 10px 20px; color: var(--text, #1f2937);
+        text-decoration: none; font-size: 0.95rem; transition: background 0.15s;
+        white-space: nowrap;
+    }
+    .dropdown-item:hover { background: rgba(37,99,235,0.06); color: var(--primary, #2563eb); }
+    @media (max-width: 768px) {
+        .main-nav > .nav-link { display: none; }
+        .dropdown-toggle { display: none; }
+        .dropdown-menu {
+            display: block !important; position: static;
+            box-shadow: none; border: none; border-radius: 0;
+            min-width: auto; max-height: none; padding: 0;
+            background: transparent;
+        }
+        .dropdown-item {
+            padding: 8px 0; font-size: 1rem;
+        }
+    }
+    </style>
+    <header class="site-header">
+        <div class="container header-inner">
+            <a href="/" class="logo">
+                <span class="logo-icon">🖥️</span>
+                <span>Мониторум</span>
+            </a>
+            <button class="mobile-menu-btn" aria-label="Меню" id="menuBtn">☰</button>
+            <nav class="main-nav" id="mainNav">
+                <a href="/category/nastrojka-ekrana/" class="nav-link">⚙️ Настройка экрана</a>
+<a href="/category/podklyuchenie-ustrojstv/" class="nav-link">🔌 Подключение устройств</a>
+<a href="/category/mnozhestvennye-ekrany/" class="nav-link">🖥️🖥️ Множественные экраны</a>
+<a href="/category/zvuk-i-audio/" class="nav-link">🔊 Звук и аудио</a>
+<div class="nav-dropdown">
+            <button class="nav-link dropdown-toggle">📂 Все разделы ▾</button>
+            <div class="dropdown-menu"><a href="/category/nastrojka-ekrana/" class="dropdown-item">⚙️ Настройка экрана</a>
+<a href="/category/podklyuchenie-ustrojstv/" class="dropdown-item">🔌 Подключение устройств</a>
+<a href="/category/mnozhestvennye-ekrany/" class="dropdown-item">🖥️🖥️ Множественные экраны</a>
+<a href="/category/zvuk-i-audio/" class="dropdown-item">🔊 Звук и аудио</a>
+<a href="/category/remont-i-polomki/" class="dropdown-item">🔧 Ремонт и поломки</a>
+<a href="/category/ukhod-i-chistka/" class="dropdown-item">🧼 Уход и чистка</a>
+<a href="/category/vybor-i-kharakteristiki/" class="dropdown-item">📊 Выбор и характеристики</a>
+<a href="/category/drajvery-i-po/" class="dropdown-item">💿 Драйверы и ПО</a>
+<a href="/category/krepleniya-i-ustanovka/" class="dropdown-item">🔩 Крепления и установка</a>
+<a href="/category/utilizatsiya-i-prodazha/" class="dropdown-item">♻️ Утилизация и продажа</a>
+<a href="/category/spetsialnye-rezhimy/" class="dropdown-item">🎮 Специальные режимы</a>
+<a href="/category/drugoe/" class="dropdown-item">📁 Другое</a></div>
+        </div>
+            </nav>
+        </div>
+    </header>
+
+    <nav class="breadcrumbs" aria-label="Навигация">
+        <div class="container"><a href="/">Главная</a><span class="breadcrumb-sep">›</span><a href="/category/drajvery-i-po/">Драйверы и ПО</a><span class="breadcrumb-sep">›</span><span class="breadcrumb-current">Как найти серийный номер монитора через командную строку Windows</span></div>
+    </nav>
+
+    <main class="site-main">
+        <div class="container">
+            <div class="article-layout">
+                <article class="article-main">
+                    
+                    <h1>Как посмотреть серийный номера монитора через командную строку</h1>
+                    <nav class="mobile-toc"><details><summary>📋 Содержание</summary><ul><li><a href="#подготовка-системы-к-диагностике">Подготовка системы к диагностике</a></li><li><a href="#использование-команды-wmic-для-получения-данных">Использование команды WMIC для получения данных</a></li><li><a href="#альтернативный-метод-через-powershell">Альтернативный метод через PowerShell</a></li><li><a href="#чтение-данных-через-реестр-и-wmi">Чтение данных через реестр и WMI</a></li><li><a href="#таблица-расшифровки-полей-и-возможных-ошибок">Таблица расшифровки полей и возможных ошибок</a></li><li><a href="#что-делать-если-серийный-номер-не-находится">Что делать, если серийный номер не находится</a></li><li><a href="#часто-задаваемые-вопросы">Часто задаваемые вопросы</a></li></ul></details></nav>
+                    <!--#include virtual="/ssi/article_before.html" -->
+                    <div class="article-body"><p>Найти точную идентификацию оборудования часто требуется при продаже б/у техники, оформлении гарантии или диагностике неисправностей. Физическая наклейка на корпусе может стереться, отклеиться или находиться в труднодоступном месте, например, на задней стенке, если монитор прижат к стене. В таких случаях самым быстрым и надежным способом получения данных становится программный запрос к системе.</p>
+<p>Операционная система Windows содержит встроенные утилиты, способные считывать информацию прямо из контроллера дисплея без необходимости разбирать устройство. Вам не нужно скачивать сторонний софт или устанавливать дополнительные драйверы, так как все необходимые инструменты уже доступны в стандартном интерфейсе командной строки.</p>
+<p>Использование <strong>командной строки</strong> позволяет получить данные даже в том случае, если операционная система не видит модель монитора корректно и показывает его как «Универсальный монитор PnP». Это критически важно для тех, кто пытается определить подлинность устройства или его точную ревизию при покупке с рук.</p>
+
+<h2 id="подготовка-системы-к-диагностике">Подготовка системы к диагностике</h2>
+<p>Перед тем как вводить сложные команды, необходимо обеспечить правильный уровень доступа к системным ресурсам. Обычный запуск терминала может не дать доступа к данным о подключенном оборудовании, так как утилиты WMI (Windows Management Instrumentation) требуют повышенных прав.</p>
+<p>Вам нужно нажать комбинацию клавиш <code>Win + R</code>, ввести <code>cmd</code>, но не жмите Enter сразу. Вместо этого найдите в списке или через поиск «Командная строка», нажмите на ней правой кнопкой мыши и выберите пункт «Запуск от имени администратора». Только в этом режиме утилита сможет опросить подсистему подключения видеокарты.</p>
+<p>Если вы используете Windows 10 или 11, интерфейс может отличаться, но логика остается неизменной: доступ к <strong>аппаратным идентификаторам</strong> всегда защищен от случайных изменений. Ошибки доступа часто возникают, когда пользователь пытается выполнить команду в обычном окне без прав администратора, получая вместо данных сообщение «Доступ запрещен».</p>
+
+<blockquote>⚠️ Внимание: Если система запрашивает подтверждение через экран «Контроль учетных записей», обязательно нажмите «Да». Без этого этапа команда не сможет считать данные из реестра и контроллера монитора.</blockquote>
+
+<div class="attention-box attention-tip"><span class="attention-icon">💡</span><p>Если у вас несколько мониторов, система может вернуть данные только для основного. Чтобы проверить все, вам придется выключать лишние дисплеи перед выполнением команды или использовать скрипт с циклом перебора.</p></p></div>
+
+<h2 id="использование-команды-wmic-для-получения-данных">Использование команды WMIC для получения данных</h2>
+<p>Самый классический и проверенный временем метод базируется на утилите WMIC (Windows Management Instrumentation Command-line). Она позволяет строить сложные запросы к базе данных оборудования, возвращая строки в текстовом формате. Это наиболее универсальный способ, который работает даже в старых версиях Windows.</p>
+<p>В открывшемся окне введите следующую команду и нажмите Enter:
+<pre><code>wmic path win32_dedicatedvideocontroller get deviceid</code></pre>
+<p>Эта команда покажет идентификаторы видеокарт, но для нас интересен запрос к монитору. Для получения именно серийного номера используйте более специализированный синтаксис:</p></p>
+<pre><code>wmic path Win32_PnPEntity where "Name like '%monitor%'" get DeviceID, Name, SerialNumber</code></pre>
+<p>Если система выдаст список с полями <strong>DeviceID</strong>, <strong>Name</strong> и <strong>SerialNumber</strong>, вы увидите нужные данные. Часто поле SerialNumber может быть пустым, если драйвер монитора не содержит этой информации или производитель не зашил её в прошивку.</p>
+
+<details class="faq-item"><summary>Почему поле SerialNumber может быть пустым?</summary><div class="faq-answer"><p>Некоторые производители, особенно бюджетные бренды, не прописывают уникальный серийный номер в прошивку панели. В таких случаях система выводит «None» или пустую строку. Это не ошибка Windows, а особенность изготовления конкретного девайса.</p></div></details>
+
+<p>Важно понимать, что команда считывает данные из драйвера. Если вы используете <em>Generic PnP Monitor</em>, то данные могут отсутствовать. Для получения точной информации иногда требуется установить родной драйвер с сайта производителя, например, для мониторов <em>Dell</em> или <em>LG</em>.</p>
+
+<div class="attention-box attention-tip"><span class="attention-icon">💡</span><p>Команда WMIC является универсальным инструментом, но её результат напрямую зависит от качества установленных драйверов и настроек прошивки конкретного монитора.</p></div>
+
+<h2 id="альтернативный-метод-через-powershell">Альтернативный метод через PowerShell</h2>
+<p>Современные версии Windows предлагают более мощный инструмент — PowerShell. Он работает с объектами и позволяет получать данные даже из тех утилит, которые не поддерживают консольный вывод в формате WMIC. Этот метод часто срабатывает там, где классическая командная строка бессильна.</p>
+<p>Откройте PowerShell от имени администратора (через меню Пуск или поиск) и введите команду, которая запросит информацию о подключенных дисплеях через WMI. Синтаксис выглядит следующим образом:</p>
+<pre><code>Get-WmiObject -Class Win32_PnPEntity | Where-Object { $_.Name -like "<em>Monitor</em>" } | Select-Object Name, SerialNumber, Manufacturer</code></pre>
+<p>Эта конструкция фильтрует все подключенные устройства, оставляя только те, в названии которых есть слово «Monitor». Результат будет выведен в виде таблицы, где колонка <strong>SerialNumber</strong> содержит искомый код. Если вы видите строку <em>Microsoft Basic Display Adapter</em>, значит, драйверы не установлены корректно.</p>
+<p>Для более глубокой диагностики можно использовать команду <code>Get-PnpDevice</code>, которая показывает статус устройства. Если устройство помечено как «Неготово» или «Отключено», серийный номер считаться не будет.</p>
+
+<div class="checklist-block"><h4>☑️ Проверка готовности системы к диагностике</h4><label class="check-item"><input type="checkbox"><span>Монитор включен и подключен к ПК</span></label><label class="check-item"><input type="checkbox"><span>Драйверы видеокарты установлены</span></label><label class="check-item"><input type="checkbox"><span>Командная строка запущена от имени администратора</span></label><label class="check-item"><input type="checkbox"><span>Настройки питания не отключают монитор в простое</span></label><div class="check-progress">Выполнено: <span class="check-count">0</span> / 4</div></div>
+
+<p>Иногда PowerShell возвращает данные в формате, который сложно прочитать (например, в виде массива байтов). В таком случае необходимо добавить в конец команды фильтр для преобразования данных в строку, но это уже продвинутый уровень администрирования.</p>
+
+<h2 id="чтение-данных-через-реестр-и-wmi">Чтение данных через реестр и WMI</h2>
+<p>Если стандартные команды не возвращают желаемого результата, можно попробовать обратиться напрямую к <strong>реестру Windows</strong>, где хранятся данные о подключенных устройствах. Это более сложный путь, но он часто позволяет вытащить информацию, скрытую в массивах данных.</p>
+<p>Введите команду <code>reg query "HKLM\HARDWARE\DEVICEMAP\VIDEO"</code> и изучите вывод. Там могут содержаться ключи, указывающие на путь к данным монитора. Однако для обычного пользователя проще использовать комбинацию WMI:
+<pre><code>wmic /namespace:\\root\wmi path WmiMonitorID where (Active=1) get ManufacturerName, ProductCodeID, UserFriendlyName, SerialNumberID</code></pre>
+<p>Эта специфическая команда обращается к пространству имен <em>wmi</em> и запрашивает именно <strong>идентификаторы монитора</strong> из EDID (Extended Display Identification Data). Именно здесь чаще всего зашит серийный номер на уровне железа, даже если драйвер его не транслирует.</p>
+
+<blockquote>⚠️ Внимание: Если команда возвращает длинные строки из символов, это не всегда значит, что что-то сломано. Серийный номер может быть закодирован в бинарном формате и требовать расшифровки через специальные конвертеры или утилиты.</blockquote>
+
+<table>
+<thead>
+<tr>
+<th>Команда</th>
+<th>Описание</th>
+<th>Результат</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>wmic path Win32_PnPEntity ...</code></td>
+<td>Общий запрос к оборудованию</td>
+<td>Список всех устройств с драйверами</td>
+</tr>
+<tr>
+<td><code>wmic /namespace:\\root\wmi path WmiMonitorID ...</code></td>
+<td>Запрос к EDID монитора</td>
+<td>Прямые данные из прошивки экрана</td>
+</tr>
+<tr>
+<td><code>Get-WmiObject Win32_PnPEntity</code></td>
+<td>PowerShell запрос</td>
+<td>Объекты с подробными свойствами</td>
+</tr>
+<tr>
+<td><code>reg query ...</code></td>
+<td>Запрос к реестру</td>
+<td>Параметры подключения в ключах</td>
+</tr>
+</tbody>
+</table>
+
+<p>Обратите внимание, что данные из реестра могут быть подвержены изменениям, если вы переустанавливали систему. Но <strong>EDID</strong> хранится в самом мониторе и не зависит от ОС. Поэтому метод с <code>WmiMonitorID</code> является наиболее надежным для поиска уникального кода.</p>
+
+<div class="poll-widget" id="poll-9d30346f"><div class="poll-widget-question">📊 Какая операционная версия у вас установлена?</div><div class="poll-widget-option" data-poll="9d30346f" data-idx="0" onclick="pbPollVote(this)"><span class="poll-widget-label">Windows 10</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="9d30346f" data-idx="1" onclick="pbPollVote(this)"><span class="poll-widget-label">Windows 11</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="9d30346f" data-idx="2" onclick="pbPollVote(this)"><span class="poll-widget-label">Windows 8</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div><div class="poll-widget-option" data-poll="9d30346f" data-idx="3" onclick="pbPollVote(this)"><span class="poll-widget-label">Windows 7 и старше</span><span class="poll-widget-bar"></span><span class="poll-widget-pct"></span></div></div>
+
+<h2 id="таблица-расшифровки-полей-и-возможных-ошибок">Таблица расшифровки полей и возможных ошибок</h2>
+<p>При работе с командной строкой вы можете столкнуться с различными вариантами вывода. Понимание того, что означает каждая колонка, поможет избежать ложных выводов о неисправности оборудования. Ниже приведена таблица с распространенными значениями.</p>
+
+<p>Поле <strong>ManufacturerName</strong> обычно содержит трехбуквенный код производителя (например, <em>DEL</em> для Dell, <em>CPL</em> для Apple). Если вы видите код <em>SEC</em>, это Samsung, а <em>SAM</em> — Samsung же, но в другом формате кодировки.</p>
+<p>Если поле <strong>SerialNumberID</strong> пусто или содержит набор нулей, это не значит, что у монитора нет номера. Скорее всего, производитель не зашифровал его в стандартное поле EDID, а спрятал в заводских настройках, доступ к которым можно получить только через сервисное меню.</p>
+<p>Кодировка имен может быть нестандартной, особенно для китайских брендов. В таких случаях символы могут выглядеть как «квадратики» или нечитаемые знаки, что требует использования утилит для конвертации кодировки из ASCII в Unicode.</p>
+
+<blockquote>⚠️ Внимание: Если вы видите несколько мониторов в списке, но не знаете, какой из них какой, отключите кабель от одного из них и повторите команду. То устройство, которое исчезло из списка, и есть отключенный монитор.</blockquote>
+
+<p>В некоторых случаях, особенно с игровыми мониторами <em>ASUS</em> или <em>Acer</em>, серийный номер может быть разбит на несколько частей в памяти. В таких ситуациях проще посмотреть наклейку или воспользоваться фирменной утилитой обновления драйверов, которая автоматически соберет всю информацию в один отчет.</p>
+
+<h2 id="что-делать-если-серийный-номер-не-находится">Что делать, если серийный номер не находится</h2>
+<p>Если ни одна из команд не вернула серийный номер, возможно, ваш монитор имеет <strong>устаревший протокол</strong> идентификации или использует кастомную прошивку. В этом случае программный метод может оказаться бессильным без специальных знаний.</p>
+<p>Попробуйте обновить драйверы видеокарты. Часто проблема кроется именно в том, что видеодрайвер не может корректно прочитать метаданные из монитора. Зайдите на сайт производителя видеокарты (NVIDIA, AMD или Intel) и скачайте последнюю версию драйвера.</p>
+<p>Также стоит проверить физическое подключение. Если кабель HDMI или DisplayPort поврежден, данные могут передаваться только частично, включая изображение, но лишаясь служебной информации о модели и серийном номере. <em>Кабель DVI</em> также может не передавать эти данные в отличие от HDMI.</p>
+
+<div class="attention-box attention-tip"><span class="attention-icon">💡</span><p>Если программные методы не помогают, единственный надежный способ узнать серийный номер — это физический осмотр наклейки на корпусе или использование сервисного меню монитора.</p></div>
+
+<p>Иногда помогает полный сброс настроек монитора через его собственное меню (OSD). В разделе «Information» или «System» на самом дисплее часто дублируется серийный номер, который можно считать визуально.</p>
+
+<p>В заключение стоит отметить, что командная строка — это мощный инструмент, но он не является панацеей. Для точной диагностики всегда полезно комбинировать программные методы с физическим осмотром и проверкой документации. Если вы планируете продавать устройство, наличие четкого серийного номера в системе добавит доверия покупателю.</p>
+
+<h2 id="часто-задаваемые-вопросы">Часто задаваемые вопросы</h2>
+
+<details>
+<summary>Почему команда возвращает пустую строку?</summary>
+<p>Это может означать, что драйвер монитора не содержит этой информации, или монитор не поддерживает передачу серийного номера по текущему протоколу подключения. Попробуйте сменить кабель на более современный.</p>
+</details>
+
+<details>
+<summary>Можно ли узнать серийный номер удаленного компьютера?</summary>
+<p>Да, если у вас есть доступ к командной строке удаленной машины через инструменты администрирования (например, через RDP или инструменты домена), вы можете выполнить те же команды.</p>
+</details>
+
+<details>
+<summary>Нужно ли устанавливать специальные программы?</summary>
+<p>Нет. Все описанные методы используют стандартные утилиты Windows (CMD, PowerShell, WMI), которые уже установлены в системе по умолчанию.</p>
+</details>
+
+<details>
+<summary>Что делать, если мониторов несколько?</summary>
+<p>Команда вернет список всех подключенных устройств. Вам нужно будет сопоставить DeviceID с физическим подключением, отключая мониторы по очереди, чтобы понять, какой номер принадлежит какому экрану.</p>
+</details>
+
+<details>
+<summary>Может ли серийный номер совпасть у разных мониторов?</summary>
+<p>Согласно стандартам, серийный номер должен быть уникальным для каждого устройства. Однако в случае заводского брака или на подделках может наблюдаться повторение кодов.</p>
+</details></div>
+                    <!--#include virtual="/ssi/article_after.html" -->
+
+                </article>
+                <aside class="article-sidebar"><!--#include virtual="/ssi/sidebar_top.html" --><nav class="sidebar-search"><div class="sidebar-search-box"><input type="text" id="globalSearchInput" placeholder="🔍 Поиск статей..." autocomplete="off"><div class="search-dropdown" id="globalSearchDropdown"></div></div></nav><!--#include virtual="/ssi/sidebar_before_toc.html" --><nav class="sidebar-toc" id="sidebarToc"><h3>Содержание</h3><ul><li><a href="#подготовка-системы-к-диагностике">Подготовка системы к диагностике</a></li><li><a href="#использование-команды-wmic-для-получения-данных">Использование команды WMIC для получения данных</a></li><li><a href="#альтернативный-метод-через-powershell">Альтернативный метод через PowerShell</a></li><li><a href="#чтение-данных-через-реестр-и-wmi">Чтение данных через реестр и WMI</a></li><li><a href="#таблица-расшифровки-полей-и-возможных-ошибок">Таблица расшифровки полей и возможных ошибок</a></li><li><a href="#что-делать-если-серийный-номер-не-находится">Что делать, если серийный номер не находится</a></li><li><a href="#часто-задаваемые-вопросы">Часто задаваемые вопросы</a></li></ul></nav><!--#include virtual="/ssi/sidebar_before_related.html" --><nav class="sidebar-related"><h3>Похожие статьи</h3><ul><li><a href="/articles/k/ka/kak-zapisyvat-video-igry-s-monitora.html" class="related-card">Как записывать видео игры с монитора: лучшие программы и настройки</a></li><li><a href="/articles/k/ka/kak-udalit-monitor-iz-dispetchera-ustrojstv.html" class="related-card">Как удалить монитор из диспетчера устройств: полная инструкция</a></li><li><a href="/articles/k/ka/kak-delat-skrinshot-s-ekrana-monitora.html" class="related-card">Как сделать скриншот экрана: Полное руководство для Windows, macOS и Linux</a></li><li><a href="/articles/k/ka/kak-monitorit-bilety-rzhd.html" class="related-card">Как мониторить билеты РЖД: сервисы, скрипты и способы отлова мест</a></li><li><a href="/articles/k/ka/kak-ustanovit-drajver-monitora-ubuntu.html" class="related-card">Установка драйвера монитора в Ubuntu: инструкция и тонкости</a></li></ul></nav><!--#include virtual="/ssi/sidebar_after_related.html" --></aside>
+            </div>
+        </div>
+    </main>
+
+    <!--#include virtual="/ssi/before_related_bottom.html" -->
+    <section class="related-bottom">
+        <div class="container">
+            <h2 class="related-bottom-heading">📖 Читайте также</h2>
+            <div class="related-bottom-grid"><a href="/articles/k/ka/kak-zapisyvat-video-igry-s-monitora.html" class="related-bottom-card"><span class="related-bottom-title">Как записывать видео игры с монитора: лучшие программы и настройки</span><span class="related-bottom-desc">Пошаговая инструкция по записи геймплея с монитора. Обзор OBS, Bandicam, MSI Afterburner. Настройки </span></a><a href="/articles/k/ka/kak-udalit-monitor-iz-dispetchera-ustrojstv.html" class="related-bottom-card"><span class="related-bottom-title">Как удалить монитор из диспетчера устройств: полная инструкция</span><span class="related-bottom-desc">Пошаговое руководство по удалению драйверов и скрытию монитора в Windows. Разбор причин сбоя, работа</span></a><a href="/articles/k/ka/kak-delat-skrinshot-s-ekrana-monitora.html" class="related-bottom-card"><span class="related-bottom-title">Как сделать скриншот экрана: Полное руководство для Windows, macOS и Linux</span><span class="related-bottom-desc">Узнайте, как быстро сделать скриншот экрана монитора на компьютере. Простые способы, горячие клавиши</span></a><a href="/articles/k/ka/kak-monitorit-bilety-rzhd.html" class="related-bottom-card"><span class="related-bottom-title">Как мониторить билеты РЖД: сервисы, скрипты и способы отлова мест</span><span class="related-bottom-desc">Полное руководство по мониторингу билетов РЖД. Обзор сервисов, настройка скриптов, работа с API и ст</span></a><a href="/articles/k/ka/kak-ustanovit-drajver-monitora-ubuntu.html" class="related-bottom-card"><span class="related-bottom-title">Установка драйвера монитора в Ubuntu: инструкция и тонкости</span><span class="related-bottom-desc">Пошаговое руководство по установке драйверов и профилей для мониторов в Ubuntu. Решение проблем с ра</span></a><a href="/articles/g/gd/gde-najti-monitor-portala-v-1s-8.html" class="related-bottom-card"><span class="related-bottom-title">Где найти монитор портала в 1С 8: полная инструкция по поиску</span><span class="related-bottom-desc">Ищете монитор портала в 1С 8? Узнайте, где найти этот инструмент, как запустить диагностику и интерп</span></a></div>
+        </div>
+    </section>
+    <!--#include virtual="/ssi/after_related_bottom.html" -->
+
+    <footer class="site-footer-premium">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-col">
+                    <div class="footer-brand">🖥️ Мониторум</div>
+                    <p class="footer-about">Полный справочник по настройке, ремонту и выбору компьютерных мониторов для любых задач.</p>
+                </div>
+                <div class="footer-col">
+                    <h4>Разделы</h4>
+                    <ul><li><a href="/category/nastrojka-ekrana/">⚙️ Настройка экрана</a></li>
+<li><a href="/category/podklyuchenie-ustrojstv/">🔌 Подключение устройств</a></li>
+<li><a href="/category/mnozhestvennye-ekrany/">🖥️🖥️ Множественные экраны</a></li>
+<li><a href="/category/zvuk-i-audio/">🔊 Звук и аудио</a></li>
+<li><a href="/category/remont-i-polomki/">🔧 Ремонт и поломки</a></li>
+<li><a href="/category/ukhod-i-chistka/">🧼 Уход и чистка</a></li></ul>
+                </div>
+                <div class="footer-col">
+                    <h4>Информация</h4>
+                    <ul>
+                        <li><a href="/">Главная</a></li>
+                        <li><a href="/about.html">О проекте</a></li>
+                        <li><a href="/categories.html">Все разделы</a></li>
+                        <li><a href="/contact.html">Контакты</a></li>
+                        <li><a href="/privacy.html">Конфиденциальность</a></li>
+                        <li><a href="/sitemap.xml">Карта сайта</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>© Мониторум. Все права защищены.</p>
+                <!--LiveInternet counter--><div style="margin-top:10px;"><a href="https://www.liveinternet.ru/click"
+                target="_blank"><img id="licnt06C4" width="88" height="15" style="border:0" 
+                title="LiveInternet: показано число посетителей за сегодня"
+                src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAEALAAAAAABAAEAAAIBTAA7"
+                alt=""/></a><script>(function(d,s){d.getElementById("licnt06C4").src=
+                "https://counter.yadro.ru/hit?t26.5;r"+escape(d.referrer)+
+                ((typeof(s)=="undefined")?"":";s"+s.width+"*"+s.height+"*"+
+                (s.colorDepth?s.colorDepth:s.pixelDepth))+";u"+escape(d.URL)+
+                ";h"+escape(d.title.substring(0,150))+";"+Math.random()})(document,screen)</script></div><!--/LiveInternet-->
+            </div>
+        </div>
+    </footer>
+    <div id="cookie-consent" class="cookie-popup">
+        <div class="cookie-inner">
+            <span>🍪 Мы используем файлы cookie для улучшения работы сайта.</span>
+            <button id="cookie-accept" class="cookie-btn">Принять</button>
+        </div>
+    </div>
+    <script src="/static/js/main.js"></script>
+    <script>
+    (function() {
+        const popup = document.getElementById('cookie-consent');
+        const btn = document.getElementById('cookie-accept');
+        if (popup && btn && !localStorage.getItem('cookie-accepted')) {
+            popup.classList.add('visible');
+            btn.onclick = () => {
+                localStorage.setItem('cookie-accepted', 'true');
+                popup.classList.remove('visible');
+            };
+        }
+    })();
+    </script>
+    <script>
+    function pbPollVote(el) {
+        var poll = el.closest('.poll-widget');
+        if (poll.classList.contains('voted')) return;
+        poll.classList.add('voted');
+        el.classList.add('selected');
+        var opts = poll.querySelectorAll('.poll-widget-option');
+        var n = opts.length;
+        var raw = [];
+        var sum = 0;
+        for (var i = 0; i < n; i++) {
+            var v = Math.random() * 50 + 5;
+            if (opts[i] === el) v += 30;
+            raw.push(v);
+            sum += v;
+        }
+        var pcts = raw.map(function(v) { return Math.round(v / sum * 100); });
+        var diff = 100 - pcts.reduce(function(a,b){ return a+b; }, 0);
+        pcts[Array.from(opts).indexOf(el)] += diff;
+        setTimeout(function() {
+            opts.forEach(function(opt, i) {
+                opt.querySelector('.poll-widget-bar').style.width = pcts[i] + '%';
+                opt.querySelector('.poll-widget-pct').textContent = pcts[i] + '%';
+            });
+        }, 50);
+    }
+    </script>
+    <!--#include virtual="/ssi/body_bottom.html" -->
+    <script src="/static/js/inject.js" defer></script>
+</body>
+</html>
